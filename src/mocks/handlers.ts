@@ -1,6 +1,9 @@
 // src/mocks/handlers.ts
 import { http, HttpResponse } from "msw";
-import type { ResourceTemplateResponse } from "../types/metadata";
+import type {
+  ResourceTemplateResponse,
+  VocabularyResponse,
+} from "../types/metadata";
 
 // محاكاة استجابة قالب "كتاب" بناءً على DTO الخاص بك
 const mockTemplates: ResourceTemplateResponse[] = [
@@ -36,6 +39,14 @@ const mockTemplates: ResourceTemplateResponse[] = [
     ],
   },
 ];
+const mockVocabularies: VocabularyResponse[] = [
+  {
+    id: 1,
+    prefix: "dc",
+    namespaceUri: "http://purl.org/dc/elements/1.1/",
+    label: "Dublin Core",
+  },
+];
 
 export const handlers = [
   // 1. جلب القوالب
@@ -60,5 +71,30 @@ export const handlers = [
 
     // محاكاة نجاح العملية وإرجاع ID العنصر الجديد (كما يفعل الـ C# Handler)
     return HttpResponse.json({ id: 999 }, { status: 201 });
+  }),
+
+  // --- Vocabularies API ---
+  http.get("/api/vocabularies", () => {
+    return HttpResponse.json(mockVocabularies);
+  }),
+
+  http.post("/api/vocabularies", async ({ request }) => {
+    const body = await request.json();
+    console.log("✅ [CQRS] CreateVocabularyCommand:", body);
+    return HttpResponse.json({ id: 2 }, { status: 201 });
+  }),
+
+  // --- Properties API ---
+  http.post("/api/properties", async ({ request }) => {
+    const body = await request.json();
+    console.log("✅ [CQRS] CreatePropertyCommand:", body);
+    return HttpResponse.json({ id: 105 }, { status: 201 });
+  }),
+
+  // --- Templates API ---
+  http.post("/api/templates", async ({ request }) => {
+    const body = await request.json();
+    console.log("✅ [CQRS] CreateResourceTemplateCommand:", body);
+    return HttpResponse.json({ id: 2 }, { status: 201 });
   }),
 ];

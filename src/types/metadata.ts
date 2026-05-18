@@ -41,3 +41,31 @@ export interface CreateItemCommand {
   ownerId: number | null;
   values: CreateValueRequest[];
 }
+
+// --- Vocabularies ---
+export interface VocabularyResponse {
+  id: number;
+  prefix: string;
+  namespaceUri: string;
+  label: string;
+}
+
+export interface CreateVocabularyCommand {
+  prefix: string;
+  namespaceUri: string;
+  label: string;
+}
+
+// --- Properties ---
+export interface CreatePropertyCommand {
+  vocabularyId: number;
+  localName: string;
+  label: string;
+  termUri: string;
+}
+
+// --- Resource Templates ---
+export interface CreateResourceTemplateCommand {
+  label: string;
+  description: string | null;
+}
