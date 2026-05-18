@@ -1,25 +1,43 @@
 // src/types/metadata.ts
 
-// 1. خاصية الميتاداتا (مثلاً: المؤلف، تاريخ النشر)
-export interface PropertyDto {
-  id: string;
-  name: string; // مثل "Author"
-  label: string; // العرض للمستخدم "المؤلف"
-  type: "Literal" | "URI" | "InternalLink"; // حسب ما ذكرت في هندسة الباك اند
+// --- Responses (البيانات القادمة من الباك اند) ---
+
+export interface TemplatePropertyResponse {
+  propertyId: number;
+  propertyLabel: string;
   isRequired: boolean;
+  displayOrder: number;
 }
 
-// 2. قالب الموارد (مثلاً: قالب المخطوطات)
-export interface TemplateDto {
-  id: string;
-  name: string;
-  description: string;
-  properties: PropertyDto[]; // الحقول التي يفرضها هذا القالب
+export interface ResourceTemplateResponse {
+  id: number;
+  label: string;
+  description: string | null;
+  properties: TemplatePropertyResponse[];
 }
 
-// 3. قيمة الميتاداتا (التي ستدخل في جدول Values)
-export interface MetadataValueDto {
-  propertyId: string;
-  value: string;
-  language?: string; // لدعم تعدد اللغات كما ذكرت
+export interface PropertyResponse {
+  id: number;
+  vocabularyId: number;
+  vocabularyPrefix: string;
+  localName: string;
+  label: string;
+  termUri: string;
+}
+
+// --- Commands/Requests (البيانات التي سنرسلها للباك اند) ---
+
+export interface CreateValueRequest {
+  propertyId: number;
+  valueText?: string | null;
+  valueUri?: string | null;
+  valueResourceId?: number | null;
+  type: "literal" | "uri" | "resource"; // Default in C# is "literal"
+  language: string; // Default in C# is "ar"
+}
+
+export interface CreateItemCommand {
+  templateId: number | null;
+  ownerId: number | null;
+  values: CreateValueRequest[];
 }

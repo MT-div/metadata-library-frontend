@@ -1,83 +1,64 @@
 // src/mocks/handlers.ts
 import { http, HttpResponse } from "msw";
-import type { TemplateDto } from "../types/metadata";
+import type { ResourceTemplateResponse } from "../types/metadata";
 
-// هذه البيانات تحاكي ما سيعود من الـ CQRS Queries
-const mockTemplates: TemplateDto[] = [
+// محاكاة استجابة قالب "كتاب" بناءً على DTO الخاص بك
+const mockTemplates: ResourceTemplateResponse[] = [
   {
-    id: "1",
-    name: "Book Template",
-    description: "Standard template for printed books",
+    id: 1,
+    label: "كتاب مطبوع",
+    description: "قالب أساسي للكتب المطبوعة والمنشورة",
     properties: [
       {
-        id: "p1",
-        name: "Title",
-        label: "العنوان",
-        type: "Literal",
+        propertyId: 101,
+        propertyLabel: "العنوان الرئيسي",
         isRequired: true,
+        displayOrder: 1,
       },
       {
-        id: "p2",
-        name: "Author",
-        label: "المؤلف",
-        type: "Literal",
+        propertyId: 102,
+        propertyLabel: "المؤلف",
         isRequired: true,
+        displayOrder: 2,
       },
       {
-        id: "p3",
-        name: "ISBN",
-        label: "الرقم التسلسلي",
-        type: "Literal",
+        propertyId: 103,
+        propertyLabel: "سنة النشر",
         isRequired: false,
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Manuscript Template",
-    description: "Template for ancient manuscripts",
-    properties: [
-      {
-        id: "p1",
-        name: "Title",
-        label: "العنوان",
-        type: "Literal",
-        isRequired: true,
+        displayOrder: 3,
       },
       {
-        id: "p4",
-        name: "Century",
-        label: "القرن",
-        type: "Literal",
-        isRequired: true,
-      },
-      {
-        id: "p5",
-        name: "Material",
-        label: "نوع الورق",
-        type: "Literal",
+        propertyId: 104,
+        propertyLabel: "الرقم المعياري (ISBN)",
         isRequired: false,
+        displayOrder: 4,
       },
     ],
   },
 ];
 
-// هنا نقوم باعتراض الـ API
 export const handlers = [
-  // محاكاة جلب القوالب (GET /api/templates)
+  // 1. جلب القوالب
   http.get("/api/templates", () => {
     return HttpResponse.json(mockTemplates);
   }),
 
-  // محاكاة إنشاء عنصر جديد (POST /api/items)
-  http.post("/api/items", async ({ request }) => {
-    const body = await request.json();
-    console.log("Received payload (Like ASP.NET Command):", body);
+  // 2. جلب قالب محدد بواسطة الـ ID
+  http.get("/api/templates/:id", ({ params }) => {
+    const template = mockTemplates.find((t) => t.id === Number(params.id));
+    if (!template) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json(template);
+  }),
 
-    // محاكاة نجاح العملية وإرجاع حالة 201 Created
-    return HttpResponse.json(
-      { success: true, message: "Item created successfully" },
-      { status: 201 }
-    );
+  // 3. محاكاة الـ Command الخاص بإنشاء العنصر
+  http.post("/api/items", async ({ request }) => {
+    // هذا سيلتقط الـ CreateItemCommand الذي أرسلته لي
+    const body = await request.json();
+    console.log("✅ [CQRS Command Received] CreateItemCommand:", body);
+
+    // محاكاة نجاح العملية وإرجاع ID العنصر الجديد (كما يفعل الـ C# Handler)
+    return HttpResponse.json({ id: 999 }, { status: 201 });
   }),
 ];
