@@ -5,6 +5,7 @@ import { CreateItemPage } from "./features/items/CreateItemPage";
 import { CreatePropertyPage } from "./features/properties/CreatePropertyPage";
 import { CreateVocabularyPage } from "./features/vocabularies/CreateVocabularyPage";
 import { CreateTemplatePage } from "./features/templates/CreateTemplatePage";
+import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="vocabularies/new" element={<CreateVocabularyPage />} />
           <Route path="properties/new" element={<CreatePropertyPage />} />
           <Route path="templates/new" element={<CreateTemplatePage />} />
+          <Route path="itemsets/new" element={<CreateItemSetPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

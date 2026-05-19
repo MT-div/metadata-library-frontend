@@ -113,7 +113,7 @@ export const handlers = [
     return HttpResponse.json({ id: 2 }, { status: 201 });
   }),
   // محاكاة GetPropertiesByVocabularyQuery
-  http.get('/api/vocabularies/:vocabId/properties', ({ params }) => {
+  http.get("/api/vocabularies/:vocabId/properties", ({ params }) => {
     const vocabId = Number(params.vocabId);
     // سنفترض هنا أن كل الخصائص الوهمية تابعة للقاموس رقم 1 للتجربة
     const filteredProps = vocabId === 1 ? mockProperties : [];
@@ -128,5 +128,13 @@ export const handlers = [
       body
     );
     return HttpResponse.json({ success: true }, { status: 200 });
+  }),
+
+  // --- Item Sets API ---
+  http.post("/api/itemsets", async ({ request }) => {
+    const body = await request.json();
+    console.log("✅ [CQRS] CreateItemSetCommand Received:", body);
+    // محاكاة إرجاع ID المجموعة الجديدة
+    return HttpResponse.json({ id: 1 }, { status: 201 });
   }),
 ];
