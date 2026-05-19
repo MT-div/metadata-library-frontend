@@ -5,6 +5,21 @@ import type {
   VocabularyResponse,
 } from "../types/metadata";
 
+const mockProperties = [
+  {
+    id: 101,
+    localName: "title",
+    label: "العنوان الرئيسي",
+    vocabularyPrefix: "dc",
+  },
+  { id: 102, localName: "author", label: "المؤلف", vocabularyPrefix: "dc" },
+  {
+    id: 103,
+    localName: "publishDate",
+    label: "تاريخ النشر",
+    vocabularyPrefix: "dc",
+  },
+];
 // محاكاة استجابة قالب "كتاب" بناءً على DTO الخاص بك
 const mockTemplates: ResourceTemplateResponse[] = [
   {
@@ -96,5 +111,22 @@ export const handlers = [
     const body = await request.json();
     console.log("✅ [CQRS] CreateResourceTemplateCommand:", body);
     return HttpResponse.json({ id: 2 }, { status: 201 });
+  }),
+  // محاكاة GetPropertiesByVocabularyQuery
+  http.get('/api/vocabularies/:vocabId/properties', ({ params }) => {
+    const vocabId = Number(params.vocabId);
+    // سنفترض هنا أن كل الخصائص الوهمية تابعة للقاموس رقم 1 للتجربة
+    const filteredProps = vocabId === 1 ? mockProperties : [];
+    return HttpResponse.json(filteredProps);
+  }),
+
+  // 2. محاكاة تحديث خصائص القالب (الـ Command الجديد الخاص بك)
+  http.put("/api/templates/:id/properties", async ({ request, params }) => {
+    const body = await request.json();
+    console.log(
+      `✅ [CQRS] UpdateTemplatePropertiesCommand (Template ID: ${params.id}):`,
+      body
+    );
+    return HttpResponse.json({ success: true }, { status: 200 });
   }),
 ];

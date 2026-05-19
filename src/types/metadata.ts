@@ -69,3 +69,16 @@ export interface CreateResourceTemplateCommand {
   label: string;
   description: string | null;
 }
+// --- Template Properties ---
+
+export interface TemplatePropertyRequest {
+  propertyId: number;
+  isRequired: boolean;
+  displayOrder: number;
+  alternateLabel?: string | null;
+}
+
+export interface UpdateTemplatePropertiesCommand {
+  templateId: number;
+  properties: TemplatePropertyRequest[];
+}
