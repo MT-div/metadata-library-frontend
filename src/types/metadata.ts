@@ -1,6 +1,7 @@
 // src/types/metadata.ts
 
 // --- Responses (البيانات القادمة من الباك اند) ---
+// --- Commands/Requests (البيانات التي سنرسلها للباك اند) ---
 
 export interface TemplatePropertyResponse {
   propertyId: number;
@@ -25,7 +26,21 @@ export interface PropertyResponse {
   termUri: string;
 }
 
-// --- Commands/Requests (البيانات التي سنرسلها للباك اند) ---
+export interface ItemValueResponse {
+  propertyId: number;
+  propertyLabel: string;
+  valueText?: string | null;
+  language?: string | null;
+}
+
+export interface ItemResponse {
+  id: number;
+  type: string;
+  templateId: number | null;
+  ownerId: number | null;
+  ownerName?: string | null;
+  metadataValues: ItemValueResponse[];
+}
 
 export interface CreateValueRequest {
   propertyId: number;
@@ -113,4 +128,20 @@ export interface ItemSetResponse {
   description: string | null;
   isPublic: boolean;
   items: ItemSetItemResponse[];
+}
+
+// --- Media ---
+export interface CreateMediaCommand {
+  itemId: number;
+  storagePath: string;
+  fileName: string;
+  values: CreateValueRequest[]; // نعيد استخدام نفس الـ Request
+}
+
+export interface MediaResponse {
+  id: number;
+  itemId: number;
+  storagePath: string;
+  fileName: string;
+  metadataValues: ItemValueResponse[];
 }

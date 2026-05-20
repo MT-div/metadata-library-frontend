@@ -137,4 +137,30 @@ export const handlers = [
     // محاكاة إرجاع ID المجموعة الجديدة
     return HttpResponse.json({ id: 1 }, { status: 201 });
   }),
+
+  // --- Media API ---
+  http.post("/api/media", async ({ request }) => {
+    const body = await request.json();
+    console.log("✅ [CQRS] CreateMediaCommand Received:", body);
+    return HttpResponse.json({ id: 55 }, { status: 201 });
+  }),
+
+  // --- File Upload API (المحاكاة للكونترولر الجديد) ---
+  http.post("/api/files/upload", async () => {
+    // محاكاة تأخير بسيط للشبكة لكي نرى تأثير "جاري الرفع..."
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("✅ [File Upload] Received file form data.");
+
+    // إعادة الرد تماماً كما كتبته أنت في الـ C#
+    return HttpResponse.json(
+      {
+        storagePath: `/uploads/${crypto.randomUUID()}_mockfile.jpg`,
+        fileName: "mockfile.jpg",
+        mimeType: "image/jpeg",
+        fileSize: 204800,
+      },
+      { status: 200 }
+    );
+  }),
 ];

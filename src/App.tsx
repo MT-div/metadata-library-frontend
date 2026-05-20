@@ -6,6 +6,7 @@ import { CreatePropertyPage } from "./features/properties/CreatePropertyPage";
 import { CreateVocabularyPage } from "./features/vocabularies/CreateVocabularyPage";
 import { CreateTemplatePage } from "./features/templates/CreateTemplatePage";
 import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
+import { CreateMediaPage } from "./features/media/CreateMediaPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="properties/new" element={<CreatePropertyPage />} />
           <Route path="templates/new" element={<CreateTemplatePage />} />
           <Route path="itemsets/new" element={<CreateItemSetPage />} />
+          <Route path="media/new" element={<CreateMediaPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
