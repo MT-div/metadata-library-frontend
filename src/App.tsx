@@ -7,6 +7,7 @@ import { CreateVocabularyPage } from "./features/vocabularies/CreateVocabularyPa
 import { CreateTemplatePage } from "./features/templates/CreateTemplatePage";
 import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
 import { CreateMediaPage } from "./features/media/CreateMediaPage";
+import { BrowseItemsPage } from "./features/items/BrowseItemsPage";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="templates/new" element={<CreateTemplatePage />} />
           <Route path="itemsets/new" element={<CreateItemSetPage />} />
           <Route path="media/new" element={<CreateMediaPage />} />
+          <Route path="browse" element={<BrowseItemsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -4,6 +4,58 @@ import type {
   ResourceTemplateResponse,
   VocabularyResponse,
 } from "../types/metadata";
+// أضف هذه المصفوفات الوهمية في أعلى الملف
+const mockItems = [
+  {
+    id: 1,
+    type: "Item",
+    templateId: 1,
+    ownerId: 1,
+    ownerName: "Admin",
+    metadataValues: [
+      {
+        propertyId: 101,
+        propertyLabel: "العنوان",
+        valueText: "تاريخ الأمم والملوك (تاريخ الطبري)",
+      },
+      { propertyId: 102, propertyLabel: "المؤلف", valueText: "الإمام الطبري" },
+      { propertyId: 103, propertyLabel: "سنة النشر", valueText: "310 هـ" },
+    ],
+  },
+  {
+    id: 2,
+    type: "Item",
+    templateId: 2,
+    ownerId: 1,
+    ownerName: "Admin",
+    metadataValues: [
+      {
+        propertyId: 101,
+        propertyLabel: "العنوان",
+        valueText: "خريطة دمشق القديمة",
+      },
+      { propertyId: 104, propertyLabel: "النوع", valueText: "صورة جغرافية" },
+      { propertyId: 105, propertyLabel: "التاريخ", valueText: "1920 م" },
+    ],
+  },
+];
+
+const mockItemSets = [
+  {
+    id: 1,
+    title: "المكتبة التاريخية",
+    description: "كتب ومخطوطات تاريخية",
+    isPublic: true,
+    items: [{ id: 1 }],
+  },
+  {
+    id: 2,
+    title: "الخرائط والوثائق",
+    description: "خرائط جغرافية",
+    isPublic: true,
+    items: [{ id: 2 }],
+  },
+];
 
 const mockProperties = [
   {
@@ -162,5 +214,15 @@ export const handlers = [
       },
       { status: 200 }
     );
+  }),
+
+  // جلب كل العناصر (GetAllItemsQuery)
+  http.get("/api/items", () => {
+    return HttpResponse.json(mockItems);
+  }),
+
+  // جلب كل المجموعات (GetAllItemSetsQuery)
+  http.get("/api/itemsets", () => {
+    return HttpResponse.json(mockItemSets);
   }),
 ];
