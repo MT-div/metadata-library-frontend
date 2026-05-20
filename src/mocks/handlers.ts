@@ -75,16 +75,35 @@ const mockItemSets = [
 const mockProperties = [
   {
     id: 101,
+    vocabularyId: 1,
     localName: "title",
     label: "العنوان الرئيسي",
     vocabularyPrefix: "dc",
+    termUri: "http://purl.org/dc/elements/1.1/title",
   },
-  { id: 102, localName: "author", label: "المؤلف", vocabularyPrefix: "dc" },
+  {
+    id: 102,
+    vocabularyId: 1,
+    localName: "creator",
+    label: "المؤلف",
+    vocabularyPrefix: "dc",
+    termUri: "http://purl.org/dc/elements/1.1/creator",
+  },
   {
     id: 103,
-    localName: "publishDate",
+    vocabularyId: 1,
+    localName: "date",
     label: "تاريخ النشر",
     vocabularyPrefix: "dc",
+    termUri: "http://purl.org/dc/elements/1.1/date",
+  },
+  {
+    id: 104,
+    vocabularyId: 2,
+    localName: "shelfMark",
+    label: "رقم الرف",
+    vocabularyPrefix: "lib",
+    termUri: "http://library.local/terms/shelfMark",
   },
 ];
 // محاكاة استجابة قالب "كتاب" بناءً على DTO الخاص بك
@@ -127,6 +146,12 @@ const mockVocabularies: VocabularyResponse[] = [
     prefix: "dc",
     namespaceUri: "http://purl.org/dc/elements/1.1/",
     label: "Dublin Core",
+  },
+  {
+    id: 2,
+    prefix: "lib",
+    namespaceUri: "http://library.local/terms/",
+    label: "المكتبة المحلية",
   },
 ];
 

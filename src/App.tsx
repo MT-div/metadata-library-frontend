@@ -10,6 +10,7 @@ import { CreateMediaPage } from "./features/media/CreateMediaPage";
 import { BrowseItemsPage } from "./features/items/BrowseItemsPage";
 import { ItemDetailsPage } from "./features/items/ItemDetailsPage";
 import { BrowseItemSetsPage } from "./features/itemSets/BrowseItemSetsPage";
+import { ManageMetadataPage } from "./features/admin/ManageMetadataPage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="browse" element={<BrowseItemsPage />} />
           <Route path="items/:id" element={<ItemDetailsPage />} />
           <Route path="itemsets" element={<BrowseItemSetsPage />} />
+          <Route path="admin/metadata" element={<ManageMetadataPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
