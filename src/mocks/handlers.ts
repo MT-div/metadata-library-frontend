@@ -225,4 +225,28 @@ export const handlers = [
   http.get("/api/itemsets", () => {
     return HttpResponse.json(mockItemSets);
   }),
+  // جلب عنصر محدد بواسطة ID
+  http.get("/api/items/:id", ({ params }) => {
+    const item = mockItems.find((i) => i.id === Number(params.id));
+    if (!item) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json(item);
+  }),
+
+  // محاكاة جلب الميديا التابعة لعنصر (GetMediaByItemQuery)
+  http.get("/api/media", ({ request }) => {
+    const url = new URL(request.url);
+    const itemId = url.searchParams.get("itemId");
+
+    // بيانات وهمية لملفات مرفوعة
+    const mockMedia = [
+      {
+        id: 1,
+        itemId: Number(itemId),
+        storagePath: "/uploads/mock_image.jpg",
+        fileName: "cover.jpg",
+        metadataValues: [],
+      },
+    ];
+    return HttpResponse.json(mockMedia);
+  }),
 ];

@@ -14,16 +14,23 @@ import type {
   ResourceTemplateResponse,
   ItemSetResponse,
 } from "../../types/metadata";
+import { Link, useLocation } from "react-router-dom";
 
 export const BrowseItemsPage = () => {
   const [items, setItems] = useState<ItemResponse[]>([]);
   const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
 
+  const location = useLocation();
+
   // حالات الفلترة والبحث
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("all");
-  const [selectedItemSetId, setSelectedItemSetId] = useState<string>("all");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
+    location.state?.template ?? "all"
+  );
+  const [selectedItemSetId, setSelectedItemSetId] = useState<string>(
+    location.state?.itemSet ?? "all"
+  );
 
   // حالة طريقة العرض
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -100,7 +107,7 @@ export const BrowseItemsPage = () => {
       <div className="bg-white p-4 rounded-xl shadow-sm border mb-8 flex flex-col lg:flex-row gap-4 items-center justify-between">
         <div className="flex flex-col md:flex-row gap-4 w-full lg:w-3/4">
           {/* مربع البحث */}
-          <div className="relative flex-grow">
+          <div className="relative grow">
             <Search
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
               size={20}
@@ -115,7 +122,7 @@ export const BrowseItemsPage = () => {
           </div>
 
           {/* فلتر القوالب */}
-          <div className="flex items-center gap-2 min-w-[200px]">
+          <div className="flex items-center gap-2 growmin-w-50">
             <Filter size={18} className="text-gray-500" />
             <select
               className="w-full border rounded-lg py-2.5 px-3 outline-none bg-white"
@@ -132,7 +139,7 @@ export const BrowseItemsPage = () => {
           </div>
 
           {/* فلتر المجموعات (Item Sets) */}
-          <div className="flex items-center gap-2 min-w-[200px]">
+          <div className="flex items-center gap-2 growmin-w-50">
             <select
               className="w-full border rounded-lg py-2.5 px-3 outline-none bg-white"
               value={selectedItemSetId}
@@ -202,7 +209,7 @@ export const BrowseItemsPage = () => {
                 <div className="h-32 bg-gray-50 flex items-center justify-center border-b group-hover:bg-blue-50 transition">
                   {getIconForTemplate(item.templateId)}
                 </div>
-                <div className="p-5 flex-grow flex flex-col">
+                <div className="p-5 grow flex flex-col">
                   <span className="text-xs font-semibold text-primary bg-blue-50 px-2 py-1 rounded w-fit mb-3">
                     {template?.label || "قالب غير معروف"}
                   </span>
@@ -210,14 +217,17 @@ export const BrowseItemsPage = () => {
                     {title}
                   </h3>
                   {author && (
-                    <p className="text-sm text-gray-600 mb-4 flex-grow">
+                    <p className="text-sm text-gray-600 mb-4 grow">
                       بواسطة: {author}
                     </p>
                   )}
 
-                  <button className="mt-auto pt-4 border-t w-full text-left text-sm font-semibold text-gray-500 hover:text-primary flex items-center justify-between transition">
+                  <Link
+                    to={`/items/${item.id}`}
+                    className="mt-auto pt-4 border-t w-full text-left text-sm font-semibold text-gray-500 hover:text-primary flex items-center justify-between transition"
+                  >
                     عرض التفاصيل <ChevronLeft size={16} />
-                  </button>
+                  </Link>
                 </div>
               </div>
             );
@@ -263,9 +273,12 @@ export const BrowseItemsPage = () => {
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      <button className="text-primary hover:underline text-sm font-semibold">
+                      <Link
+                        to={`/items/${item.id}`}
+                        className="text-primary hover:underline text-sm font-semibold"
+                      >
                         تفاصيل
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 );

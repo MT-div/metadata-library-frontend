@@ -187,7 +187,7 @@ export const CreateTemplatePage = () => {
             </h2>
             {/* أداة إضافة خاصية (بعد التحديث) */}
             <div className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-lg border">
-              <div className="flex-grow w-full md:w-auto">
+              <div className="grow w-full md:w-auto">
                 <label className="block text-sm font-semibold mb-1">
                   1. اختر القاموس:
                 </label>
@@ -204,7 +204,7 @@ export const CreateTemplatePage = () => {
                 </select>
               </div>
 
-              <div className="flex-grow w-full md:w-auto">
+              <div className="grow w-full md:w-auto">
                 <label className="block text-sm font-semibold mb-1">
                   2. اختر الخاصية:
                 </label>

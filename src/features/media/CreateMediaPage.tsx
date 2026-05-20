@@ -190,7 +190,7 @@ export const CreateMediaPage = () => {
             </h2>
 
             <div className="flex gap-2 items-end bg-gray-50 p-4 rounded-lg border mb-4">
-              <div className="flex-grow">
+              <div className="grow">
                 <label className="block text-sm font-semibold mb-1">
                   إضافة خاصية لوصف الملف:
                 </label>
@@ -231,7 +231,7 @@ export const CreateMediaPage = () => {
                     onChange={(e) =>
                       handleUpdateValueText(index, e.target.value)
                     }
-                    className="flex-grow border rounded-lg p-2 outline-none focus:border-primary"
+                    className="grow border rounded-lg p-2 outline-none focus:border-primary"
                     placeholder="أدخل القيمة..."
                   />
                   <button
