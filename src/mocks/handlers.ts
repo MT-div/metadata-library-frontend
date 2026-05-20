@@ -43,17 +43,32 @@ const mockItems = [
 const mockItemSets = [
   {
     id: 1,
+    type: "ItemSet",
     title: "المكتبة التاريخية",
-    description: "كتب ومخطوطات تاريخية",
+    description:
+      "مجموعة تضم أندر الكتب والمخطوطات التي تتحدث عن التاريخ الإسلامي والأموي.",
     isPublic: true,
-    items: [{ id: 1 }],
+    ownerName: "Admin",
+    items: [{ id: 1 }, { id: 3 }, { id: 5 }], // محاكاة أن بداخلها 3 عناصر
   },
   {
     id: 2,
-    title: "الخرائط والوثائق",
-    description: "خرائط جغرافية",
-    isPublic: true,
+    type: "ItemSet",
+    title: "الخرائط والوثائق العثمانية",
+    description: "أرشيف كامل للخرائط الجغرافية القديمة لبلاد الشام.",
+    isPublic: false, // مجموعة خاصة
+    ownerName: "Librarian",
     items: [{ id: 2 }],
+  },
+  {
+    id: 3,
+    type: "ItemSet",
+    title: "مجموعة الصور الفوتوغرافية",
+    description:
+      "صور نادرة بالأبيض والأسود لمدينة دمشق في أوائل القرن العشرين.",
+    isPublic: true,
+    ownerName: "Admin",
+    items: [], // مجموعة فارغة
   },
 ];
 

@@ -9,6 +9,7 @@ import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
 import { CreateMediaPage } from "./features/media/CreateMediaPage";
 import { BrowseItemsPage } from "./features/items/BrowseItemsPage";
 import { ItemDetailsPage } from "./features/items/ItemDetailsPage";
+import { BrowseItemSetsPage } from "./features/itemSets/BrowseItemSetsPage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="media/new" element={<CreateMediaPage />} />
           <Route path="browse" element={<BrowseItemsPage />} />
           <Route path="items/:id" element={<ItemDetailsPage />} />
+          <Route path="itemsets" element={<BrowseItemSetsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
