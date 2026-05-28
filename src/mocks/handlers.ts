@@ -198,6 +198,11 @@ export const handlers = [
     return HttpResponse.json({ id: 105 }, { status: 201 });
   }),
 
+  // 3. جلب كل الخصائص المتاحة في النظام
+  http.get("/api/properties", () => {
+    return HttpResponse.json(mockProperties);
+  }),
+
   // --- Templates API ---
   http.post("/api/templates", async ({ request }) => {
     const body = await request.json();
