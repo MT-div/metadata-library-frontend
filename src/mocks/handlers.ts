@@ -294,4 +294,22 @@ export const handlers = [
     ];
     return HttpResponse.json(mockMedia);
   }),
+
+  // محاكاة إضافة عنصر إلى مجموعة (AddItemToItemSetCommand)
+  http.post("/api/itemsets/:setId/items", async ({ request, params }) => {
+    const body = await request.json();
+    console.log(
+      `✅ [CQRS] AddItemToItemSetCommand (Set: ${params.setId}):`,
+      body
+    );
+    return HttpResponse.json({ success: true }, { status: 200 });
+  }),
+
+  // محاكاة إزالة عنصر من مجموعة (RemoveItemFromItemSetCommand)
+  http.delete("/api/itemsets/:setId/items/:itemId", ({ params }) => {
+    console.log(
+      `✅ [CQRS] RemoveItemFromItemSetCommand (Set: ${params.setId}, Item: ${params.itemId})`
+    );
+    return HttpResponse.json({ success: true }, { status: 200 });
+  }),
 ];

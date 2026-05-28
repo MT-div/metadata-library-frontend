@@ -12,6 +12,7 @@ import { ItemDetailsPage } from "./features/items/ItemDetailsPage";
 import { BrowseItemSetsPage } from "./features/itemSets/BrowseItemSetsPage";
 import { ManageMetadataPage } from "./features/admin/ManageMetadataPage";
 import { ManageTemplatesPage } from "./features/admin/ManageTemplatesPage";
+import { ManageItemSetsPage } from "./features/admin/ManageItemSetsPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="itemsets" element={<BrowseItemSetsPage />} />
           <Route path="admin/metadata" element={<ManageMetadataPage />} />
           <Route path="admin/templates" element={<ManageTemplatesPage />} />
+          <Route path="admin/itemsets" element={<ManageItemSetsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
