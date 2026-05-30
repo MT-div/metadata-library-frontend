@@ -209,13 +209,13 @@ export const ManageItemSetsPage = () => {
 
               {/* أداة إضافة عنصر للمجموعة */}
               <div className="p-6 border-b bg-white">
-                <label className="block text-sm font-bold mb-3 text-gray-800 flex items-center gap-2">
+                <label className="block text-sm font-bold mb-3 text-gray-800  items-center gap-2">
                   <LinkIcon size={18} className="text-primary" /> إضافة عنصر
                   لهذه المجموعة:
                 </label>
                 <div className="flex gap-3">
                   <select
-                    className="flex-grow border border-gray-300 rounded-lg p-3 outline-none bg-white focus:ring-2 focus:ring-primary focus:border-primary transition"
+                    className="grow border border-gray-300 rounded-lg p-3 outline-none bg-white focus:ring-2 focus:ring-primary focus:border-primary transition"
                     value={itemToAdd}
                     onChange={(e) => setItemToAdd(e.target.value)}
                   >
@@ -237,7 +237,7 @@ export const ManageItemSetsPage = () => {
               </div>
 
               {/* قائمة العناصر الموجودة داخل المجموعة */}
-              <div className="p-6 flex-grow bg-gray-50">
+              <div className="p-6 grow bg-gray-50">
                 <h3 className="font-bold text-gray-800 mb-4">
                   العناصر المرتبطة حالياً ({selectedSet.items?.length || 0}):
                 </h3>
