@@ -10,7 +10,7 @@ export const MainLayout = () => {
   const navLinks = [
     { title: "Home", path: "/" },
     { title: "Explore", path: "/browse" },
-    { title: "My Journey", path: "/journey" },
+    { title: "Favorite", path: "/favorite" },
     { title: "Collections", path: "/itemsets" },
     { title: "About", path: "/about" },
   ];

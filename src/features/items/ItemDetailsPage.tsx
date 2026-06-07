@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-//import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
+  ArrowLeft,
   Edit,
   FilePlus,
   Trash2,
@@ -11,6 +10,7 @@ import {
   Image as ImageIcon,
   Book,
   FileText,
+  ChevronRight,
 } from "lucide-react";
 import type {
   ItemResponse,
@@ -19,8 +19,78 @@ import type {
   MediaResponse,
 } from "../../types/metadata";
 
+// ── Tokens ────────────────────────────────────────────────────────────────────
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+  dangerBg: "#fdf0ee",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
+
+// ── Reusable section card ─────────────────────────────────────────────────────
+const SectionCard = ({
+  title,
+  icon,
+  action,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <div
+    style={{
+      background: C.surface,
+      border: `1.5px solid ${C.goldBorder}`,
+      borderRadius: 16,
+      overflow: "hidden",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+    }}
+  >
+    <div
+      style={{
+        background: C.goldLight,
+        borderBottom: `1.5px solid ${C.goldBorder}`,
+        padding: "14px 20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ color: C.gold }}>{icon}</span>
+        <h2
+          style={{
+            fontFamily: serif,
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            color: C.ink,
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      {action}
+    </div>
+    <div style={{ padding: "20px" }}>{children}</div>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 export const ItemDetailsPage = () => {
-  const { id } = useParams(); // استخراج الـ ID من الرابط
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [item, setItem] = useState<ItemResponse | null>(null);
@@ -32,262 +102,584 @@ export const ItemDetailsPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
         const itemRes = await fetch(`/api/items/${id}`);
-        if (!itemRes.ok) throw new Error("Element not found");
+        if (!itemRes.ok) throw new Error("Not found");
         const itemData: ItemResponse = await itemRes.json();
         setItem(itemData);
 
-        // جلب باقي البيانات بالتوازي
-        //ملاحظة من عرابي : هون لازم كمان نجيب بس ال templete itemsets للعنصر مو جيب الكل بعديل فلتر
-        const [templatesRes, setsRes, mediaRes] = await Promise.all([
+        const [tplRes, setsRes, mediaRes] = await Promise.all([
           fetch("/api/templates"),
           fetch("/api/itemsets"),
           fetch(`/api/media?itemId=${id}`),
         ]);
+        const tpls = (await tplRes.json()) as ResourceTemplateResponse[];
+        setTemplate(tpls.find((t) => t.id === itemData.templateId) || null);
 
-        const templatesData =
-          (await templatesRes.json()) as ResourceTemplateResponse[];
-        setTemplate(
-          templatesData.find((t) => t.id === itemData.templateId) || null
-        );
-
-        const setsData = (await setsRes.json()) as ItemSetResponse[];
-        // تصفية المجموعات التي تحتوي على هذا العنصر
+        const sets = (await setsRes.json()) as ItemSetResponse[];
         setItemSets(
-          setsData.filter((s) => s.items?.some((i) => i.id === itemData.id))
+          sets.filter((s) => s.items?.some((i) => i.id === itemData.id))
         );
 
         setMedia((await mediaRes.json()) as MediaResponse[]);
-      } catch (error) {
-        console.error(error);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    load();
   }, [id]);
 
+  // ── Loading / Error states ────────────────────────────────────────────────
   if (loading)
     return (
-      <div className="text-center py-20 text-primary animate-pulse">
-        جاري تحميل البيانات...
+      <div
+        style={{
+          textAlign: "center",
+          padding: 80,
+          fontFamily: sans,
+          color: C.inkSoft,
+          fontStyle: "italic",
+        }}
+      >
+        Loading item details...
       </div>
     );
   if (!item)
     return (
-      <div className="text-center py-20 text-red-500 font-bold text-xl">
-        العنصر غير موجود!
+      <div
+        style={{
+          textAlign: "center",
+          padding: 80,
+          fontFamily: serif,
+          color: C.danger,
+          fontSize: "1.2rem",
+        }}
+      >
+        Item not found.
       </div>
     );
 
-  // 1. استخراج العنوان والمؤلف
-  const titleProps = ["عنوان", "Title"];
-  const authorProps = ["مؤلف", "كاتب", "Author"];
+  // ── Extract key fields ────────────────────────────────────────────────────
+  const titleLabels = ["عنوان", "Title"];
+  const authorLabels = ["مؤلف", "كاتب", "Author"];
 
   const title =
     item.metadataValues.find((v) =>
-      titleProps.some((t) => v.propertyLabel.includes(t))
-    )?.valueText || `عنصر بدون عنوان #${item.id}`;
-  const author = item.metadataValues.find((v) =>
-    authorProps.some((a) => v.propertyLabel.includes(a))
-  )?.valueText;
+      titleLabels.some((l) => v.propertyLabel.includes(l))
+    )?.valueText || `Untitled #${item.id}`;
+  const author =
+    item.metadataValues.find((v) =>
+      authorLabels.some((l) => v.propertyLabel.includes(l))
+    )?.valueText || null;
 
-  // 2. تصفية باقي الخصائص (استبعاد العنوان والمؤلف) وترتيبها حسب displayOrder من القالب
-  const sortedMetadata = item.metadataValues
+  const sortedMeta = item.metadataValues
     .filter(
       (v) =>
-        !titleProps.includes(v.propertyLabel) &&
-        !authorProps.includes(v.propertyLabel)
+        !titleLabels.includes(v.propertyLabel) &&
+        !authorLabels.includes(v.propertyLabel)
     )
     .map((v) => {
-      // البحث عن ترتيب هذه الخاصية داخل القالب
-      const propDef = template?.properties?.find(
+      const def = template?.properties?.find(
         (p) => p.propertyId === v.propertyId
       );
-      return { ...v, displayOrder: propDef?.displayOrder ?? 999 };
+      return { ...v, displayOrder: def?.displayOrder ?? 999 };
     })
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
-  // 3. دوال الانتقال الذكي (Clickable Badges)
-  const handleFilterClick = (
-    type: "template" | "itemSet",
-    filterId: string
-  ) => {
-    // ننتقل لصفحة الاستعراض ونمرر الفلتر كـ State
+  const handleBadgeClick = (type: "template" | "itemSet", filterId: string) =>
     navigate("/browse", { state: { [type]: filterId } });
-  };
+
+  const isImage = template?.label.includes("صورة");
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir="rtl">
-      {/* الأزرار العلوية */}
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-500 hover:text-primary flex items-center gap-2 font-medium transition"
+    <div
+      style={{
+        background: C.bg,
+        minHeight: "calc(100vh - 72px)",
+        fontFamily: sans,
+      }}
+    >
+      <div
+        style={{ maxWidth: 1280, margin: "0 auto", padding: "36px 48px 60px" }}
+      >
+        {/* ── Top action bar ── */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 28,
+          }}
         >
-          <ArrowRight size={20} /> عودة للقائمة
-        </button>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg flex items-center gap-2 font-medium transition">
-            <Edit size={18} /> تعديل
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "transparent",
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 999,
+              padding: "9px 18px",
+              fontFamily: sans,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              color: C.inkMid,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = C.goldLight;
+              e.currentTarget.style.borderColor = C.gold;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = C.goldBorder;
+            }}
+          >
+            <ArrowLeft size={16} /> Back to list
           </button>
-          <button className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg flex items-center gap-2 font-medium transition">
-            <Trash2 size={18} /> حذف
-          </button>
-        </div>
-      </div>
 
-      {/* منطقة الترويسة (Hero) */}
-      <div className="bg-white rounded-2xl shadow-sm border p-8 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 h-full bg-primary"></div>
-        <div className="flex items-start gap-6">
-          <div className="bg-blue-50 p-6 rounded-2xl text-primary shrink-0">
-            {template?.label.includes("صورة") ? (
-              <ImageIcon size={48} />
-            ) : (
-              <Book size={48} />
-            )}
+          <div style={{ display: "flex", gap: 10 }}>
+            <ActionBtn
+              icon={<Edit size={15} />}
+              label="Edit"
+              onClick={() => {}}
+            />
+            <ActionBtn
+              icon={<Trash2 size={15} />}
+              label="Delete"
+              danger
+              onClick={() => {}}
+            />
           </div>
-          <div>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-mono border">
-                ID: {item.id}
-              </span>
-              {template && (
-                <button
-                  onClick={() =>
-                    handleFilterClick("template", template.id.toString())
-                  }
-                  className="bg-blue-50 text-primary border border-blue-200 px-3 py-1 rounded-full text-sm font-semibold hover:bg-blue-100 hover:shadow-sm transition flex items-center gap-1 cursor-pointer"
-                >
-                  <Tag size={14} /> {template.label}
-                </button>
+        </div>
+
+        {/* ── Hero card ── */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 20,
+            overflow: "hidden",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
+            marginBottom: 28,
+            display: "flex",
+          }}
+        >
+          {/* Gold left accent */}
+          <div style={{ width: 5, background: C.gold, flexShrink: 0 }} />
+
+          <div
+            style={{
+              padding: "32px",
+              display: "flex",
+              gap: 28,
+              alignItems: "flex-start",
+              flexGrow: 1,
+            }}
+          >
+            {/* Icon */}
+            <div
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 18,
+                flexShrink: 0,
+                background: C.goldLight,
+                border: `1.5px solid ${C.goldBorder}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {isImage ? (
+                <ImageIcon size={40} color={C.gold} strokeWidth={1.5} />
+              ) : (
+                <Book size={40} color={C.gold} strokeWidth={1.5} />
               )}
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 leading-tight">
-              {title}
-            </h1>
-            {author && (
-              <p className="text-lg text-gray-600 font-medium">
-                بواسطة: {author}
-              </p>
-            )}
-            {item.ownerName && (
-              <p className="text-sm text-gray-400 mt-4">
-                تم الإضافة بواسطة: {item.ownerName}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* العمود الأيمن: البيانات الوصفية المرتبة */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="bg-gray-50 border-b p-4 px-6">
-              <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                <FileText className="text-primary" size={20} /> البيانات الوصفية
-                (Metadata)
-              </h2>
-            </div>
-            <div className="p-6">
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                {sortedMetadata.length > 0 ? (
-                  sortedMetadata.map((val, idx) => (
-                    <div key={idx} className="border-b border-dashed pb-3">
-                      <dt className="text-sm font-semibold text-gray-500 mb-1">
-                        {val.propertyLabel}
-                      </dt>
-                      <dd className="text-base text-gray-900 font-medium">
-                        {val.valueText || "-"}
-                      </dd>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">
-                    لا توجد تفاصيل إضافية لهذا العنصر.
-                  </p>
+            {/* Text */}
+            <div style={{ flexGrow: 1 }}>
+              {/* Badges row */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 14,
+                }}
+              >
+                {/* ID */}
+                <span
+                  style={{
+                    background: C.bg,
+                    border: `1px solid ${C.goldBorder}`,
+                    color: C.inkSoft,
+                    fontSize: "0.75rem",
+                    fontFamily: "monospace",
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                  }}
+                >
+                  ID: {item.id}
+                </span>
+
+                {/* Template badge — clickable */}
+                {template && (
+                  <button
+                    onClick={() =>
+                      handleBadgeClick("template", template.id.toString())
+                    }
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      background: C.goldMid,
+                      border: `1px solid ${C.goldBorder}`,
+                      color: C.goldDark,
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      padding: "4px 12px",
+                      borderRadius: 999,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = C.goldLight)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = C.goldMid)
+                    }
+                  >
+                    <Tag size={12} /> {template.label}
+                  </button>
                 )}
-              </dl>
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* العمود الأيسر: الميديا والمجموعات */}
-        <div className="space-y-8">
-          {/* قسم المجموعات */}
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="bg-gray-50 border-b p-4 px-6">
-              <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                <Folder className="text-primary" size={20} /> المجموعات
-                (Collections)
-              </h2>
-            </div>
-            <div className="p-6">
-              {itemSets.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {itemSets.map((set) => (
-                    <button
-                      key={set.id}
-                      onClick={() =>
-                        handleFilterClick("itemSet", set.id.toString())
-                      }
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition border flex items-center gap-2 cursor-pointer"
-                    >
-                      <Folder size={14} className="text-gray-500" /> {set.title}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">
-                  العنصر لا ينتمي لأي مجموعة.
+              {/* Title */}
+              <h1
+                style={{
+                  fontFamily: serif,
+                  fontSize: "clamp(1.5rem,3vw,2.2rem)",
+                  fontWeight: 800,
+                  color: C.ink,
+                  margin: "0 0 10px",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {title}
+              </h1>
+
+              {author && (
+                <p
+                  style={{
+                    fontFamily: sans,
+                    fontSize: "1rem",
+                    color: C.inkMid,
+                    margin: "0 0 6px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  by {author}
+                </p>
+              )}
+              {item.ownerName && (
+                <p style={{ fontSize: "0.8rem", color: C.inkSoft, margin: 0 }}>
+                  Added by: {item.ownerName}
                 </p>
               )}
             </div>
           </div>
+        </div>
 
-          {/* قسم الملفات */}
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="bg-gray-50 border-b p-4 px-6 flex justify-between items-center">
-              <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                <ImageIcon className="text-primary" size={20} /> الوسائط المرفقة
-              </h2>
-              <button className="text-primary hover:text-blue-700 p-1">
-                <FilePlus size={20} />
-              </button>
-            </div>
-            <div className="p-6">
-              {media.length > 0 ? (
-                <div className="space-y-3">
+        {/* ── Body grid: metadata (left 2/3) + sidebar (right 1/3) ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 320px",
+            gap: 24,
+            alignItems: "start",
+          }}
+        >
+          {/* ── LEFT: Metadata ── */}
+          <SectionCard title="Metadata" icon={<FileText size={18} />}>
+            {sortedMeta.length === 0 ? (
+              <p
+                style={{
+                  color: C.inkSoft,
+                  fontSize: "0.88rem",
+                  fontStyle: "italic",
+                }}
+              >
+                No additional metadata for this item.
+              </p>
+            ) : (
+              <dl
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                  gap: "0 24px",
+                }}
+              >
+                {sortedMeta.map((val, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: "14px 0",
+                      borderBottom: `1px dashed ${C.goldBorder}`,
+                    }}
+                  >
+                    <dt
+                      style={{
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        color: C.inkSoft,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        marginBottom: 5,
+                      }}
+                    >
+                      {val.propertyLabel}
+                    </dt>
+                    <dd
+                      style={{
+                        fontFamily: serif,
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        color: C.ink,
+                        margin: 0,
+                      }}
+                    >
+                      {val.valueText || "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </SectionCard>
+
+          {/* ── RIGHT sidebar ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Collections */}
+            <SectionCard title="Collections" icon={<Folder size={18} />}>
+              {itemSets.length === 0 ? (
+                <p
+                  style={{
+                    color: C.inkSoft,
+                    fontSize: "0.82rem",
+                    fontStyle: "italic",
+                  }}
+                >
+                  This item doesn't belong to any collection.
+                </p>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  {itemSets.map((set) => (
+                    <button
+                      key={set.id}
+                      onClick={() =>
+                        handleBadgeClick("itemSet", set.id.toString())
+                      }
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: C.bg,
+                        border: `1.5px solid ${C.goldBorder}`,
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        cursor: "pointer",
+                        fontFamily: sans,
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = C.goldLight;
+                        e.currentTarget.style.borderColor = C.gold;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = C.bg;
+                        e.currentTarget.style.borderColor = C.goldBorder;
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Folder size={15} color={C.gold} />
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            color: C.ink,
+                          }}
+                        >
+                          {set.title}
+                        </span>
+                      </div>
+                      <ChevronRight size={14} color={C.inkSoft} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Media */}
+            <SectionCard
+              title="Attached Media"
+              icon={<ImageIcon size={18} />}
+              action={
+                <button
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: C.gold,
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    transition: "color 0.15s",
+                  }}
+                >
+                  <FilePlus size={18} />
+                </button>
+              }
+            >
+              {media.length === 0 ? (
+                <p
+                  style={{
+                    color: C.inkSoft,
+                    fontSize: "0.82rem",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No attached files.
+                </p>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   {media.map((m) => (
                     <div
                       key={m.id}
-                      className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: `1.5px solid ${C.goldBorder}`,
+                        background: C.bg,
+                        cursor: "pointer",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = C.goldLight)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = C.bg)
+                      }
                     >
-                      <div className="bg-blue-100 text-primary p-2 rounded-lg">
-                        <FileText size={20} />
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          background: C.goldLight,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <FileText size={18} color={C.gold} />
                       </div>
-                      <div className="overflow-hidden">
-                        <p className="font-semibold text-sm text-gray-800 truncate">
+                      <div style={{ overflow: "hidden" }}>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.83rem",
+                            fontWeight: 600,
+                            color: C.ink,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {m.fileName}
                         </p>
-                        <p className="text-xs text-gray-500 font-mono truncate">
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.7rem",
+                            color: C.inkSoft,
+                            fontFamily: "monospace",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {m.storagePath}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-gray-500 text-sm">لا توجد ملفات مرفقة.</p>
               )}
-            </div>
+            </SectionCard>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+// ── Action button ─────────────────────────────────────────────────────────────
+const ActionBtn = ({
+  icon,
+  label,
+  danger,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 7,
+      background: danger ? "#fdf0ee" : C.surface,
+      border: `1.5px solid ${danger ? "rgba(192,57,43,0.25)" : C.goldBorder}`,
+      color: danger ? C.danger : C.inkMid,
+      borderRadius: 10,
+      padding: "9px 16px",
+      fontFamily: sans,
+      fontSize: "0.85rem",
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "all 0.15s",
+    }}
+    onMouseEnter={(e) =>
+      (e.currentTarget.style.background = danger ? "#fce8e5" : C.goldLight)
+    }
+    onMouseLeave={(e) =>
+      (e.currentTarget.style.background = danger ? "#fdf0ee" : C.surface)
+    }
+  >
+    {icon} {label}
+  </button>
+);
