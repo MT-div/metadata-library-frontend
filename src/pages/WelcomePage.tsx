@@ -5,8 +5,9 @@ import compassIcon from "../assets/icons/compass.svg";
 import usersIcon from "../assets/icons/users.svg";
 import bookMarkedIcon from "../assets/icons/book-marked.svg";
 import vasePng from "../assets/icons/vase.png";
-import libraryHero from "../assets/images/libraryHero5.png";
 import backVase from "../assets/icons/backVase.png"; // uncomment when file is ready
+
+import libraryHero from "../assets/images/libraryHero6.png";
 
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
@@ -223,14 +224,14 @@ export const WelcomePage = () => {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "#f0e8d8",
+              background: "#ffffff",
               border: "1px solid #dbc9a4",
               borderRadius: 999,
               padding: "7px 16px",
               marginBottom: 16,
             }}
           >
-            <Sparkle size={24} />
+            <Sparkle size={12} />
             <span
               style={{
                 fontSize: "0.82rem",

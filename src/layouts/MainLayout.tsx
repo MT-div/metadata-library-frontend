@@ -1,6 +1,7 @@
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import { Globe, ChevronDown } from "lucide-react";
 import openBookIcon from "../assets/icons/open-book.svg";
+import leafs from "../assets/images/leafs.png";
 
 // تم حذف مكون BookLogoIcon القديم لأنه لم يعد مستخدماً
 
@@ -23,6 +24,18 @@ export const MainLayout = () => {
         background: "#faf6f0",
       }}
     >
+      <img
+        src={leafs}
+        alt="leafs"
+        style={{
+          position: "absolute",
+          width: 200,
+          top: " 10%",
+          left: -40,
+          opacity: 0.5,
+          zIndex: 1,
+        }}
+      />
       {/* ═══════════════════════════ NAVBAR ═══════════════════════════ */}
       <header
         style={{
