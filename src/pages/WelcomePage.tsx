@@ -90,7 +90,7 @@ export const WelcomePage = () => {
           position: "absolute",
           bottom: -55, // sits above the feature strip
           left: -20,
-          width: 220,
+          width: 240,
           zIndex: 4,
           filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.10))",
           pointerEvents: "none",
@@ -102,9 +102,9 @@ export const WelcomePage = () => {
         aria-hidden
         style={{
           position: "absolute",
-          bottom: -75, // sits above the feature strip
+          bottom: -110, // sits above the feature strip
           left: -20,
-          width: 220,
+          width: 260,
           zIndex: 0,
           filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.10))",
           pointerEvents: "none",

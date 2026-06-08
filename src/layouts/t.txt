@@ -1,0 +1,7 @@
+git checkout -b theme/LoginPage-page
+git add .
+git commit -m "style: update application theme for LoginPagePage"
+git push -u origin theme/LoginPage-page
+git checkout main
+git merge theme/LoginPage-page
+git push origin main
