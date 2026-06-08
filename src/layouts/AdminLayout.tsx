@@ -13,6 +13,7 @@ import {
   Globe,
   ChevronRight,
 } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -77,6 +78,14 @@ const NAV_GROUPS = [
 export const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+
+  // 👈 الإضافة هنا
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout(); // نمسح البيانات من المحفظة
+    navigate("/login"); // نوجهه لصفحة الدخول
+  };
 
   return (
     <div
@@ -317,6 +326,7 @@ export const AdminLayout = () => {
               e.currentTarget.style.background = "transparent";
               e.currentTarget.style.color = "rgba(220,80,60,0.75)";
             }}
+            onClick={handleLogout}
           >
             <LogOut size={17} /> Sign Out
           </button>
@@ -395,10 +405,10 @@ export const AdminLayout = () => {
                   color: C.ink,
                 }}
               >
-                Admin
+                {user?.userName}
               </p>
               <p style={{ margin: 0, fontSize: "0.72rem", color: C.inkSoft }}>
-                admin@library.com
+                {user?.email}
               </p>
             </div>
             {/* Avatar */}
@@ -419,7 +429,7 @@ export const AdminLayout = () => {
                 flexShrink: 0,
               }}
             >
-              A
+              {user?.userName?.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>

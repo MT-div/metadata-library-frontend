@@ -312,4 +312,25 @@ export const handlers = [
     );
     return HttpResponse.json({ success: true }, { status: 200 });
   }),
+
+  // --- Auth API ---
+  http.post("/api/auth/login", async ({ request }) => {
+    const body = (await request.json()) as { email: string; password: string };
+    console.log("✅ [Auth] Login attempt for:", body.email);
+
+    // محاكاة تأخير الشبكة
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // إذا كان الإيميل خطأ (للتجربة)
+    if (body.email === "wrong@test.com") {
+      return new HttpResponse("Invalid email or password.", { status: 401 });
+    }
+
+    // الرد الناجح يطابق AuthResponse الخاص بك
+    return HttpResponse.json({
+      userName: "Admin 1",
+      email: body.email,
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake_token_for_testing",
+    });
+  }),
 ];

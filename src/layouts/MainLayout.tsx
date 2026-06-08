@@ -2,10 +2,13 @@ import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import { Globe, ChevronDown } from "lucide-react";
 import openBookIcon from "../assets/icons/open-book.svg";
 import leafs from "../assets/images/leafs.png";
+import { useAuthStore } from "../store/useAuthStore";
 
 // تم حذف مكون BookLogoIcon القديم لأنه لم يعد مستخدماً
 
 export const MainLayout = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated); // 👈
+
   const navigate = useNavigate();
   const navLinks = [
     { title: "Home", path: "/" },
@@ -144,7 +147,7 @@ export const MainLayout = () => {
 
             {/* Sign In */}
             <button
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate(isAuthenticated ? "/admin" : "/login")}
               style={{
                 background: "#c8a96e",
                 color: "#fff",
@@ -164,7 +167,7 @@ export const MainLayout = () => {
                 (e.currentTarget.style.background = "#c8a96e")
               }
             >
-              Sign in
+              {isAuthenticated ? "Admin Panel" : "Sign In"}
             </button>
           </div>
         </div>

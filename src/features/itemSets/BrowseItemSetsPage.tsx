@@ -76,7 +76,14 @@ export const BrowseItemSetsPage = () => {
           padding: "44px 48px 36px",
         }}
       >
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+        <div
+          style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            position: "relative",
+            zIndex: 2,
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -84,8 +91,6 @@ export const BrowseItemSetsPage = () => {
               alignItems: "flex-end",
               flexWrap: "wrap",
               gap: 20,
-              position: "relative",
-              zIndex: 2,
             }}
           >
             <div>
