@@ -1,188 +1,707 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type {
   ResourceTemplateResponse,
   CreateItemCommand,
 } from "../../types/metadata";
-import { Save, Loader2, FileText } from "lucide-react";
+import {
+  Save,
+  Loader2,
+  FileText,
+  ArrowLeft,
+  RotateCcw,
+  ChevronRight,
+} from "lucide-react";
+
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
 
 export const CreateItemPage = () => {
-  // 1. حالات القوالب
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | "">("");
-
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 2. حالة الفورم الديناميكي
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<Record<number, string>>({});
+  const [focusedField, setFocusedField] = useState<number | string | null>(
+    null
+  );
 
-  // 3. جلب جميع القوالب عند فتح الصفحة
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await fetch("/api/templates");
-        const data = await response.json();
+    fetch("/api/templates")
+      .then((r) => r.json())
+      .then((data) => {
         setTemplates(data);
-      } catch (error) {
-        console.error("Error fetching templates:", error);
-      } finally {
         setLoading(false);
-      }
-    };
-    fetchTemplates();
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  // 4. دالة مسح الحقول عند تغيير القالب
-  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleTemplateChange = (val: string) => {
     setSelectedTemplateId(val === "" ? "" : Number(val));
-    setFormData({}); // تفريغ البيانات القديمة عند تغيير القالب
-  };
-
-  const handleInputChange = (propertyId: number, value: string) => {
-    setFormData((prev) => ({ ...prev, [propertyId]: value }));
+    setFormData({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTemplateId) {
-      alert("الرجاء اختيار قالب أولاً!");
-      return;
-    }
-
+    if (!selectedTemplateId) return;
     setIsSubmitting(true);
-
     const command: CreateItemCommand = {
       templateId: Number(selectedTemplateId),
-      ownerId: 1,
+      ownerId: 1, // TODO: replace with authenticated user id
       values: Object.entries(formData).map(([propId, valueText]) => ({
         propertyId: Number(propId),
-        valueText: valueText,
+        valueText,
         type: "literal",
-        language: "ar",
+        language: "en",
       })),
     };
-
     try {
-      const response = await fetch("/api/items", {
+      const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(command),
       });
-
-      if (response.ok) {
-        setFormData({});
-        alert("تم حفظ العنصر بنجاح!");
-        console.log("🚀 Command Sent:", command);
+      if (res.ok) {
+        setSuccess(true);
+        console.log("CreateItemCommand:", command);
+        setTimeout(() => {
+          setFormData({});
+          setSuccess(false);
+        }, 2200);
       }
-    } catch (error) {
-      console.error("Error saving item:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // إيجاد القالب المحدد لرسم حقوله
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const sortedProps =
+    selectedTemplate?.properties
+      .slice()
+      .sort((a, b) => a.displayOrder - b.displayOrder) ?? [];
+  const filledCount = Object.values(formData).filter((v) => v.trim()).length;
+  const totalRequired = sortedProps.filter((p) => p.isRequired).length;
 
-  if (loading) {
+  const inputStyle = (id: number | string): React.CSSProperties => ({
+    width: "100%",
+    boxSizing: "border-box",
+    border: `1.5px solid ${focusedField === id ? C.gold : C.goldBorder}`,
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontFamily: sans,
+    fontSize: "0.88rem",
+    color: C.ink,
+    background: C.surface,
+    outline: "none",
+    transition: "border-color 0.2s",
+  });
+
+  if (loading)
     return (
-      <div className="flex justify-center items-center h-64 text-primary">
-        <Loader2 className="animate-spin" size={40} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: 240,
+          color: C.gold,
+          fontFamily: sans,
+        }}
+      >
+        <Loader2 size={36} style={{ animation: "spin 1s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
-  }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
-      <div className="bg-white shadow-sm border rounded-xl p-6 md:p-8">
-        {/* ترويسة الصفحة واختيار القالب */}
-        <div className="mb-8 border-b pb-6">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-4">
-            <FileText className="text-primary" /> إضافة عنصر جديد للمكتبة
+    <div style={{ fontFamily: sans, color: C.ink }}>
+      {/* ── Page header ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: `1.5px solid ${C.goldBorder}`,
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: C.gold,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin · Items
+          </p>
+          <h1
+            style={{
+              fontFamily: serif,
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: C.ink,
+              margin: "0 0 6px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Add New Item
           </h1>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
+            Choose a template, then fill in the metadata fields.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            background: "transparent",
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 999,
+            padding: "9px 18px",
+            fontFamily: sans,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: C.inkMid,
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.goldLight;
+            e.currentTarget.style.borderColor = C.gold;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = C.goldBorder;
+          }}
+        >
+          <ArrowLeft size={15} /> Back
+        </button>
+      </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg border">
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
-              1. اختر القالب الوصفي (Template):
-            </label>
-            <select
-              className="w-full border rounded-lg p-3 outline-none bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-              value={selectedTemplateId}
-              onChange={handleTemplateChange}
+      <div style={{ maxWidth: 780, margin: "0 auto" }}>
+        {/* ── Step 1: Template selector ── */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            marginBottom: 20,
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              background: C.goldLight,
+              borderBottom: `1.5px solid ${C.goldBorder}`,
+              padding: "16px 24px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: C.gold,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: serif,
+                fontWeight: 800,
+                fontSize: "0.95rem",
+                color: "#fff",
+              }}
             >
-              <option value="">-- اختر قالباً للبدء --</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            {selectedTemplate?.description && (
-              <p className="text-sm text-gray-500 mt-2">
-                الوصف: {selectedTemplate.description}
+              1
+            </div>
+            <div>
+              <h2
+                style={{
+                  fontFamily: serif,
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  color: C.ink,
+                  margin: 0,
+                }}
+              >
+                Choose a Template
+              </h2>
+              <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
+                The template determines which metadata fields will appear
               </p>
+            </div>
+          </div>
+
+          <div style={{ padding: "20px 24px" }}>
+            {/* Template cards */}
+            {templates.length === 0 ? (
+              <p
+                style={{
+                  color: C.inkSoft,
+                  fontStyle: "italic",
+                  fontSize: "0.88rem",
+                }}
+              >
+                No templates available.
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))",
+                  gap: 10,
+                }}
+              >
+                {templates.map((t) => {
+                  const isActive = t.id === selectedTemplateId;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => handleTemplateChange(String(t.id))}
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 12,
+                        cursor: "pointer",
+                        border: `2px solid ${isActive ? C.gold : C.goldBorder}`,
+                        background: isActive ? C.goldLight : C.bg,
+                        transition: "all 0.15s",
+                        textAlign: "left",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background = "#f5f0e8";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) e.currentTarget.style.background = C.bg;
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <FileText
+                          size={18}
+                          color={isActive ? C.gold : C.inkSoft}
+                          strokeWidth={1.5}
+                        />
+                        {isActive && (
+                          <span
+                            style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: "50%",
+                              background: C.gold,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 11,
+                              color: "#fff",
+                              fontWeight: 700,
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        style={{
+                          margin: "8px 0 3px",
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          color: isActive ? C.goldDark : C.ink,
+                        }}
+                      >
+                        {t.label}
+                      </p>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "0.7rem",
+                          color: C.inkSoft,
+                        }}
+                      >
+                        {t.properties?.length ?? 0} fields
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Selected template description */}
+            {selectedTemplate?.description && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: "10px 14px",
+                  background: C.goldMid,
+                  border: `1px solid ${C.goldBorder}`,
+                  borderRadius: 10,
+                  fontSize: "0.82rem",
+                  color: C.inkMid,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 6,
+                }}
+              >
+                <ChevronRight
+                  size={13}
+                  color={C.gold}
+                  style={{ flexShrink: 0, marginTop: 1 }}
+                />
+                {selectedTemplate.description}
+              </div>
             )}
           </div>
         </div>
 
-        {/* الفورم الديناميكي (لا يظهر إلا إذا تم اختيار قالب) */}
-        {selectedTemplate ? (
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
-              2. تعبئة بيانات: {selectedTemplate.label}
-            </h2>
+        {/* ── Step 2: Dynamic form ── */}
+        {selectedTemplate && (
+          <div
+            style={{
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                background: C.goldLight,
+                borderBottom: `1.5px solid ${C.goldBorder}`,
+                padding: "16px 24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: C.gold,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: serif,
+                    fontWeight: 800,
+                    fontSize: "0.95rem",
+                    color: "#fff",
+                  }}
+                >
+                  2
+                </div>
+                <div>
+                  <h2
+                    style={{
+                      fontFamily: serif,
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      color: C.ink,
+                      margin: 0,
+                    }}
+                  >
+                    Fill in: {selectedTemplate.label}
+                  </h2>
+                  <p
+                    style={{ margin: 0, fontSize: "0.72rem", color: C.inkSoft }}
+                  >
+                    {filledCount} of {sortedProps.length} fields filled
+                    {totalRequired > 0 && ` · ${totalRequired} required`}
+                  </p>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              {selectedTemplate.properties
-                .sort((a, b) => a.displayOrder - b.displayOrder)
-                .map((prop) => (
-                  <div key={prop.propertyId} className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">
+              {/* Progress bar */}
+              <div
+                style={{
+                  width: 120,
+                  height: 6,
+                  background: C.goldBorder,
+                  borderRadius: 999,
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 999,
+                    background: C.gold,
+                    width: `${
+                      sortedProps.length
+                        ? (filledCount / sortedProps.length) * 100
+                        : 0
+                    }%`,
+                    transition: "width 0.3s",
+                  }}
+                />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: 18,
+                }}
+              >
+                {sortedProps.map((prop) => (
+                  <div key={prop.propertyId}>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        color: C.inkMid,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        marginBottom: 7,
+                      }}
+                    >
                       {prop.propertyLabel}
                       {prop.isRequired && (
-                        <span className="text-red-500 mr-1">*</span>
+                        <span style={{ color: C.danger, fontSize: "0.78rem" }}>
+                          *
+                        </span>
+                      )}
+                      {!prop.isRequired && (
+                        <span
+                          style={{
+                            fontSize: "0.65rem",
+                            fontWeight: 400,
+                            color: C.inkSoft,
+                            textTransform: "none",
+                            letterSpacing: 0,
+                          }}
+                        >
+                          optional
+                        </span>
                       )}
                     </label>
                     <input
                       type="text"
-                      value={formData[prop.propertyId] || ""}
+                      value={formData[prop.propertyId] ?? ""}
                       onChange={(e) =>
-                        handleInputChange(prop.propertyId, e.target.value)
+                        setFormData((p) => ({
+                          ...p,
+                          [prop.propertyId]: e.target.value,
+                        }))
                       }
-                      className="border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
-                      placeholder={`أدخل ${prop.propertyLabel}...`}
+                      onFocus={() => setFocusedField(prop.propertyId)}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder={`Enter ${prop.propertyLabel.toLowerCase()}...`}
                       required={prop.isRequired}
+                      style={inputStyle(prop.propertyId)}
                     />
                   </div>
                 ))}
-            </div>
+              </div>
 
-            <div className="mt-8 pt-6 border-t flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData({})}
-                className="px-5 py-2.5 rounded-lg border text-gray-600 hover:bg-gray-50 font-medium"
+              {/* Actions */}
+              <div
+                style={{
+                  marginTop: 28,
+                  paddingTop: 20,
+                  borderTop: `1.5px solid ${C.goldBorder}`,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                تفريغ الحقول
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-lg bg-primary text-white hover:bg-blue-700 flex items-center gap-2 font-medium transition disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <Save size={20} />
-                )}
-                {isSubmitting ? "جاري الحفظ..." : "حفظ العنصر"}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({})}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "transparent",
+                    border: `1.5px solid ${C.goldBorder}`,
+                    borderRadius: 10,
+                    padding: "9px 16px",
+                    fontFamily: sans,
+                    fontSize: "0.83rem",
+                    fontWeight: 600,
+                    color: C.inkSoft,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = C.bg)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <RotateCcw size={13} /> Clear Fields
+                </button>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    style={{
+                      background: "transparent",
+                      border: `1.5px solid ${C.goldBorder}`,
+                      borderRadius: 10,
+                      padding: "10px 20px",
+                      fontFamily: sans,
+                      fontSize: "0.88rem",
+                      fontWeight: 600,
+                      color: C.inkMid,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = C.bg)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: success
+                        ? "#edf7ee"
+                        : isSubmitting
+                        ? C.goldBorder
+                        : C.gold,
+                      color: success ? "#2d6e3a" : "#fff",
+                      border: success
+                        ? "1.5px solid rgba(45,110,58,0.3)"
+                        : "none",
+                      borderRadius: 10,
+                      padding: "10px 26px",
+                      fontFamily: sans,
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      cursor: isSubmitting ? "not-allowed" : "pointer",
+                      transition: "all 0.2s",
+                      boxShadow:
+                        success || isSubmitting
+                          ? "none"
+                          : "0 2px 12px rgba(200,169,110,0.35)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSubmitting && !success)
+                        e.currentTarget.style.background = C.goldDark;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSubmitting && !success)
+                        e.currentTarget.style.background = C.gold;
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2
+                          size={15}
+                          style={{ animation: "spin 1s linear infinite" }}
+                        />{" "}
+                        Saving...
+                      </>
+                    ) : success ? (
+                      "✓ Item Saved!"
+                    ) : (
+                      <>
+                        <Save size={15} /> Save Item
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Placeholder when no template selected */}
+        {!selectedTemplate && (
+          <div
+            style={{
+              background: C.surface,
+              border: `1.5px dashed ${C.goldBorder}`,
+              borderRadius: 16,
+              padding: "52px 24px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: C.goldLight,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+              }}
+            >
+              <FileText size={26} color={C.gold} strokeWidth={1.5} />
             </div>
-          </form>
-        ) : (
-          <div className="text-center py-10 text-gray-400 font-medium">
-            يرجى اختيار قالب من القائمة أعلاه لإظهار حقول الإدخال.
+            <p
+              style={{
+                fontFamily: serif,
+                fontSize: "1rem",
+                color: C.inkMid,
+                margin: "0 0 4px",
+              }}
+            >
+              Step 2: Metadata Fields
+            </p>
+            <p style={{ fontSize: "0.82rem", color: C.inkSoft, margin: 0 }}>
+              Select a template above to reveal the input fields.
+            </p>
           </div>
         )}
       </div>
