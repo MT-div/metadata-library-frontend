@@ -4,288 +4,747 @@ import {
   Folder,
   Plus,
   Trash2,
-  Library,
   Globe,
   Lock,
   Link as LinkIcon,
   Search,
+  ChevronRight,
+  FolderOpen,
 } from "lucide-react";
 import type { ItemSetResponse, ItemResponse } from "../../types/metadata";
+
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+  dangerBg: "#fdf0ee",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
 
 export const ManageItemSetsPage = () => {
   const navigate = useNavigate();
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
   const [allItems, setAllItems] = useState<ItemResponse[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
-
-  // حالة لاختيار عنصر لإضافته للمجموعة
   const [itemToAdd, setItemToAdd] = useState<number | string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [focusedSel, setFocusedSel] = useState(false);
 
   useEffect(() => {
-    // جلب المجموعات وكل العناصر
     Promise.all([
-      fetch("/api/itemsets").then((res) => res.json()),
-      fetch("/api/items").then((res) => res.json()),
-    ]).then(([setsData, itemsData]) => {
-      setItemSets(setsData);
-      setAllItems(itemsData);
-      if (setsData.length > 0) setSelectedSetId(setsData[0].id);
+      fetch("/api/itemsets").then((r) => r.json()),
+      fetch("/api/items").then((r) => r.json()),
+    ]).then(([sets, items]) => {
+      setItemSets(sets);
+      setAllItems(items);
+      if (sets.length > 0) setSelectedSetId(sets[0].id);
     });
   }, []);
 
   const selectedSet = itemSets.find((s) => s.id === selectedSetId);
 
-  // دالة استخراج عنوان العنصر لعرضه في القائمة بشكل جميل
-  const getItemTitle = (item: ItemResponse) => {
-    const titleObj = item.metadataValues.find(
+  const getItemTitle = (item: ItemResponse) =>
+    item.metadataValues.find(
       (v) =>
         v.propertyLabel.includes("عنوان") || v.propertyLabel.includes("Title")
-    );
-    return titleObj?.valueText || `عنصر بدون عنوان #${item.id}`;
-  };
+    )?.valueText ?? `Untitled #${item.id}`;
 
-  // --- دوال الـ Commands ---
-
-  // 1. إضافة عنصر للمجموعة (AddItemToItemSetCommand)
-  const handleAddItemToSet = async () => {
+  const handleAdd = async () => {
     if (!selectedSetId || !itemToAdd) return;
-
-    // التحقق إذا كان العنصر موجوداً مسبقاً في المجموعة
-    const alreadyExists = selectedSet?.items?.some(
-      (i) => i.id === Number(itemToAdd)
-    );
-    if (alreadyExists) {
-      alert("هذا العنصر موجود مسبقاً في هذه المجموعة!");
+    if (selectedSet?.items?.some((i) => i.id === Number(itemToAdd))) {
+      alert("This item already exists in the collection.");
       return;
     }
-
     setIsProcessing(true);
     try {
-      // إرسال الـ Command كما ينتظره الـ C#
-      const command = { itemSetId: selectedSetId, itemId: Number(itemToAdd) };
-
-      const response = await fetch(`/api/itemsets/${selectedSetId}/items`, {
+      const res = await fetch(`/api/itemsets/${selectedSetId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(command),
+        body: JSON.stringify({
+          itemSetId: selectedSetId,
+          itemId: Number(itemToAdd),
+        }),
       });
-
-      if (response.ok) {
-        // تحديث الـ UI محلياً ليظهر العنصر الجديد فوراً
-        const updatedSets = itemSets.map((set) => {
-          if (set.id === selectedSetId) {
-            const addedItem = allItems.find((i) => i.id === Number(itemToAdd));
-            if (!addedItem) return set;
-            const newSetItem = {
-              id: addedItem.id,
-              type: "Item" as const,
-              templateId: addedItem.templateId,
-              ownerId: null,
-            };
-            return { ...set, items: [...(set.items || []), newSetItem] };
-          }
-          return set;
-        });
-        setItemSets(updatedSets);
+      if (res.ok) {
+        const added = allItems.find((i) => i.id === Number(itemToAdd));
+        if (added) {
+          setItemSets((prev) =>
+            prev.map((s) =>
+              s.id === selectedSetId
+                ? {
+                    ...s,
+                    items: [
+                      ...(s.items || []),
+                      {
+                        id: added.id,
+                        type: "Item" as const,
+                        templateId: added.templateId,
+                        ownerId: null,
+                      },
+                    ],
+                  }
+                : s
+            )
+          );
+        }
         setItemToAdd("");
-        alert("تم ربط العنصر بالمجموعة بنجاح!");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // 2. إزالة عنصر من المجموعة (RemoveItemFromItemSetCommand)
-  const handleRemoveItemFromSet = async (itemId: number) => {
-    if (!selectedSetId) return;
+  const handleRemove = async (itemId: number) => {
     if (
+      !selectedSetId ||
       !confirm(
-        "هل أنت متأكد من إزالة هذا العنصر من المجموعة؟ (لن يتم حذف العنصر من المكتبة)"
+        "Remove this item from the collection? (The item won't be deleted from the library)"
       )
     )
       return;
-
     setIsProcessing(true);
     try {
-      const response = await fetch(
+      const res = await fetch(
         `/api/itemsets/${selectedSetId}/items/${itemId}`,
-        {
-          method: "DELETE",
-        }
+        { method: "DELETE" }
       );
-
-      if (response.ok) {
-        // تحديث الـ UI محلياً
-        const updatedSets = itemSets.map((set) => {
-          if (set.id === selectedSetId) {
-            return { ...set, items: set.items.filter((i) => i.id !== itemId) };
-          }
-          return set;
-        });
-        setItemSets(updatedSets);
+      if (res.ok) {
+        setItemSets((prev) =>
+          prev.map((s) =>
+            s.id === selectedSetId
+              ? { ...s, items: s.items.filter((i) => i.id !== itemId) }
+              : s
+          )
+        );
       }
-    } catch (error) {
-      console.error(error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir="rtl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b pb-6">
+    <div style={{ fontFamily: sans, color: C.ink }}>
+      {/* ── Page header ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: `1.5px solid ${C.goldBorder}`,
+        }}
+      >
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Library className="text-primary" size={32} /> إدارة المجموعات
-            والعناصر
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: C.gold,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin · Collections
+          </p>
+          <h1
+            style={{
+              fontFamily: serif,
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: C.ink,
+              margin: "0 0 6px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Manage Collections
           </h1>
-          <p className="text-gray-500 mt-2">
-            قم بإدارة محتوى المجموعات (Item Sets) وإضافة أو إزالة العناصر منها.
+          <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
+            Link or remove items from each collection.
           </p>
         </div>
         <button
           onClick={() => navigate("/itemsets/new")}
-          className="bg-white border-2 border-primary text-primary px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium hover:bg-blue-50 transition"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            background: C.gold,
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 20px",
+            fontFamily: sans,
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            transition: "background 0.15s",
+            boxShadow: "0 2px 10px rgba(200,169,110,0.3)",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = C.goldDark)}
+          onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
         >
-          <Plus size={20} /> إنشاء مجموعة جديدة
+          <Plus size={15} /> New Collection
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* اللوحة الجانبية: قائمة المجموعات */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border p-5">
-            <h2 className="font-bold text-lg text-gray-800 flex items-center gap-2 mb-4">
-              <Folder className="text-primary" size={20} /> المجموعات المتوفرة
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "220px 1fr",
+          gap: 24,
+          alignItems: "start",
+        }}
+      >
+        {/* ══ LEFT: Collections list ══ */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            position: "sticky",
+            top: 24,
+          }}
+        >
+          <div
+            style={{
+              background: C.goldLight,
+              borderBottom: `1.5px solid ${C.goldBorder}`,
+              padding: "14px 18px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Folder size={16} color={C.gold} />
+            <h2
+              style={{
+                fontFamily: serif,
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                color: C.ink,
+                margin: 0,
+              }}
+            >
+              Collections
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: "0.72rem",
+                  fontWeight: 400,
+                  color: C.inkSoft,
+                }}
+              >
+                ({itemSets.length})
+              </span>
             </h2>
-            <div className="flex flex-col gap-2">
-              {itemSets.map((set) => (
+          </div>
+          <div style={{ padding: "10px" }}>
+            {itemSets.map((set) => {
+              const isActive = set.id === selectedSetId;
+              return (
                 <button
                   key={set.id}
                   onClick={() => setSelectedSetId(set.id)}
-                  className={`text-right px-4 py-3 rounded-lg border transition text-sm font-semibold flex justify-between items-center ${
-                    selectedSetId === set.id
-                      ? "bg-blue-50 border-primary text-primary"
-                      : "bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "11px 12px",
+                    borderRadius: 10,
+                    marginBottom: 3,
+                    border: `1.5px solid ${isActive ? C.gold : "transparent"}`,
+                    background: isActive ? C.goldLight : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.background = C.bg;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive)
+                      e.currentTarget.style.background = "transparent";
+                  }}
                 >
-                  <span className="truncate max-w-[80%]">{set.title}</span>
-                  <span className="bg-white border px-2 py-0.5 rounded text-xs text-gray-500">
-                    {set.items?.length || 0}
-                  </span>
+                  <div style={{ overflow: "hidden" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.85rem",
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? C.goldDark : C.inkMid,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {set.title}
+                    </p>
+                    <p
+                      style={{
+                        margin: "2px 0 0",
+                        fontSize: "0.68rem",
+                        color: C.inkSoft,
+                      }}
+                    >
+                      {set.items?.length ?? 0} items
+                    </p>
+                  </div>
+                  <ChevronRight
+                    size={14}
+                    color={isActive ? C.gold : C.inkSoft}
+                    style={{ flexShrink: 0 }}
+                  />
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* لوحة التحكم بالمجموعة المحددة */}
-        <div className="lg:col-span-3">
-          {selectedSet ? (
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col h-full">
-              {/* تفاصيل المجموعة */}
-              <div className="bg-gray-50 border-b p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h2 className="font-bold text-2xl text-gray-900">
+        {/* ══ RIGHT: Collection editor ══ */}
+        {selectedSet ? (
+          <div
+            style={{
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
+          >
+            {/* Collection info header */}
+            <div
+              style={{
+                background: C.goldLight,
+                borderBottom: `1.5px solid ${C.goldBorder}`,
+                padding: "18px 24px",
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    flexShrink: 0,
+                    background: C.gold,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <FolderOpen size={22} color="#fff" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h2
+                    style={{
+                      fontFamily: serif,
+                      fontSize: "1.1rem",
+                      fontWeight: 700,
+                      color: C.ink,
+                      margin: "0 0 4px",
+                    }}
+                  >
                     {selectedSet.title}
                   </h2>
-                  {selectedSet.isPublic ? (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-3 py-1.5 rounded-full">
-                      <Globe size={14} /> عامة للزوار
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-100 px-3 py-1.5 rounded-full">
-                      <Lock size={14} /> خاصة
-                    </span>
+                  {selectedSet.description && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.8rem",
+                        color: C.inkSoft,
+                      }}
+                    >
+                      {selectedSet.description}
+                    </p>
                   )}
                 </div>
-                <p className="text-gray-600 mb-4">
-                  {selectedSet.description || "لا يوجد وصف."}
-                </p>
               </div>
 
-              {/* أداة إضافة عنصر للمجموعة */}
-              <div className="p-6 border-b bg-white">
-                <label className="block text-sm font-bold mb-3 text-gray-800  items-center gap-2">
-                  <LinkIcon size={18} className="text-primary" /> إضافة عنصر
-                  لهذه المجموعة:
-                </label>
-                <div className="flex gap-3">
+              {/* Public / Private badge */}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  flexShrink: 0,
+                  background: selectedSet.isPublic
+                    ? "rgba(45,110,58,0.1)"
+                    : "rgba(180,120,40,0.1)",
+                  border: `1px solid ${
+                    selectedSet.isPublic
+                      ? "rgba(45,110,58,0.3)"
+                      : "rgba(180,120,40,0.3)"
+                  }`,
+                  color: selectedSet.isPublic ? "#2d6e3a" : "#7c5010",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  padding: "5px 12px",
+                  borderRadius: 999,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {selectedSet.isPublic ? (
+                  <>
+                    <Globe size={12} /> Public
+                  </>
+                ) : (
+                  <>
+                    <Lock size={12} /> Private
+                  </>
+                )}
+              </span>
+            </div>
+
+            {/* Add item row */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderBottom: `1.5px solid ${C.goldBorder}`,
+                background: "#fdfaf6",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: C.inkMid,
+                  letterSpacing: "0.07em",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                <LinkIcon size={13} color={C.gold} /> Link Item to Collection
+              </label>
+              <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ flex: 1, position: "relative" }}>
                   <select
-                    className="grow border border-gray-300 rounded-lg p-3 outline-none bg-white focus:ring-2 focus:ring-primary focus:border-primary transition"
                     value={itemToAdd}
                     onChange={(e) => setItemToAdd(e.target.value)}
+                    onFocus={() => setFocusedSel(true)}
+                    onBlur={() => setFocusedSel(false)}
+                    style={{
+                      width: "100%",
+                      appearance: "none",
+                      background: C.surface,
+                      border: `1.5px solid ${
+                        focusedSel ? C.gold : C.goldBorder
+                      }`,
+                      borderRadius: 10,
+                      padding: "10px 36px 10px 14px",
+                      fontFamily: sans,
+                      fontSize: "0.85rem",
+                      color: itemToAdd ? C.ink : C.inkSoft,
+                      outline: "none",
+                      cursor: "pointer",
+                      transition: "border-color 0.2s",
+                    }}
                   >
-                    <option value="">-- ابحث واختر عنصراً من المكتبة --</option>
+                    <option value="">Select an item to add...</option>
                     {allItems.map((item) => (
                       <option key={item.id} value={item.id}>
-                        ID: {item.id} | {getItemTitle(item)}
+                        #{item.id} — {getItemTitle(item)}
                       </option>
                     ))}
                   </select>
-                  <button
-                    onClick={handleAddItemToSet}
-                    disabled={isProcessing || !itemToAdd}
-                    className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2 transition disabled:opacity-50"
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: C.inkSoft,
+                      fontSize: 12,
+                    }}
                   >
-                    <Plus size={18} /> ربط بالمجموعة
-                  </button>
+                    ▾
+                  </span>
                 </div>
-              </div>
-
-              {/* قائمة العناصر الموجودة داخل المجموعة */}
-              <div className="p-6 grow bg-gray-50">
-                <h3 className="font-bold text-gray-800 mb-4">
-                  العناصر المرتبطة حالياً ({selectedSet.items?.length || 0}):
-                </h3>
-
-                {!selectedSet.items || selectedSet.items.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl border border-dashed">
-                    <Search className="mx-auto text-gray-300 mb-3" size={40} />
-                    <p className="text-gray-500 font-medium">
-                      المجموعة فارغة. اختر عنصراً من الأعلى لإضافته.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedSet.items.map((setItem) => {
-                      const fullItemDetails = allItems.find(
-                        (i) => i.id === setItem.id
-                      );
-                      return (
-                        <div
-                          key={setItem.id}
-                          className="bg-white border rounded-lg p-4 flex justify-between items-center hover:shadow-sm transition"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-bold text-gray-900 text-lg">
-                              {fullItemDetails
-                                ? getItemTitle(fullItemDetails)
-                                : `عنصر #${setItem.id}`}
-                            </span>
-                            <span className="text-sm text-gray-500 font-mono mt-1">
-                              Item ID: {setItem.id}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => handleRemoveItemFromSet(setItem.id)}
-                            disabled={isProcessing}
-                            className="text-red-500 hover:text-white hover:bg-red-500 p-2.5 rounded-lg transition disabled:opacity-50 flex items-center gap-2 font-medium"
-                          >
-                            <Trash2 size={18} /> إزالة من المجموعة
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <button
+                  onClick={handleAdd}
+                  disabled={isProcessing || !itemToAdd}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    background:
+                      !itemToAdd || isProcessing ? C.goldBorder : C.gold,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "10px 20px",
+                    fontFamily: sans,
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    cursor:
+                      !itemToAdd || isProcessing ? "not-allowed" : "pointer",
+                    transition: "background 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (itemToAdd && !isProcessing)
+                      e.currentTarget.style.background = C.goldDark;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (itemToAdd && !isProcessing)
+                      e.currentTarget.style.background = C.gold;
+                  }}
+                >
+                  <Plus size={15} /> Add to Collection
+                </button>
               </div>
             </div>
-          ) : null}
-        </div>
+
+            {/* Items list */}
+            <div style={{ padding: "20px 24px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: serif,
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    color: C.ink,
+                    margin: 0,
+                  }}
+                >
+                  Linked Items
+                </h3>
+                <span
+                  style={{
+                    background: C.goldMid,
+                    color: C.goldDark,
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    border: `1px solid ${C.goldBorder}`,
+                  }}
+                >
+                  {selectedSet.items?.length ?? 0} items
+                </span>
+              </div>
+
+              {!selectedSet.items || selectedSet.items.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "48px 24px",
+                    background: C.bg,
+                    borderRadius: 14,
+                    border: `1.5px dashed ${C.goldBorder}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      background: C.goldLight,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 14px",
+                    }}
+                  >
+                    <Search size={24} color={C.gold} strokeWidth={1.5} />
+                  </div>
+                  <p
+                    style={{
+                      fontFamily: serif,
+                      fontSize: "1rem",
+                      color: C.inkMid,
+                      margin: "0 0 4px",
+                    }}
+                  >
+                    Collection is empty
+                  </p>
+                  <p
+                    style={{ fontSize: "0.82rem", color: C.inkSoft, margin: 0 }}
+                  >
+                    Select an item above and click "Add to Collection".
+                  </p>
+                </div>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  {selectedSet.items.map((setItem, idx) => {
+                    const full = allItems.find((i) => i.id === setItem.id);
+                    return (
+                      <div
+                        key={setItem.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          background: C.bg,
+                          border: `1.5px solid ${C.goldBorder}`,
+                          borderRadius: 12,
+                          padding: "12px 16px",
+                          transition: "border-color 0.15s, box-shadow 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.borderColor = C.gold;
+                          (e.currentTarget as HTMLDivElement).style.boxShadow =
+                            "0 2px 10px rgba(200,169,110,0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.borderColor = C.goldBorder;
+                          (e.currentTarget as HTMLDivElement).style.boxShadow =
+                            "none";
+                        }}
+                      >
+                        {/* Left: order + info */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              background: C.goldLight,
+                              border: `1px solid ${C.goldBorder}`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              color: C.goldDark,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontFamily: serif,
+                                fontWeight: 700,
+                                fontSize: "0.92rem",
+                                color: C.ink,
+                              }}
+                            >
+                              {full
+                                ? getItemTitle(full)
+                                : `Item #${setItem.id}`}
+                            </p>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: "0.7rem",
+                                color: C.inkSoft,
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              ID: {setItem.id}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Remove button */}
+                        <button
+                          onClick={() => handleRemove(setItem.id)}
+                          disabled={isProcessing}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            background: C.dangerBg,
+                            border: `1px solid rgba(192,57,43,0.2)`,
+                            color: C.danger,
+                            borderRadius: 8,
+                            padding: "7px 12px",
+                            fontFamily: sans,
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            cursor: isProcessing ? "not-allowed" : "pointer",
+                            opacity: isProcessing ? 0.6 : 1,
+                            transition: "all 0.15s",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = "#fce8e5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = C.dangerBg)
+                          }
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              background: C.surface,
+              border: `1.5px dashed ${C.goldBorder}`,
+              borderRadius: 16,
+              padding: "60px 24px",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: serif,
+                fontSize: "1.1rem",
+                color: C.inkSoft,
+              }}
+            >
+              Select a collection from the left to manage its items.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
