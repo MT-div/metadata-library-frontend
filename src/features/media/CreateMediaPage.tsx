@@ -1,9 +1,35 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type {
   CreateMediaCommand,
   CreateValueRequest,
 } from "../../types/metadata";
-import { UploadCloud, Save, Plus, Trash2, File } from "lucide-react";
+import {
+  UploadCloud,
+  Save,
+  Plus,
+  Trash2,
+  File,
+  ArrowLeft,
+  X,
+} from "lucide-react";
+
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+  dangerBg: "#fdf0ee",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
 
 interface PropertyOption {
   id: number;
@@ -11,193 +37,437 @@ interface PropertyOption {
 }
 
 export const CreateMediaPage = () => {
-  // حالة الملف الفعلي المختار من الجهاز
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  // حالة الـ ID الخاص بالعنصر الأب (الكتاب/المخطوطة)
+  const [isDragging, setIsDragging] = useState(false);
   const [itemId, setItemId] = useState<number>(0);
-
-  // حالة القيم الوصفية المرتبطة بالملف
   const [mediaValues, setMediaValues] = useState<CreateValueRequest[]>([]);
-
-  // لجلب الخصائص المتاحة لوصف الملف
   const [availableProps, setAvailableProps] = useState<PropertyOption[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<number>(0);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | number | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // جلب الخصائص لكي نختار منها لوصف الملف
     fetch("/api/properties")
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         setAvailableProps(data);
         if (data.length > 0) setSelectedPropId(data[0].id);
       });
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
+  const handleFileSelect = (file: File) => setSelectedFile(file);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) setSelectedFile(file);
   };
 
   const handleAddValue = () => {
-    if (selectedPropId === 0) return;
-    const newReq: CreateValueRequest = {
-      propertyId: selectedPropId,
-      valueText: "",
-      type: "literal",
-      language: "ar",
-    };
-    setMediaValues([...mediaValues, newReq]);
-  };
-
-  const handleUpdateValueText = (index: number, text: string) => {
-    const updated = [...mediaValues];
-    updated[index].valueText = text;
-    setMediaValues(updated);
+    if (!selectedPropId) return;
+    setMediaValues((prev) => [
+      ...prev,
+      {
+        propertyId: selectedPropId,
+        valueText: "",
+        type: "literal",
+        language: "en",
+      },
+    ]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      alert("الرجاء اختيار ملف أولاً!");
+      alert("Please select a file first.");
       return;
     }
     if (itemId <= 0) {
-      alert("الرجاء إدخال رقم العنصر (Item ID) المرتبط بهذا الملف.");
+      alert("Please enter a valid Item ID.");
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      // ==========================================
-      // الخطوة 1: رفع الملف الفعلي (Binary Upload)
-      // ==========================================
-      const formData = new FormData();
-      formData.append("file", selectedFile); // نفس اسم البارامتر (file) في الـ C# IFormFile
-
-      const uploadResponse = await fetch("/api/files/upload", {
+      // Step 1: upload binary file
+      const fd = new FormData();
+      fd.append("file", selectedFile);
+      // NOTE: do NOT set Content-Type header — browser sets it with boundary automatically
+      const uploadRes = await fetch("/api/files/upload", {
         method: "POST",
-        // 💡 معلومة Senior: لا تقم أبداً بكتابة Content-Type مع الـ FormData
-        // المتصفح سيقوم بوضعها تلقائياً مع الـ Boundary الخاص بالملف
-        body: formData,
+        body: fd,
       });
+      if (!uploadRes.ok) throw new Error("File upload failed");
+      const uploadData = await uploadRes.json();
 
-      if (!uploadResponse.ok) {
-        throw new Error("فشل رفع الملف إلى الخادم");
-      }
-
-      // قراءة الرد القادم من الـ FilesController الخاص بك
-      const uploadData = await uploadResponse.json();
-
-      // ==========================================
-      // الخطوة 2: ربط المسار بالميتاداتا وإرسال הـ Command
-      // ==========================================
+      // Step 2: create media record with metadata
       const command: CreateMediaCommand = {
-        itemId: itemId,
-        storagePath: uploadData.storagePath, // المسار الذي استلمناه من السيرفر
-        fileName: selectedFile.name, // الاسم الأصلي للملف
+        itemId,
+        storagePath: uploadData.storagePath,
+        fileName: selectedFile.name,
         values: mediaValues,
       };
-
-      const mediaResponse = await fetch("/api/media", {
+      const mediaRes = await fetch("/api/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(command),
       });
-
-      if (mediaResponse.ok) {
-        alert("تم رفع الملف وربط الميتاداتا بنجاح!");
-        setSelectedFile(null);
-        setItemId(0);
-        setMediaValues([]);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+      if (mediaRes.ok) {
+        setSuccess(true);
+        setTimeout(() => {
+          setSelectedFile(null);
+          setItemId(0);
+          setMediaValues([]);
+          setSuccess(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }, 2200);
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("حدث خطأ أثناء العملية، راجع الـ Console");
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
-      <div className="bg-white shadow-sm border rounded-xl p-6 md:p-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2 mb-6 border-b pb-4 text-gray-900">
-          <UploadCloud className="text-primary" size={28} /> رفع الوسائط
-          والملفات
-        </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* قسم ربط الملف بالعنصر */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold mb-1">
-                رقم العنصر (Item ID) <span className="text-red-500">*</span>
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  };
+
+  const inputStyle = (id: string | number): React.CSSProperties => ({
+    width: "100%",
+    boxSizing: "border-box",
+    border: `1.5px solid ${focusedField === id ? C.gold : C.goldBorder}`,
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontFamily: sans,
+    fontSize: "0.88rem",
+    color: C.ink,
+    background: C.surface,
+    outline: "none",
+    transition: "border-color 0.2s",
+  });
+
+  return (
+    <div style={{ fontFamily: sans, color: C.ink }}>
+      {/* ── Page header ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: `1.5px solid ${C.goldBorder}`,
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: C.gold,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin · Media
+          </p>
+          <h1
+            style={{
+              fontFamily: serif,
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: C.ink,
+              margin: "0 0 6px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Upload Media
+          </h1>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
+            Upload a file and attach descriptive metadata to it.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            background: "transparent",
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 999,
+            padding: "9px 18px",
+            fontFamily: sans,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: C.inkMid,
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.goldLight;
+            e.currentTarget.style.borderColor = C.gold;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = C.goldBorder;
+          }}
+        >
+          <ArrowLeft size={15} /> Back
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        >
+          {/* ── Card 1: Link to Item ── */}
+          <SectionCard
+            step="1"
+            title="Link to Item"
+            subtitle="Which item does this file belong to?"
+          >
+            <div style={{ maxWidth: 280 }}>
+              <label style={labelStyle}>
+                Item ID <span style={{ color: C.danger }}>*</span>
               </label>
               <input
                 type="number"
                 required
                 min="1"
+                placeholder="e.g. 101"
                 value={itemId || ""}
                 onChange={(e) => setItemId(Number(e.target.value))}
-                className="w-full border rounded-lg p-3 outline-none focus:border-primary"
-                placeholder="مثال: 101"
+                onFocus={() => setFocusedField("itemId")}
+                onBlur={() => setFocusedField(null)}
+                style={inputStyle("itemId")}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                يجب أن يكون الملف تابعاً لعنصر (كتاب/مخطوطة) موجود مسبقاً.
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: "0.72rem",
+                  color: C.inkSoft,
+                }}
+              >
+                The file must be linked to an existing item (book, manuscript,
+                etc.)
               </p>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* قسم رفع الملف الفعلي */}
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              className="hidden"
-              id="fileUpload"
-            />
-            <label
-              htmlFor="fileUpload"
-              className="cursor-pointer flex flex-col items-center gap-3"
+          {/* ── Card 2: File Upload ── */}
+          <SectionCard
+            step="2"
+            title="Select File"
+            subtitle="PDF, JPG, PNG, MP4, and more"
+          >
+            {/* Drop zone */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => !selectedFile && fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${
+                  isDragging
+                    ? C.gold
+                    : selectedFile
+                    ? C.goldBorder
+                    : C.goldBorder
+                }`,
+                background: isDragging
+                  ? C.goldLight
+                  : selectedFile
+                  ? "#fdfaf6"
+                  : C.bg,
+                borderRadius: 14,
+                padding: "32px 24px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                cursor: selectedFile ? "default" : "pointer",
+                transition: "all 0.2s",
+              }}
             >
-              <div className="bg-blue-50 p-4 rounded-full text-primary">
-                {selectedFile ? <File size={32} /> : <UploadCloud size={32} />}
-              </div>
-              <span className="font-semibold text-gray-700">
-                {selectedFile ? selectedFile.name : "اضغط لاختيار ملف من جهازك"}
-              </span>
-              <span className="text-sm text-gray-500">
-                {selectedFile
-                  ? `حجم الملف: ${(selectedFile.size / 1024 / 1024).toFixed(
-                      2
-                    )} MB`
-                  : "PDF, JPG, PNG, MP4"}
-              </span>
-            </label>
-          </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) =>
+                  e.target.files?.[0] && handleFileSelect(e.target.files[0])
+                }
+                style={{ display: "none" }}
+              />
 
-          {/* قسم الميتاداتا الخاصة بالملف (اختياري) */}
-          <div className="pt-4 border-t">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              البيانات الوصفية للملف (اختياري)
-            </h2>
+              {selectedFile ? (
+                /* File selected state */
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 12,
+                      background: C.goldLight,
+                      border: `1.5px solid ${C.goldBorder}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <File size={24} color={C.gold} strokeWidth={1.5} />
+                  </div>
+                  <div style={{ flexGrow: 1, overflow: "hidden" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        fontSize: "0.92rem",
+                        color: C.ink,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {selectedFile.name}
+                    </p>
+                    <p
+                      style={{
+                        margin: "3px 0 0",
+                        fontSize: "0.75rem",
+                        color: C.inkSoft,
+                      }}
+                    >
+                      {formatSize(selectedFile.size)} ·{" "}
+                      {selectedFile.type || "unknown type"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      background: C.dangerBg,
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      color: C.danger,
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                /* Empty state */
+                <>
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      background: isDragging
+                        ? "rgba(200,169,110,0.25)"
+                        : C.goldLight,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 14,
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <UploadCloud size={28} color={C.gold} strokeWidth={1.5} />
+                  </div>
+                  <p
+                    style={{
+                      margin: "0 0 4px",
+                      fontWeight: 700,
+                      fontSize: "0.95rem",
+                      color: C.inkMid,
+                    }}
+                  >
+                    {isDragging
+                      ? "Drop file here"
+                      : "Click to browse or drag & drop"}
+                  </p>
+                  <p
+                    style={{ margin: 0, fontSize: "0.78rem", color: C.inkSoft }}
+                  >
+                    PDF, JPG, PNG, MP4 — any size
+                  </p>
+                </>
+              )}
+            </div>
+          </SectionCard>
 
-            <div className="flex gap-2 items-end bg-gray-50 p-4 rounded-lg border mb-4">
-              <div className="grow">
-                <label className="block text-sm font-semibold mb-1">
-                  إضافة خاصية لوصف الملف:
+          {/* ── Card 3: Optional metadata ── */}
+          <SectionCard
+            step="3"
+            title="File Metadata"
+            subtitle="Optional — add descriptive properties to this file"
+          >
+            {/* Add property row */}
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "flex-end",
+                padding: "14px 16px",
+                background: C.bg,
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 12,
+                marginBottom: mediaValues.length > 0 ? 16 : 0,
+              }}
+            >
+              <div style={{ flex: 1, position: "relative" }}>
+                <label style={{ ...labelStyle, marginBottom: 6 }}>
+                  Add Property
                 </label>
                 <select
-                  className="w-full border rounded-lg p-2.5 bg-white outline-none"
                   value={selectedPropId}
                   onChange={(e) => setSelectedPropId(Number(e.target.value))}
+                  style={{
+                    width: "100%",
+                    appearance: "none",
+                    background: C.surface,
+                    border: `1.5px solid ${C.goldBorder}`,
+                    borderRadius: 10,
+                    padding: "9px 32px 9px 12px",
+                    fontFamily: sans,
+                    fontSize: "0.85rem",
+                    color: C.ink,
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
                 >
                   {availableProps.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -205,62 +475,308 @@ export const CreateMediaPage = () => {
                     </option>
                   ))}
                 </select>
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    bottom: 10,
+                    pointerEvents: "none",
+                    color: C.inkSoft,
+                    fontSize: 12,
+                  }}
+                >
+                  ▾
+                </span>
               </div>
               <button
                 type="button"
                 onClick={handleAddValue}
-                className="bg-gray-800 text-white px-4 py-2.5 rounded-lg flex items-center gap-1 hover:bg-gray-900"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: C.gold,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "10px 16px",
+                  fontFamily: sans,
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = C.goldDark)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = C.gold)
+                }
               >
-                <Plus size={18} /> إضافة حقل
+                <Plus size={14} /> Add Field
               </button>
             </div>
 
-            {mediaValues.map((val, index) => {
-              const propDetails = availableProps.find(
-                (p) => p.id === val.propertyId
-              );
-              return (
-                <div key={index} className="flex items-center gap-3 mb-3">
-                  <label className="w-1/4 text-sm font-semibold text-gray-700">
-                    {propDetails?.label}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={val.valueText || ""}
-                    onChange={(e) =>
-                      handleUpdateValueText(index, e.target.value)
-                    }
-                    className="grow border rounded-lg p-2 outline-none focus:border-primary"
-                    placeholder="أدخل القيمة..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMediaValues(mediaValues.filter((_, i) => i !== index))
-                    }
-                    className="text-red-500 p-2 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+            {/* Value rows */}
+            {mediaValues.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {mediaValues.map((val, idx) => {
+                  const prop = availableProps.find(
+                    (p) => p.id === val.propertyId
+                  );
+                  const fieldId = `media-${idx}`;
+                  return (
+                    <div
+                      key={idx}
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    >
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          minWidth: 110,
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          color: C.inkMid,
+                          padding: "4px 0",
+                        }}
+                      >
+                        {prop?.label ?? "Property"}
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Enter value..."
+                        value={val.valueText ?? ""}
+                        onChange={(e) => {
+                          const u = [...mediaValues];
+                          u[idx].valueText = e.target.value;
+                          setMediaValues(u);
+                        }}
+                        onFocus={() => setFocusedField(fieldId)}
+                        onBlur={() => setFocusedField(null)}
+                        style={{ ...inputStyle(fieldId), flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMediaValues(
+                            mediaValues.filter((_, i) => i !== idx)
+                          )
+                        }
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          background: C.dangerBg,
+                          border: "none",
+                          color: C.danger,
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "opacity 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.opacity = "0.7")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.opacity = "1")
+                        }
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-          {/* أزرار الحفظ */}
-          <div className="pt-6 border-t flex justify-end">
+            {mediaValues.length === 0 && (
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  color: C.inkSoft,
+                  fontStyle: "italic",
+                  margin: "8px 0 0",
+                }}
+              >
+                No metadata fields added yet. This section is optional.
+              </p>
+            )}
+          </SectionCard>
+
+          {/* ── Submit ── */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+              paddingTop: 8,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              style={{
+                background: "transparent",
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 10,
+                padding: "10px 20px",
+                fontFamily: sans,
+                fontSize: "0.88rem",
+                fontWeight: 600,
+                color: C.inkMid,
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
+            >
+              Cancel
+            </button>
+
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-blue-700 flex items-center gap-2 font-medium disabled:opacity-50"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: success
+                  ? "#edf7ee"
+                  : isSubmitting
+                  ? C.goldBorder
+                  : C.gold,
+                color: success ? "#2d6e3a" : "#fff",
+                border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
+                borderRadius: 10,
+                padding: "10px 28px",
+                fontFamily: sans,
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+                boxShadow:
+                  success || isSubmitting
+                    ? "none"
+                    : "0 2px 12px rgba(200,169,110,0.35)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isSubmitting && !success)
+                  e.currentTarget.style.background = C.goldDark;
+              }}
+              onMouseLeave={(e) => {
+                if (!isSubmitting && !success)
+                  e.currentTarget.style.background = C.gold;
+              }}
             >
-              <Save size={20} />{" "}
-              {isSubmitting ? "جاري الرفع..." : "رفع وحفظ البيانات"}
+              <Save size={16} />
+              {isSubmitting
+                ? "Uploading..."
+                : success
+                ? "✓ Upload Complete!"
+                : "Upload & Save"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+};
+
+// ── Reusable Section Card ────────────────────────────────────────────────────
+const C2 = {
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkSoft: "#9a8060",
+};
+const serif2 = "'Georgia','Times New Roman',serif";
+const sans2 = "'Poppins',system-ui,sans-serif";
+
+const SectionCard = ({
+  step,
+  title,
+  subtitle,
+  children,
+}: {
+  step: string;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) => (
+  <div
+    style={{
+      background: C2.surface,
+      border: `1.5px solid ${C2.goldBorder}`,
+      borderRadius: 16,
+      overflow: "hidden",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+    }}
+  >
+    <div
+      style={{
+        background: C2.goldLight,
+        borderBottom: `1.5px solid ${C2.goldBorder}`,
+        padding: "14px 22px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 8,
+          background: C2.gold,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: serif2,
+          fontWeight: 800,
+          fontSize: "0.9rem",
+          color: "#fff",
+        }}
+      >
+        {step}
+      </div>
+      <div>
+        <h2
+          style={{
+            fontFamily: serif2,
+            fontSize: "0.92rem",
+            fontWeight: 700,
+            color: C2.ink,
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+        <p style={{ margin: 0, fontSize: "0.72rem", color: C2.inkSoft }}>
+          {subtitle}
+        </p>
+      </div>
+    </div>
+    <div style={{ padding: "20px 22px" }}>{children}</div>
+  </div>
+);
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.72rem",
+  fontWeight: 700,
+  color: "#5c4a30",
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  marginBottom: 8,
+  fontFamily: sans2,
 };
