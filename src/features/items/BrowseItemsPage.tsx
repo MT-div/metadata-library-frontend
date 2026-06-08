@@ -6,6 +6,8 @@ import type {
 } from "../../types/metadata";
 import { Link, useLocation } from "react-router-dom";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
+import ItemBottom from "../../assets/icons/ItemBottom.png";
+
 // uncomment when file is ready
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -243,10 +245,30 @@ export const BrowseItemsPage = () => {
                 color: C.gold,
                 lineHeight: 1.1,
                 fontStyle: "italic",
+                position: "relative",
               }}
             >
-              Items ↙
+              Items
             </h1>
+            <div
+              style={{
+                position: "relative",
+              }}
+            >
+              <img
+                src={ItemBottom}
+                alt="ItemBottom"
+                style={{
+                  width: 240,
+                  objectFit: "cover",
+                  display: "block",
+                  position: "absolute",
+                  left: -25,
+                  top: -80,
+                }}
+              />
+            </div>
+
             <p
               style={{
                 color: C.inkMid,

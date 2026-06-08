@@ -70,7 +70,8 @@ export const BrowseItemSetsPage = () => {
       {/* ══════════ HERO ══════════ */}
       <div
         style={{
-          background: `linear-gradient(to bottom, #ede7db, ${C.bg})`,
+          // background: `linear-gradient(to bottom, #ede7db, ${C.bg})`,
+          background: C.bg,
           borderBottom: `1.5px solid ${C.goldBorder}`,
           padding: "44px 48px 36px",
         }}
@@ -83,6 +84,8 @@ export const BrowseItemSetsPage = () => {
               alignItems: "flex-end",
               flexWrap: "wrap",
               gap: 20,
+              position: "relative",
+              zIndex: 2,
             }}
           >
             <div>
@@ -92,11 +95,13 @@ export const BrowseItemSetsPage = () => {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: C.goldMid,
+                  background: C.surface,
                   border: `1px solid ${C.goldBorder}`,
                   borderRadius: 999,
                   padding: "5px 14px",
                   marginBottom: 14,
+                  position: "relative",
+                  zIndex: 2,
                 }}
               >
                 <FolderOpen size={13} color={C.gold} />
@@ -104,7 +109,7 @@ export const BrowseItemSetsPage = () => {
                   style={{
                     fontSize: "0.75rem",
                     fontWeight: 600,
-                    color: C.goldDark,
+                    color: C.ink,
                     letterSpacing: "0.04em",
                   }}
                 >
@@ -401,11 +406,9 @@ const CollectionCard = ({
 
   // Deterministic pastel cover color based on id
   const COVERS = [
-    `linear-gradient(135deg, #e8d4b0 0%, #c8a96e 100%)`,
-    `linear-gradient(135deg, #d4c5e8 0%, #9b72cf 100%)`,
-    `linear-gradient(135deg, #c5dfc8 0%, #4a9c5a 100%)`,
-    `linear-gradient(135deg, #c5d8e8 0%, #4a7a9c 100%)`,
-    `linear-gradient(135deg, #e8c5c5 0%, #9c4a4a 100%)`,
+    "linear-gradient(145deg,#c8a040,#8b5e1a)",
+    "linear-gradient(145deg,#b8860b,#5c3a0a)",
+    "linear-gradient(145deg,#b09070,#6a4a2a)",
   ];
   const cover = COVERS[set.id % COVERS.length];
 
