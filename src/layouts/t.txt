@@ -1,7 +1,7 @@
-git checkout -b theme/LoginPage-page
+git checkout -b theme/CreateMediaPage-page
 git add .
-git commit -m "style: update application theme for LoginPagePage"
-git push -u origin theme/LoginPage-page
+git commit -m "style: update application theme for CreateMediaPagePage"
+git push -u origin theme/CreateMediaPage-page
 git checkout main
-git merge theme/LoginPage-page
+git merge theme/CreateMediaPage-page
 git push origin main
