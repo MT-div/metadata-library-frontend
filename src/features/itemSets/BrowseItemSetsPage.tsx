@@ -10,7 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import type { ItemSetResponse } from "../../types/metadata";
-
+import { api } from "../../services/api";
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -33,13 +33,16 @@ export const BrowseItemSetsPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/itemsets")
-      .then((r) => r.json())
-      .then((data) => {
-        setItemSets(data);
+    api
+      .get<ItemSetResponse[]>("/api/item-sets")
+      .then((res) => {
+        setItemSets(res.data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("Error loading item sets:", err);
+        setLoading(false);
+      });
   }, []);
 
   const handleOpenSet = (setId: number) =>

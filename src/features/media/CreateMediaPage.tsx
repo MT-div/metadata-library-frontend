@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type {
-  CreateMediaCommand,
-  CreateValueRequest,
-} from "../../types/metadata";
+import type { CreateValueRequest } from "../../types/metadata";
 import {
   UploadCloud,
   Save,
@@ -13,6 +10,7 @@ import {
   ArrowLeft,
   X,
 } from "lucide-react";
+import { api } from "../../services/api";
 
 const C = {
   bg: "#F7F3ED",
@@ -52,14 +50,14 @@ export const CreateMediaPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/properties")
-      .then((r) => r.json())
-      .then((data) => {
-        setAvailableProps(data);
-        if (data.length > 0) setSelectedPropId(data[0].id);
-      });
+    api
+      .get("/api/properties")
+      .then((res) => {
+        setAvailableProps(res.data);
+        if (res.data.length > 0) setSelectedPropId(res.data[0].id);
+      })
+      .catch((err) => console.error("Error fetching properties:", err));
   }, []);
-
   const handleFileSelect = (file: File) => setSelectedFile(file);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -93,31 +91,32 @@ export const CreateMediaPage = () => {
       return;
     }
     setIsSubmitting(true);
-    try {
-      // Step 1: upload binary file
-      const fd = new FormData();
-      fd.append("file", selectedFile);
-      // NOTE: do NOT set Content-Type header — browser sets it with boundary automatically
-      const uploadRes = await fetch("/api/files/upload", {
-        method: "POST",
-        body: fd,
-      });
-      if (!uploadRes.ok) throw new Error("File upload failed");
-      const uploadData = await uploadRes.json();
 
-      // Step 2: create media record with metadata
-      const command: CreateMediaCommand = {
-        itemId,
-        storagePath: uploadData.storagePath,
-        fileName: selectedFile.name,
-        values: mediaValues,
-      };
-      const mediaRes = await fetch("/api/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(command),
+    try {
+      // 1. تجهيز مصفوفة القيم تماماً كما يتوقعها C#
+      const formattedValues = mediaValues.map((v) => ({
+        propertyId: v.propertyId,
+        valueText: v.valueText,
+        type: "literal",
+        language: "en",
+      }));
+
+      // 2. إنشاء الـ FormData لتطابق UploadMediaRequestDto في الباك اند
+      const fd = new FormData();
+
+      // انتبه: الأسماء هنا يجب أن تطابق خصائص الـ C# DTO تماماً
+      fd.append("File", selectedFile);
+      fd.append("ItemId", itemId.toString());
+      fd.append("ValuesJson", JSON.stringify(formattedValues));
+
+      // 3. إرسال الطلب المدمج لمرة واحدة فقط!
+      // (افترضت أن هذا الـ Endpoint موجود داخل MediaController)
+      const res = await api.post("/api/media/upload-with-metadata", fd, {
+        headers: {
+          "Content-Type": undefined, // هذا السطر يجبر Axios على عدم إرسال Header خاطئ
+        },
       });
-      if (mediaRes.ok) {
+      if (res.status === 200 || res.status === 201) {
         setSuccess(true);
         setTimeout(() => {
           setSelectedFile(null);
@@ -128,7 +127,10 @@ export const CreateMediaPage = () => {
         }, 2200);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Media upload error:", err);
+      alert(
+        "حدث خطأ أثناء رفع الملف أو حفظ البيانات. تأكد من أن الـ Item ID صحيح."
+      );
     } finally {
       setIsSubmitting(false);
     }

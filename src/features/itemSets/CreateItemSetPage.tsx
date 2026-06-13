@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CreateItemSetCommand } from "../../types/metadata";
 import { Save, FolderPlus, Globe, Lock, Info, ArrowLeft } from "lucide-react";
-
+import { api } from "../../services/api";
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
   bg: "#F7F3ED",
@@ -36,25 +36,24 @@ export const CreateItemSetPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/itemsets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
+      // 👇 استخدام api.post مع الرابط الصحيح (item-sets)
+      const res = await api.post("/api/item-sets", formData);
+
+      if (res.status === 200 || res.status === 201) {
         setSuccess(true);
         setTimeout(() => {
           setFormData({
             title: "",
             description: "",
             isPublic: true,
-            ownerId: 1,
+            ownerId: 1, // سيتم أخذها لاحقاً من التوكن الحقيقي
           });
           setSuccess(false);
         }, 2000);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error creating item set:", err);
+      alert("حدث خطأ أثناء إنشاء المجموعة.");
     } finally {
       setIsSubmitting(false);
     }

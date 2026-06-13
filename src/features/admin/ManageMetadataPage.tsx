@@ -1,3 +1,4 @@
+// src/features/admin/ManageMetadataPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,6 +14,9 @@ import type {
   VocabularyResponse,
   PropertyResponse,
 } from "../../types/metadata";
+
+// 👇 1. استيراد Axios (الجاسوس الحقيقي الذي يحمل الـ Token)
+import { api } from "../../services/api";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -46,24 +50,33 @@ export const ManageMetadataPage = () => {
     setPropsLoading(true);
   };
 
+  // 👇 2. جلب القواميس باستخدام Axios
   useEffect(() => {
-    fetch("/api/vocabularies")
-      .then((r) => r.json())
-      .then((data) => {
+    api
+      .get<VocabularyResponse[]>("/api/vocabularies")
+      .then((res) => {
+        const data = res.data; // Axios يضع البيانات داخل .data
         setVocabularies(data);
         if (data.length > 0) selectVocab(data[0].id);
-        setLoading(false);
-      });
+      })
+      .catch((err) => console.error("Error fetching vocabularies:", err))
+      .finally(() => setLoading(false));
   }, []);
 
+  // 👇 3. جلب الخصائص باستخدام الرابط الحقيقي من الـ Swagger
   useEffect(() => {
     if (!selectedVocabId) return;
-    fetch(`/api/vocabularies/${selectedVocabId}/properties`)
-      .then((r) => r.json())
-      .then((data) => {
-        setProperties(data);
-        setPropsLoading(false);
-      });
+
+    // لاحظ المسار: يطابق /api/properties/by-vocabulary/{vocabularyId}
+    api
+      .get<PropertyResponse[]>(
+        `/api/properties/by-vocabulary/${selectedVocabId}`
+      )
+      .then((res) => {
+        setProperties(res.data);
+      })
+      .catch((err) => console.error("Error fetching properties:", err))
+      .finally(() => setPropsLoading(false));
   }, [selectedVocabId]);
 
   const selectedVocab = vocabularies.find((v) => v.id === selectedVocabId);

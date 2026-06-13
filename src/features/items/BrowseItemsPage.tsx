@@ -7,6 +7,7 @@ import type {
 import { Link, useLocation } from "react-router-dom";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
+import { api } from "../../services/api";
 
 // uncomment when file is ready
 
@@ -27,7 +28,6 @@ const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
 // ── Static category counts (replace with API data when /api/stats is ready) ──
-// TODO: replace with fetch("/api/stats") when backend endpoint is available
 const CATEGORIES = [
   { label: "All Items", count: 0, icon: "📚", key: "all" },
   { label: "Books", count: 0, icon: "📖", key: "book" },
@@ -90,9 +90,10 @@ export const BrowseItemsPage = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/items").then((r) => r.json()),
-      fetch("/api/templates").then((r) => r.json()),
-      fetch("/api/itemsets").then((r) => r.json()),
+      // 👇 استخدام Axios والروابط المطابقة للـ Swagger تماماً
+      api.get("/api/items").then((r) => r.data),
+      api.get("/api/resource-templates").then((r) => r.data),
+      api.get("/api/item-sets").then((r) => r.data),
     ])
       .then(([i, t, s]) => {
         setItems(i);
@@ -100,7 +101,10 @@ export const BrowseItemsPage = () => {
         setItemSets(s);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("Error loading browse data:", err);
+        setLoading(false);
+      });
   }, []);
 
   const extract = (item: ItemResponse, labels: string[]) =>

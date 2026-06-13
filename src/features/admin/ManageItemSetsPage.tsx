@@ -12,6 +12,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import type { ItemSetResponse, ItemResponse } from "../../types/metadata";
+import { api } from "../../services/api";
 
 const C = {
   bg: "#F7F3ED",
@@ -41,13 +42,15 @@ export const ManageItemSetsPage = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/itemsets").then((r) => r.json()),
-      fetch("/api/items").then((r) => r.json()),
-    ]).then(([sets, items]) => {
-      setItemSets(sets);
-      setAllItems(items);
-      if (sets.length > 0) setSelectedSetId(sets[0].id);
-    });
+      api.get("/api/item-sets").then((r) => r.data),
+      api.get("/api/items").then((r) => r.data),
+    ])
+      .then(([sets, items]) => {
+        setItemSets(sets);
+        setAllItems(items);
+        if (sets.length > 0) setSelectedSetId(sets[0].id);
+      })
+      .catch((err) => console.error("Error loading ItemSets data:", err));
   }, []);
 
   const selectedSet = itemSets.find((s) => s.id === selectedSetId);
@@ -66,15 +69,16 @@ export const ManageItemSetsPage = () => {
     }
     setIsProcessing(true);
     try {
-      const res = await fetch(`/api/itemsets/${selectedSetId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // 👇 الرابط الحقيقي لإضافة عنصر لمجموعة
+      const res = await api.post(
+        `/api/item-sets/${selectedSetId}/items/${itemToAdd}`,
+        {
           itemSetId: selectedSetId,
           itemId: Number(itemToAdd),
-        }),
-      });
-      if (res.ok) {
+        }
+      );
+
+      if (res.status === 200 || res.status === 204) {
         const added = allItems.find((i) => i.id === Number(itemToAdd));
         if (added) {
           setItemSets((prev) =>
@@ -99,7 +103,8 @@ export const ManageItemSetsPage = () => {
         setItemToAdd("");
       }
     } catch (e) {
-      console.error(e);
+      console.error("Add item error:", e);
+      alert("حدث خطأ أثناء الإضافة.");
     } finally {
       setIsProcessing(false);
     }
@@ -115,11 +120,11 @@ export const ManageItemSetsPage = () => {
       return;
     setIsProcessing(true);
     try {
-      const res = await fetch(
-        `/api/itemsets/${selectedSetId}/items/${itemId}`,
-        { method: "DELETE" }
+      const res = await api.delete(
+        `/api/item-sets/${selectedSetId}/items/${itemId}`
       );
-      if (res.ok) {
+
+      if (res.status === 200 || res.status === 204) {
         setItemSets((prev) =>
           prev.map((s) =>
             s.id === selectedSetId
@@ -129,7 +134,8 @@ export const ManageItemSetsPage = () => {
         );
       }
     } catch (e) {
-      console.error(e);
+      console.error("Remove item error:", e);
+      alert("حدث خطأ أثناء الإزالة.");
     } finally {
       setIsProcessing(false);
     }

@@ -1,89 +1,551 @@
-import { useState } from "react";
+import {
+  useState,
+  type FormEvent,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import type { CreateVocabularyCommand } from "../../types/metadata";
-import { Save, BookOpen } from "lucide-react";
+import { Save, BookOpen, ArrowLeft, Info, ExternalLink } from "lucide-react";
+import { api } from "../../services/api";
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
+
+const FieldLabel = ({
+  children,
+  required,
+}: {
+  children: ReactNode;
+  required?: boolean;
+}) => (
+  <label
+    style={{
+      display: "block",
+      fontSize: "0.72rem",
+      fontWeight: 700,
+      color: C.inkMid,
+      letterSpacing: "0.05em",
+      textTransform: "uppercase",
+      marginBottom: 8,
+      fontFamily: sans,
+    }}
+  >
+    {children}
+    {required && <span style={{ color: C.danger, marginLeft: 4 }}>*</span>}
+  </label>
+);
 
 export const CreateVocabularyPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<CreateVocabularyCommand>({
     prefix: "",
     namespaceUri: "",
     label: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Auto-build namespace URI preview from prefix
+  const uriPreview = formData.prefix
+    ? `https://purl.org/${formData.prefix.toLowerCase()}/terms/`
+    : null;
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const response = await fetch("/api/vocabularies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-    if (response.ok) {
-      alert("تم الحفظ!");
-      setFormData({ prefix: "", namespaceUri: "", label: "" });
+    setIsSubmitting(true);
+    try {
+      // 👇 استخدام Axios للإرسال (الرابط يطابق الـ Swagger)
+      const res = await api.post("/api/vocabularies", formData);
+
+      // Axios يعتبر 200 و 201 نجاحاً
+      if (res.status === 200 || res.status === 201) {
+        setSuccess(true);
+        setTimeout(() => {
+          setFormData({ prefix: "", namespaceUri: "", label: "" });
+          setSuccess(false);
+        }, 2200);
+      }
+    } catch (e) {
+      console.error("Error creating vocabulary:", e);
+      alert("حدث خطأ أثناء حفظ القاموس، تأكد من الكونسول.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const inputStyle = (id: string): CSSProperties => ({
+    width: "100%",
+    boxSizing: "border-box",
+    border: `1.5px solid ${focused === id ? C.gold : C.goldBorder}`,
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontFamily: sans,
+    fontSize: "0.88rem",
+    color: C.ink,
+    background: C.surface,
+    outline: "none",
+    transition: "border-color 0.2s",
+  });
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8" dir="rtl">
-      <div className="bg-white shadow-sm border rounded-xl p-6 md:p-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2 mb-6 border-b pb-4">
-          <BookOpen className="text-primary" /> إضافة قاموس جديد
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              الاسم المعروض (Label)
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.label}
-              onChange={(e) =>
-                setFormData({ ...formData, label: e.target.value })
-              }
-              className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none"
-              placeholder="مثال: Dublin Core"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              الـ Prefix
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.prefix}
-              onChange={(e) =>
-                setFormData({ ...formData, prefix: e.target.value })
-              }
-              className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none"
-              placeholder="مثال: dc"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              الرابط العالمي (Namespace URI)
-            </label>
-            <input
-              type="url"
-              required
-              value={formData.namespaceUri}
-              onChange={(e) =>
-                setFormData({ ...formData, namespaceUri: e.target.value })
-              }
-              className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none"
-              placeholder="http://..."
-              dir="ltr"
-            />
-          </div>
-          <div className="pt-4 border-t flex justify-end">
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-blue-700 flex items-center gap-2"
+    <div style={{ fontFamily: sans, color: C.ink }}>
+      {/* ── Page header ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: `1.5px solid ${C.goldBorder}`,
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: C.gold,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin · Metadata
+          </p>
+          <h1
+            style={{
+              fontFamily: serif,
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: C.ink,
+              margin: "0 0 6px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            New Vocabulary
+          </h1>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
+            Register a new metadata vocabulary (e.g. Dublin Core, Schema.org).
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            background: "transparent",
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 999,
+            padding: "9px 18px",
+            fontFamily: sans,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: C.inkMid,
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.goldLight;
+            e.currentTarget.style.borderColor = C.gold;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = C.goldBorder;
+          }}
+        >
+          <ArrowLeft size={15} /> Back
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 18,
+            overflow: "hidden",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
+          }}
+        >
+          {/* Card header */}
+          <div
+            style={{
+              background: C.goldLight,
+              borderBottom: `1.5px solid ${C.goldBorder}`,
+              padding: "20px 28px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: C.gold,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <Save size={20} /> حفظ القاموس
-            </button>
+              <BookOpen size={22} color="#fff" strokeWidth={1.8} />
+            </div>
+            <div>
+              <h2
+                style={{
+                  fontFamily: serif,
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  color: C.ink,
+                  margin: 0,
+                }}
+              >
+                Vocabulary Details
+              </h2>
+              <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
+                Define a new metadata namespace for the library schema
+              </p>
+            </div>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit} style={{ padding: "28px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* Label */}
+              <div>
+                <FieldLabel required>Display Label</FieldLabel>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dublin Core"
+                  value={formData.label}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, label: e.target.value }))
+                  }
+                  onFocus={() => setFocused("label")}
+                  onBlur={() => setFocused(null)}
+                  style={inputStyle("label")}
+                />
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    fontSize: "0.72rem",
+                    color: C.inkSoft,
+                  }}
+                >
+                  Human-readable name shown in the admin interface
+                </p>
+              </div>
+
+              {/* Prefix */}
+              <div>
+                <FieldLabel required>Prefix</FieldLabel>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. dc"
+                  value={formData.prefix}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      prefix: e.target.value.toLowerCase(),
+                    }))
+                  }
+                  onFocus={() => setFocused("prefix")}
+                  onBlur={() => setFocused(null)}
+                  style={{
+                    ...inputStyle("prefix"),
+                    fontFamily: "monospace",
+                    fontSize: "0.9rem",
+                  }}
+                  dir="ltr"
+                />
+                {/* Live preview badge */}
+                {formData.prefix && (
+                  <div
+                    style={{
+                      marginTop: 7,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        background: C.goldMid,
+                        color: C.goldDark,
+                        fontSize: "0.75rem",
+                        fontFamily: "monospace",
+                        fontWeight: 700,
+                        padding: "3px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${C.goldBorder}`,
+                      }}
+                    >
+                      {formData.prefix}:term
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: C.inkSoft }}>
+                      preview of how properties will appear
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Namespace URI */}
+              <div>
+                <FieldLabel required>Namespace URI</FieldLabel>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://..."
+                  value={formData.namespaceUri}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, namespaceUri: e.target.value }))
+                  }
+                  onFocus={() => setFocused("uri")}
+                  onBlur={() => setFocused(null)}
+                  style={{
+                    ...inputStyle("uri"),
+                    fontFamily: "monospace",
+                    fontSize: "0.82rem",
+                  }}
+                  dir="ltr"
+                />
+                {/* URI hint */}
+                {uriPreview && !formData.namespaceUri && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((p) => ({ ...p, namespaceUri: uriPreview }))
+                    }
+                    style={{
+                      marginTop: 6,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "0.72rem",
+                      color: C.gold,
+                      fontFamily: sans,
+                      padding: 0,
+                    }}
+                  >
+                    <Info size={11} /> Suggested:{" "}
+                    <span style={{ fontFamily: "monospace" }}>
+                      {uriPreview}
+                    </span>
+                  </button>
+                )}
+                {/* Valid URI link preview */}
+                {formData.namespaceUri && (
+                  <a
+                    href={formData.namespaceUri}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      marginTop: 6,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      fontSize: "0.72rem",
+                      color: C.gold,
+                      fontFamily: "monospace",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <ExternalLink size={11} /> {formData.namespaceUri}
+                  </a>
+                )}
+              </div>
+
+              {/* Well-known vocabularies hint */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "flex-start",
+                  background: C.goldMid,
+                  border: `1px solid ${C.goldBorder}`,
+                  borderRadius: 10,
+                  padding: "11px 14px",
+                }}
+              >
+                <Info
+                  size={14}
+                  color={C.gold}
+                  style={{ flexShrink: 0, marginTop: 1 }}
+                />
+                <div>
+                  <p
+                    style={{
+                      margin: "0 0 6px",
+                      fontSize: "0.78rem",
+                      color: C.inkMid,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Common vocabularies:
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {[
+                      {
+                        label: "Dublin Core",
+                        prefix: "dc",
+                        uri: "http://purl.org/dc/elements/1.1/",
+                      },
+                      {
+                        label: "Schema.org",
+                        prefix: "schema",
+                        uri: "https://schema.org/",
+                      },
+                      {
+                        label: "FOAF",
+                        prefix: "foaf",
+                        uri: "http://xmlns.com/foaf/0.1/",
+                      },
+                    ].map((v) => (
+                      <button
+                        key={v.prefix}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            label: v.label,
+                            prefix: v.prefix,
+                            namespaceUri: v.uri,
+                          })
+                        }
+                        style={{
+                          background: C.surface,
+                          border: `1px solid ${C.goldBorder}`,
+                          borderRadius: 999,
+                          padding: "3px 10px",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                          color: C.inkMid,
+                          cursor: "pointer",
+                          fontFamily: "monospace",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = C.goldLight;
+                          e.currentTarget.style.borderColor = C.gold;
+                          e.currentTarget.style.color = C.goldDark;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = C.surface;
+                          e.currentTarget.style.borderColor = C.goldBorder;
+                          e.currentTarget.style.color = C.inkMid;
+                        }}
+                      >
+                        {v.prefix}:
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div
+              style={{
+                marginTop: 24,
+                paddingTop: 20,
+                borderTop: `1.5px solid ${C.goldBorder}`,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                style={{
+                  background: "transparent",
+                  border: `1.5px solid ${C.goldBorder}`,
+                  borderRadius: 10,
+                  padding: "10px 20px",
+                  fontFamily: sans,
+                  fontSize: "0.88rem",
+                  fontWeight: 600,
+                  color: C.inkMid,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: success
+                    ? "#edf7ee"
+                    : isSubmitting
+                    ? C.goldBorder
+                    : C.gold,
+                  color: success ? "#2d6e3a" : "#fff",
+                  border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
+                  borderRadius: 10,
+                  padding: "10px 24px",
+                  fontFamily: sans,
+                  fontSize: "0.88rem",
+                  fontWeight: 700,
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                  boxShadow:
+                    success || isSubmitting
+                      ? "none"
+                      : "0 2px 12px rgba(200,169,110,0.35)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSubmitting && !success)
+                    e.currentTarget.style.background = C.goldDark;
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSubmitting && !success)
+                    e.currentTarget.style.background = C.gold;
+                }}
+              >
+                <Save size={15} />
+                {isSubmitting
+                  ? "Saving..."
+                  : success
+                  ? "✓ Vocabulary Saved!"
+                  : "Save Vocabulary"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

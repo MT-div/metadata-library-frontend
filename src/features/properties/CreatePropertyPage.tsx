@@ -5,6 +5,7 @@ import type {
   VocabularyResponse,
 } from "../../types/metadata";
 import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
+import { api } from "../../services/api";
 
 const C = {
   bg: "#F7F3ED",
@@ -64,13 +65,15 @@ export const CreatePropertyPage = () => {
   const [focused, setFocused] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/vocabularies")
-      .then((r) => r.json())
-      .then((data) => {
+    api
+      .get<VocabularyResponse[]>("/api/vocabularies")
+      .then((res) => {
+        const data = res.data;
         setVocabularies(data);
         if (data.length > 0)
           setFormData((p) => ({ ...p, vocabularyId: data[0].id }));
-      });
+      })
+      .catch((err) => console.error("Error fetching vocabularies:", err));
   }, []);
 
   const selectedVocab = vocabularies.find(
@@ -97,12 +100,10 @@ export const CreatePropertyPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/properties", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
+      // 👇 إرسال البيانات باستخدام Axios
+      const res = await api.post("/api/properties", formData);
+
+      if (res.status === 200 || res.status === 201) {
         setSuccess(true);
         setTimeout(() => {
           setFormData({
@@ -115,12 +116,12 @@ export const CreatePropertyPage = () => {
         }, 2200);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error creating property:", e);
+      alert("حدث خطأ أثناء حفظ الخاصية. تأكد من الكونسول.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
   const inputStyle = (id: string): React.CSSProperties => ({
     width: "100%",
     boxSizing: "border-box",

@@ -1,10 +1,36 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type {
   CreateResourceTemplateCommand,
   TemplatePropertyRequest,
   VocabularyResponse,
 } from "../../types/metadata";
-import { Save, LayoutTemplate, Plus, Trash2 } from "lucide-react";
+import {
+  Save,
+  LayoutTemplate,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Info,
+  GripVertical,
+} from "lucide-react";
+
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+  dangerBg: "#fdf0ee",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
 
 type AvailableProperty = {
   id: number;
@@ -13,299 +39,862 @@ type AvailableProperty = {
   localName: string;
 };
 
+// ── Shared sub-components ────────────────────────────────────────────────────
+const FieldLabel = ({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
+  <label
+    style={{
+      display: "block",
+      fontSize: "0.72rem",
+      fontWeight: 700,
+      color: C.inkMid,
+      letterSpacing: "0.05em",
+      textTransform: "uppercase",
+      marginBottom: 8,
+      fontFamily: sans,
+    }}
+  >
+    {children}
+    {required && <span style={{ color: C.danger, marginLeft: 4 }}>*</span>}
+  </label>
+);
+
+const StepHeader = ({
+  step,
+  title,
+  subtitle,
+}: {
+  step: string;
+  title: string;
+  subtitle: string;
+}) => (
+  <div
+    style={{
+      background: C.goldLight,
+      borderBottom: `1.5px solid ${C.goldBorder}`,
+      padding: "14px 24px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+    }}
+  >
+    <div
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        background: C.gold,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: serif,
+        fontWeight: 800,
+        fontSize: "0.9rem",
+        color: "#fff",
+      }}
+    >
+      {step}
+    </div>
+    <div>
+      <h2
+        style={{
+          fontFamily: serif,
+          fontSize: "0.92rem",
+          fontWeight: 700,
+          color: C.ink,
+          margin: 0,
+        }}
+      >
+        {title}
+      </h2>
+      <p style={{ margin: 0, fontSize: "0.72rem", color: C.inkSoft }}>
+        {subtitle}
+      </p>
+    </div>
+  </div>
+);
+
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  appearance: "none",
+  background: C.surface,
+  border: `1.5px solid ${C.goldBorder}`,
+  borderRadius: 10,
+  padding: "10px 32px 10px 14px",
+  fontFamily: sans,
+  fontSize: "0.85rem",
+  color: C.ink,
+  outline: "none",
+  cursor: "pointer",
+  transition: "border-color 0.2s",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 export const CreateTemplatePage = () => {
+  const navigate = useNavigate();
   const [templateData, setTemplateData] =
     useState<CreateResourceTemplateCommand>({ label: "", description: "" });
   const [selectedProperties, setSelectedProperties] = useState<
     TemplatePropertyRequest[]
   >([]);
-
-  // --- الحالات الجديدة لدعم القوائم المترابطة (Cascading Dropdowns) ---
   const [vocabularies, setVocabularies] = useState<VocabularyResponse[]>([]);
   const [selectedVocabId, setSelectedVocabId] = useState<number>(0);
-
   const [availableProps, setAvailableProps] = useState<AvailableProperty[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
+  // cache of all prop labels we've added (for display after vocab change)
+  const [propCache, setPropCache] = useState<Record<number, string>>({});
 
-  // 1. جلب القواميس عند تحميل الصفحة
   useEffect(() => {
     fetch("/api/vocabularies")
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         setVocabularies(data);
         if (data.length > 0) setSelectedVocabId(data[0].id);
       });
   }, []);
 
-  // 2. جلب الخصائص "فقط" عندما يتغير القاموس المختار (تطبيق ملاحظتك!)
   useEffect(() => {
-    if (selectedVocabId === 0) return;
-
+    if (!selectedVocabId) return;
     fetch(`/api/vocabularies/${selectedVocabId}/properties`)
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         setAvailableProps(data);
-        if (data.length > 0) {
-          setSelectedPropId(data[0].id);
-        } else {
-          setSelectedPropId(0); // إذا كان القاموس فارغاً
-        }
+        setSelectedPropId(data.length > 0 ? data[0].id : 0);
+        // build cache
+        const entries: Record<number, string> = {};
+        data.forEach((p: AvailableProperty) => {
+          entries[p.id] = p.label;
+        });
+        setPropCache((prev) => ({ ...prev, ...entries }));
       });
   }, [selectedVocabId]);
 
-  // إضافة خاصية للقالب (محلياً في الـ UI)
   const handleAddProperty = () => {
-    if (selectedPropId === 0) return;
-
-    // منع تكرار نفس الخاصية
+    if (!selectedPropId) return;
     if (selectedProperties.some((p) => p.propertyId === selectedPropId)) {
-      alert("هذه الخاصية مضافة مسبقاً!");
+      alert("This property is already added.");
       return;
     }
-
-    const newProp: TemplatePropertyRequest = {
-      propertyId: selectedPropId,
-      isRequired: false,
-      displayOrder: selectedProperties.length + 1, // الترتيب التلقائي
-      alternateLabel: "",
-    };
-
-    setSelectedProperties([...selectedProperties, newProp]);
+    setSelectedProperties((prev) => [
+      ...prev,
+      {
+        propertyId: selectedPropId,
+        isRequired: false,
+        displayOrder: prev.length + 1,
+        alternateLabel: "",
+      },
+    ]);
   };
 
-  // إزالة خاصية من القالب
-  const handleRemoveProperty = (propId: number) => {
-    setSelectedProperties(
-      selectedProperties.filter((p) => p.propertyId !== propId)
+  const handleRemove = (id: number) =>
+    setSelectedProperties((prev) =>
+      prev
+        .filter((p) => p.propertyId !== id)
+        .map((p, i) => ({ ...p, displayOrder: i + 1 }))
     );
-  };
 
-  // تغيير حالة (مطلوب/غير مطلوب) لخاصية معينة
-  const handleToggleRequired = (propId: number) => {
-    setSelectedProperties(
-      selectedProperties.map((p) =>
-        p.propertyId === propId ? { ...p, isRequired: !p.isRequired } : p
+  const handleToggle = (id: number) =>
+    setSelectedProperties((prev) =>
+      prev.map((p) =>
+        p.propertyId === id ? { ...p, isRequired: !p.isRequired } : p
       )
     );
-  };
 
-  // عملية الحفظ (التي ستعكس الباك اند الخاص بك بخطوتين)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // الدفاع الأمامي (Frontend Validation) يحاكي الـ FluentValidation الخاص بك
     if (selectedProperties.length === 0) {
-      alert("الـ Validator يقول: يجب إضافة خاصية واحدة على الأقل للقالب!");
+      alert("Add at least one property to the template.");
       return;
     }
-
+    setIsSubmitting(true);
     try {
-      // الخطوة الأولى: إنشاء القالب
       const createRes = await fetch("/api/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templateData),
       });
-
-      const createdData = await createRes.json();
-      const newTemplateId = createdData.id;
-
-      // الخطوة الثانية: ربط الخصائص بالقالب الجديد
-      const updateCommand = {
-        templateId: newTemplateId,
-        properties: selectedProperties,
-      };
-
-      await fetch(`/api/templates/${newTemplateId}/properties`, {
+      const created = await createRes.json();
+      await fetch(`/api/templates/${created.id}/properties`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateCommand),
+        body: JSON.stringify({
+          templateId: created.id,
+          properties: selectedProperties,
+        }),
       });
-
-      alert("تم بناء القالب وربط الخصائص بنجاح! راجع الـ Console.");
-      // إعادة تعيين النموذج
-      setTemplateData({ label: "", description: "" });
-      setSelectedProperties([]);
-    } catch (error) {
-      console.error("حدث خطأ:", error);
+      setSuccess(true);
+      setTimeout(() => {
+        setTemplateData({ label: "", description: "" });
+        setSelectedProperties([]);
+        setSuccess(false);
+      }, 2200);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
-      <div className="bg-white shadow-sm border rounded-xl p-6 md:p-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2 mb-6 border-b pb-4">
-          <LayoutTemplate className="text-primary" /> بناء قالب جديد
-        </h1>
+  const inputStyle = (id: string): React.CSSProperties => ({
+    width: "100%",
+    boxSizing: "border-box",
+    border: `1.5px solid ${focused === id ? C.gold : C.goldBorder}`,
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontFamily: sans,
+    fontSize: "0.88rem",
+    color: C.ink,
+    background: C.surface,
+    outline: "none",
+    transition: "border-color 0.2s",
+  });
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* قسم بيانات القالب الأساسية */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800">
-              1. المعلومات الأساسية
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  اسم القالب <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={templateData.label}
-                  onChange={(e) =>
-                    setTemplateData({ ...templateData, label: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-2.5 outline-none focus:border-primary"
-                  placeholder="مثال: كتاب مطبوع"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  الوصف
-                </label>
-                <input
-                  type="text"
-                  value={templateData.description || ""}
-                  onChange={(e) =>
-                    setTemplateData({
-                      ...templateData,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-lg p-2.5 outline-none focus:border-primary"
-                  placeholder="وصف اختياري..."
-                />
-              </div>
+  const selectedVocab = vocabularies.find((v) => v.id === selectedVocabId);
+
+  return (
+    <div style={{ fontFamily: sans, color: C.ink }}>
+      {/* ── Page header ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: 16,
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: `1.5px solid ${C.goldBorder}`,
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: C.gold,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin · Templates
+          </p>
+          <h1
+            style={{
+              fontFamily: serif,
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: C.ink,
+              margin: "0 0 6px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Build New Template
+          </h1>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
+            Define a template and select which metadata fields it includes.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            background: "transparent",
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 999,
+            padding: "9px 18px",
+            fontFamily: sans,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: C.inkMid,
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.goldLight;
+            e.currentTarget.style.borderColor = C.gold;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = C.goldBorder;
+          }}
+        >
+          <ArrowLeft size={15} /> Back
+        </button>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          maxWidth: 740,
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+        }}
+      >
+        {/* ── Card 1: Basic info ── */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <StepHeader
+            step="1"
+            title="Template Info"
+            subtitle="Name and describe the template"
+          />
+          <div
+            style={{
+              padding: "22px 24px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <FieldLabel required>Template Name</FieldLabel>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Printed Book"
+                value={templateData.label}
+                onChange={(e) =>
+                  setTemplateData((p) => ({ ...p, label: e.target.value }))
+                }
+                onFocus={() => setFocused("label")}
+                onBlur={() => setFocused(null)}
+                style={inputStyle("label")}
+              />
+            </div>
+            <div>
+              <FieldLabel>Description</FieldLabel>
+              <input
+                type="text"
+                placeholder="Optional description..."
+                value={templateData.description ?? ""}
+                onChange={(e) =>
+                  setTemplateData((p) => ({
+                    ...p,
+                    description: e.target.value,
+                  }))
+                }
+                onFocus={() => setFocused("desc")}
+                onBlur={() => setFocused(null)}
+                style={inputStyle("desc")}
+              />
             </div>
           </div>
+        </div>
 
-          {/* قسم الخصائص الديناميكية */}
-          <div className="space-y-4 pt-4 border-t">
-            <h2 className="text-lg font-semibold text-gray-800">
-              2. حقول القالب (الخصائص)
-            </h2>
-            {/* أداة إضافة خاصية (بعد التحديث) */}
-            <div className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-lg border">
-              <div className="grow w-full md:w-auto">
-                <label className="block text-sm font-semibold mb-1">
-                  1. اختر القاموس:
-                </label>
-                <select
-                  className="w-full border rounded-lg p-2.5 bg-white outline-none"
-                  value={selectedVocabId}
-                  onChange={(e) => setSelectedVocabId(Number(e.target.value))}
-                >
-                  {vocabularies.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.label} ({v.prefix})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grow w-full md:w-auto">
-                <label className="block text-sm font-semibold mb-1">
-                  2. اختر الخاصية:
-                </label>
-                <select
-                  className="w-full border rounded-lg p-2.5 bg-white outline-none disabled:bg-gray-200"
-                  value={selectedPropId}
-                  onChange={(e) => setSelectedPropId(Number(e.target.value))}
-                  disabled={availableProps.length === 0}
-                >
-                  {availableProps.length === 0 ? (
-                    <option>لا يوجد خصائص في هذا القاموس</option>
-                  ) : (
-                    availableProps.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label} ({p.vocabularyPrefix}:{p.localName})
+        {/* ── Card 2: Add properties ── */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <StepHeader
+            step="2"
+            title="Add Fields"
+            subtitle="Choose vocabulary → property, then click Add"
+          />
+          <div style={{ padding: "20px 24px" }}>
+            {/* Cascading selects + button */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr auto",
+                gap: 12,
+                alignItems: "flex-end",
+                background: C.bg,
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 12,
+                padding: "16px",
+              }}
+            >
+              {/* Vocab */}
+              <div>
+                <FieldLabel>Vocabulary</FieldLabel>
+                <div style={{ position: "relative" }}>
+                  <select
+                    style={selectStyle}
+                    value={selectedVocabId}
+                    onChange={(e) => setSelectedVocabId(Number(e.target.value))}
+                  >
+                    {vocabularies.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.label} ({v.prefix})
                       </option>
-                    ))
-                  )}
-                </select>
+                    ))}
+                  </select>
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: C.inkSoft,
+                      fontSize: 12,
+                    }}
+                  >
+                    ▾
+                  </span>
+                </div>
+                {selectedVocab && (
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      fontSize: "0.68rem",
+                      color: C.inkSoft,
+                      fontFamily: "monospace",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {selectedVocab.namespaceUri}
+                  </p>
+                )}
               </div>
 
+              {/* Property */}
+              <div>
+                <FieldLabel>Property</FieldLabel>
+                <div style={{ position: "relative" }}>
+                  <select
+                    style={{
+                      ...selectStyle,
+                      opacity: availableProps.length === 0 ? 0.5 : 1,
+                    }}
+                    value={selectedPropId}
+                    onChange={(e) => setSelectedPropId(Number(e.target.value))}
+                    disabled={availableProps.length === 0}
+                  >
+                    {availableProps.length === 0 ? (
+                      <option>No properties in this vocabulary</option>
+                    ) : (
+                      availableProps.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label} ({p.vocabularyPrefix}:{p.localName})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: C.inkSoft,
+                      fontSize: 12,
+                    }}
+                  >
+                    ▾
+                  </span>
+                </div>
+              </div>
+
+              {/* Add button */}
               <button
                 type="button"
                 onClick={handleAddProperty}
-                disabled={selectedPropId === 0}
-                className="bg-green-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-1 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedPropId || availableProps.length === 0}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background:
+                    !selectedPropId || availableProps.length === 0
+                      ? C.goldBorder
+                      : C.gold,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "10px 16px",
+                  fontFamily: sans,
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor:
+                    !selectedPropId || availableProps.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                  transition: "background 0.15s",
+                  whiteSpace: "nowrap",
+                  alignSelf: "flex-end",
+                  marginTop: 24,
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedPropId && availableProps.length > 0)
+                    e.currentTarget.style.background = C.goldDark;
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedPropId && availableProps.length > 0)
+                    e.currentTarget.style.background = C.gold;
+                }}
               >
-                <Plus size={18} /> إضافة
+                <Plus size={15} /> Add Field
               </button>
             </div>
 
-            {/* عرض الخصائص المضافة */}
-            {selectedProperties.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-right text-sm">
-                  <thead className="bg-gray-100 text-gray-700">
-                    <tr>
-                      <th className="p-3">الترتيب</th>
-                      <th className="p-3">اسم الخاصية</th>
-                      <th className="p-3 text-center">إلزامي؟ (Required)</th>
-                      <th className="p-3 text-center">إجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedProperties.map((prop, index) => {
-                      const propDetails = availableProps.find(
-                        (p) => p.id === prop.propertyId
-                      );
-                      return (
-                        <tr
-                          key={prop.propertyId}
-                          className="border-t hover:bg-gray-50"
-                        >
-                          <td className="p-3 font-mono">{index + 1}</td>
-                          <td className="p-3 font-semibold text-primary">
-                            {propDetails?.label}
-                          </td>
-                          <td className="p-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={prop.isRequired}
-                              onChange={() =>
-                                handleToggleRequired(prop.propertyId)
-                              }
-                              className="w-4 h-4 text-primary cursor-pointer"
-                            />
-                          </td>
-                          <td className="p-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRemoveProperty(prop.propertyId)
-                              }
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">
-                لم يتم إضافة أي خصائص بعد.
-              </p>
-            )}
+            {/* Validation hint */}
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: "0.72rem",
+                color: C.inkSoft,
+              }}
+            >
+              <Info size={12} color={C.gold} />
+              At least one field is required to save the template.
+            </div>
+          </div>
+        </div>
+
+        {/* ── Card 3: Fields list ── */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div
+            style={{
+              background: C.goldLight,
+              borderBottom: `1.5px solid ${C.goldBorder}`,
+              padding: "14px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <LayoutTemplate size={16} color={C.gold} />
+              <h2
+                style={{
+                  fontFamily: serif,
+                  fontSize: "0.92rem",
+                  fontWeight: 700,
+                  color: C.ink,
+                  margin: 0,
+                }}
+              >
+                Template Fields
+              </h2>
+            </div>
+            <span
+              style={{
+                background: C.goldMid,
+                color: C.goldDark,
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                padding: "3px 10px",
+                borderRadius: 999,
+                border: `1px solid ${C.goldBorder}`,
+              }}
+            >
+              {selectedProperties.length} field
+              {selectedProperties.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          <div className="pt-6 border-t flex justify-end">
-            <button
-              type="submit"
-              className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-blue-700 flex items-center gap-2 font-medium"
-            >
-              <Save size={20} /> حفظ القالب بالكامل
-            </button>
+          <div style={{ padding: "18px 24px" }}>
+            {selectedProperties.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 24px",
+                  background: C.bg,
+                  borderRadius: 12,
+                  border: `1.5px dashed ${C.goldBorder}`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: "50%",
+                    background: C.goldLight,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 12px",
+                  }}
+                >
+                  <LayoutTemplate size={22} color={C.gold} strokeWidth={1.5} />
+                </div>
+                <p
+                  style={{
+                    fontFamily: serif,
+                    fontSize: "0.95rem",
+                    color: C.inkMid,
+                    margin: "0 0 4px",
+                  }}
+                >
+                  No fields added yet
+                </p>
+                <p style={{ fontSize: "0.78rem", color: C.inkSoft, margin: 0 }}>
+                  Use the section above to select and add properties.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {selectedProperties.map((prop, idx) => {
+                  const label =
+                    propCache[prop.propertyId] ??
+                    `Property #${prop.propertyId}`;
+                  return (
+                    <div
+                      key={prop.propertyId}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "28px 28px 1fr auto auto",
+                        alignItems: "center",
+                        gap: 10,
+                        background: C.bg,
+                        border: `1.5px solid ${C.goldBorder}`,
+                        borderRadius: 12,
+                        padding: "11px 14px",
+                        transition: "border-color 0.15s, box-shadow 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                          C.gold;
+                        (e.currentTarget as HTMLDivElement).style.boxShadow =
+                          "0 2px 10px rgba(200,169,110,0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                          C.goldBorder;
+                        (e.currentTarget as HTMLDivElement).style.boxShadow =
+                          "none";
+                      }}
+                    >
+                      {/* Order */}
+                      <span
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: "50%",
+                          background: C.goldLight,
+                          border: `1px solid ${C.goldBorder}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          color: C.goldDark,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+
+                      {/* Grip */}
+                      <GripVertical
+                        size={15}
+                        color={C.inkSoft}
+                        style={{ cursor: "grab", flexShrink: 0 }}
+                      />
+
+                      {/* Label */}
+                      <span
+                        style={{
+                          fontFamily: serif,
+                          fontWeight: 700,
+                          fontSize: "0.9rem",
+                          color: C.ink,
+                        }}
+                      >
+                        {label}
+                      </span>
+
+                      {/* Required toggle */}
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          cursor: "pointer",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <div
+                          onClick={() => handleToggle(prop.propertyId)}
+                          style={{
+                            width: 34,
+                            height: 18,
+                            borderRadius: 999,
+                            background: prop.isRequired ? C.gold : C.goldBorder,
+                            position: "relative",
+                            transition: "background 0.2s",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 2,
+                              left: prop.isRequired ? 17 : 2,
+                              width: 14,
+                              height: 14,
+                              borderRadius: "50%",
+                              background: "#fff",
+                              transition: "left 0.2s",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                            }}
+                          />
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                            color: prop.isRequired ? C.goldDark : C.inkSoft,
+                          }}
+                        >
+                          {prop.isRequired ? "Required" : "Optional"}
+                        </span>
+                      </label>
+
+                      {/* Remove */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(prop.propertyId)}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          background: C.dangerBg,
+                          border: "none",
+                          color: C.danger,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          transition: "opacity 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.opacity = "0.7")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.opacity = "1")
+                        }
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* ── Submit ── */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 10,
+            paddingTop: 4,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              background: "transparent",
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 10,
+              padding: "10px 20px",
+              fontFamily: sans,
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              color: C.inkMid,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: success
+                ? "#edf7ee"
+                : isSubmitting
+                ? C.goldBorder
+                : C.gold,
+              color: success ? "#2d6e3a" : "#fff",
+              border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
+              borderRadius: 10,
+              padding: "10px 28px",
+              fontFamily: sans,
+              fontSize: "0.9rem",
+              fontWeight: 700,
+              cursor: isSubmitting ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              boxShadow:
+                success || isSubmitting
+                  ? "none"
+                  : "0 2px 12px rgba(200,169,110,0.35)",
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting && !success)
+                e.currentTarget.style.background = C.goldDark;
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting && !success)
+                e.currentTarget.style.background = C.gold;
+            }}
+          >
+            <Save size={16} />
+            {isSubmitting
+              ? "Saving..."
+              : success
+              ? "✓ Template Created!"
+              : "Save Template"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

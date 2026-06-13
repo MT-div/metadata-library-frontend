@@ -18,6 +18,7 @@ import type {
   ItemSetResponse,
   MediaResponse,
 } from "../../types/metadata";
+import { api } from "../../services/api";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -100,31 +101,53 @@ export const ItemDetailsPage = () => {
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
   const [media, setMedia] = useState<MediaResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  // حالة لمعرفة هل جاري الحذف الآن
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // دالة الحذف
+  const handleDelete = async () => {
+    if (!confirm("هل أنت متأكد من حذف هذا العنصر؟")) return;
+
+    setIsDeleting(true);
+    try {
+      // استدعاء ה- API الحقيقي للحذف
+      await api.delete(`/api/items/${id}`);
+
+      alert("تم حذف العنصر بنجاح.");
+      // توجيه المستخدم مرة أخرى إلى صفحة الاستعراض
+      navigate("/browse", { replace: true });
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      alert("حدث خطأ أثناء محاولة حذف العنصر.");
+      setIsDeleting(false);
+    }
+  };
   useEffect(() => {
     const load = async () => {
       try {
-        const itemRes = await fetch(`/api/items/${id}`);
-        if (!itemRes.ok) throw new Error("Not found");
-        const itemData: ItemResponse = await itemRes.json();
+        // 👇 جلب تفاصيل العنصر باستخدام api
+        const itemRes = await api.get<ItemResponse>(`/api/items/${id}`);
+        const itemData = itemRes.data;
         setItem(itemData);
 
+        // 👇 جلب باقي البيانات بالتوازي مع الروابط المطابقة للـ Swagger
         const [tplRes, setsRes, mediaRes] = await Promise.all([
-          fetch("/api/templates"),
-          fetch("/api/itemsets"),
-          fetch(`/api/media?itemId=${id}`),
+          api.get<ResourceTemplateResponse[]>("/api/resource-templates"),
+          api.get<ItemSetResponse[]>("/api/item-sets"),
+          api.get<MediaResponse[]>(`/api/media/by-item/${id}`), // الرابط الصحيح للميديا
         ]);
-        const tpls = (await tplRes.json()) as ResourceTemplateResponse[];
+
+        const tpls = tplRes.data;
         setTemplate(tpls.find((t) => t.id === itemData.templateId) || null);
 
-        const sets = (await setsRes.json()) as ItemSetResponse[];
+        const sets = setsRes.data;
         setItemSets(
           sets.filter((s) => s.items?.some((i) => i.id === itemData.id))
         );
 
-        setMedia((await mediaRes.json()) as MediaResponse[]);
+        setMedia(mediaRes.data);
       } catch (e) {
-        console.error(e);
+        console.error("Error loading item details:", e);
       } finally {
         setLoading(false);
       }
@@ -251,9 +274,9 @@ export const ItemDetailsPage = () => {
             />
             <ActionBtn
               icon={<Trash2 size={15} />}
-              label="Delete"
+              label={isDeleting ? "Deleting..." : "Delete"}
               danger
-              onClick={() => {}}
+              onClick={handleDelete} // 👈 تم ربط الدالة هنا
             />
           </div>
         </div>

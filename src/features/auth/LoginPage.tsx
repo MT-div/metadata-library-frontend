@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Loader2 } from "lucide-react";
 import type { LoginRequest, AuthResponse } from "../../types/auth";
+import { api } from "../../services/api";
+import { AxiosError } from "axios";
 
 import vasePng from "../../assets/icons/vase.png";
 import backVase from "../../assets/icons/backVase.png";
@@ -119,25 +121,32 @@ export const LoginPage = () => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!response.ok)
-        throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
-      const data: AuthResponse = await response.json();
+      // 🚀 الاتصال الحقيقي بالباك اند! (تطابق مسار الـ Swagger)
+      const response = await api.post<AuthResponse>(
+        "/api/Auth/login",
+        formData
+      );
+
+      // البيانات تعود جاهزة داخل response.data في مكتبة Axios
+      const data = response.data;
+
+      // حفظ البيانات في الـ Store
       login(data);
+
+      // الدخول للوحة التحكم
       navigate("/admin/metadata");
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-          ? err
-          : "حدث خطأ غير متوقع. حاول مرة أخرى."
-      );
+      // معالجة رسائل الخطأ القادمة من الباك اند (مثل: Invalid email or password)
+      if (err instanceof AxiosError && err.response) {
+        setError(
+          err.response.data || "البريد الإلكتروني أو كلمة المرور غير صحيحة."
+        );
+      } else {
+        setError("تعذر الاتصال بالخادم. تأكد من تشغيل الباك اند.");
+        console.error("Login error:", err);
+      }
     } finally {
       setIsLoading(false);
     }

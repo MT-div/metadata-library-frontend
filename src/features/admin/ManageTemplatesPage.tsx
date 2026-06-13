@@ -10,6 +10,8 @@ import {
   ChevronRight,
   GripVertical,
 } from "lucide-react";
+import { api } from "../../services/api";
+
 import type {
   ResourceTemplateResponse,
   TemplatePropertyRequest,
@@ -82,13 +84,15 @@ export const ManageTemplatesPage = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/templates").then((r) => r.json()),
-      fetch("/api/properties").then((r) => r.json()),
-    ]).then(([tpls, props]) => {
-      setTemplates(tpls);
-      setAllProperties(props);
-      if (tpls.length > 0) selectTemplate(tpls[0].id, tpls);
-    });
+      api.get("/api/resource-templates").then((r) => r.data),
+      api.get("/api/properties").then((r) => r.data),
+    ])
+      .then(([tpls, props]) => {
+        setTemplates(tpls);
+        setAllProperties(props);
+        if (tpls.length > 0) selectTemplate(tpls[0].id, tpls);
+      })
+      .catch((err) => console.error("Error loading builder data:", err));
   }, []);
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
@@ -149,21 +153,21 @@ export const ManageTemplatesPage = () => {
           alternateLabel: p.alternateLabel,
         })),
       };
-      const res = await fetch(
-        `/api/templates/${selectedTemplateId}/properties`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(command),
-        }
+
+      // 👇 استخدام api.put مع الرابط الحقيقي
+      const res = await api.put(
+        `/api/resource-templates/${selectedTemplateId}/properties`,
+        command
       );
-      if (res.ok) {
+
+      if (res.status === 200 || res.status === 204) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2500);
       }
       console.log("UpdateTemplatePropertiesCommand:", command);
     } catch (e) {
-      console.error(e);
+      console.error("Save error:", e);
+      alert("حدث خطأ أثناء الحفظ. تأكد من الكونسول.");
     } finally {
       setIsSaving(false);
     }

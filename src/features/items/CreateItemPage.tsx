@@ -12,6 +12,7 @@ import {
   RotateCcw,
   ChevronRight,
 } from "lucide-react";
+import { api } from "../../services/api";
 
 const C = {
   bg: "#F7F3ED",
@@ -42,13 +43,16 @@ export const CreateItemPage = () => {
   );
 
   useEffect(() => {
-    fetch("/api/templates")
-      .then((r) => r.json())
-      .then((data) => {
-        setTemplates(data);
+    api
+      .get<ResourceTemplateResponse[]>("api/resource-templates")
+      .then((res) => {
+        setTemplates(res.data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("Error fetching templates:", err);
+        setLoading(false);
+      });
   }, []);
 
   const handleTemplateChange = (val: string) => {
@@ -60,32 +64,33 @@ export const CreateItemPage = () => {
     e.preventDefault();
     if (!selectedTemplateId) return;
     setIsSubmitting(true);
+
     const command: CreateItemCommand = {
       templateId: Number(selectedTemplateId),
-      ownerId: 1, // TODO: replace with authenticated user id
+      ownerId: 1, // TODO: سنستبدله لاحقاً بالـ ID الحقيقي من التوكن
       values: Object.entries(formData).map(([propId, valueText]) => ({
         propertyId: Number(propId),
         valueText,
         type: "literal",
-        language: "en",
+        language: "ar", // جعلتها ar افتراضياً لتناسب الميتاداتا العربية
       })),
     };
+
     try {
-      const res = await fetch("/api/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(command),
-      });
-      if (res.ok) {
+      const res = await api.post("/api/items", command);
+
+      if (res.status === 200 || res.status === 201) {
         setSuccess(true);
-        console.log("CreateItemCommand:", command);
+        console.log("CreateItemCommand Success:", command);
         setTimeout(() => {
           setFormData({});
           setSuccess(false);
+          // navigate('/browse'); // اختياري: يمكنك تفعيله لنقل المستخدم بعد الحفظ
         }, 2200);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error creating item:", e);
+      alert("حدث خطأ أثناء حفظ العنصر.");
     } finally {
       setIsSubmitting(false);
     }
