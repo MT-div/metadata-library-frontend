@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import type { UserResponse } from "../../types/metadata";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   Shield,
@@ -36,6 +37,7 @@ const sans = "'Poppins',system-ui,sans-serif";
 const AVAILABLE_ROLES = ["Admin", "Librarian", "User", "Guest"];
 
 export const ManageUsersPage = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -187,7 +189,7 @@ export const ManageUsersPage = () => {
           </p>
         </div>
         <button
-          onClick={() => alert("سيتم بناء صفحة إضافة مستخدم لاحقاً")}
+          onClick={() => navigate("/admin/users/new")}
           style={{
             display: "inline-flex",
             alignItems: "center",
