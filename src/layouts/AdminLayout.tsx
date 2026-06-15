@@ -12,6 +12,7 @@ import {
   LogOut,
   Globe,
   ChevronRight,
+  HardDrive,
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -58,6 +59,11 @@ const NAV_GROUPS = [
         title: "Collections",
         path: "/admin/itemsets",
         icon: <Library size={17} />,
+      },
+      {
+        title: "Media",
+        path: "/admin/media",
+        icon: <HardDrive size={20} />,
       },
     ],
   },

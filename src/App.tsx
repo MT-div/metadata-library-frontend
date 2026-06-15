@@ -22,6 +22,7 @@ import { CreateVocabularyPage } from "./features/vocabularies/CreateVocabularyPa
 import { CreatePropertyPage } from "./features/properties/CreatePropertyPage";
 import { CreateTemplatePage } from "./features/templates/CreateTemplatePage";
 import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
+import { ManageMediaPage } from "./features/admin/ManageMediaPage";
 
 function App() {
   return (
@@ -49,7 +50,7 @@ function App() {
               path="/admin"
               element={<Navigate to="/admin/metadata" replace />}
             />
-
+            <Route path="admin/media" element={<ManageMediaPage />} />
             <Route path="admin/metadata" element={<ManageMetadataPage />} />
             <Route path="admin/templates" element={<ManageTemplatesPage />} />
             <Route path="admin/itemsets" element={<ManageItemSetsPage />} />
