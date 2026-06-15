@@ -145,3 +145,20 @@ export interface MediaResponse {
   fileName: string;
   metadataValues: ItemValueResponse[];
 }
+
+// --- Users ---
+export interface UserResponse {
+  id: number;
+  externalId: string; // غالباً سيكون هو الإيميل أو الـ ID الخاص بـ Identity
+  fullName: string;
+  bio?: string | null;
+  profilePicturePath?: string | null;
+  roles?: string[]; // قائمة الأدوار القادمة من الباك اند
+}
+
+export interface CreateSystemUserCommand {
+  externalId: string;
+  fullName: string;
+  bio?: string | null;
+  profilePicturePath?: string | null;
+}

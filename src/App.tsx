@@ -24,6 +24,7 @@ import { CreateTemplatePage } from "./features/templates/CreateTemplatePage";
 import { CreateItemSetPage } from "./features/itemSets/CreateItemSetPage";
 import { ManageMediaPage } from "./features/admin/ManageMediaPage";
 import { ManageItemsPage } from "./features/admin/ManageItemsPage";
+import { ManageUsersPage } from "./features/admin/ManageUsersPage";
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
             <Route path="admin/templates" element={<ManageTemplatesPage />} />
             <Route path="admin/itemsets" element={<ManageItemSetsPage />} />
             <Route path="admin/items" element={<ManageItemsPage />} />
+            <Route path="admin/users" element={<ManageUsersPage />} />
 
             <Route path="items/new" element={<CreateItemPage />} />
             <Route path="media/new" element={<CreateMediaPage />} />
