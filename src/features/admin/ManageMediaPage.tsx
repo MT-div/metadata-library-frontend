@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
 import type { MediaResponse } from "../../types/metadata";
 import {
   Image as ImageIcon,
@@ -13,8 +12,7 @@ import {
   Search,
   HardDrive,
 } from "lucide-react";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
+import { api } from "../../services/api";
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -31,6 +29,39 @@ const C = {
 };
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
+
+// TODO: replace with your actual backend base URL or env variable
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+
+const getFileIcon = (fileName: string) => {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext))
+    return <ImageIcon size={26} color={C.gold} strokeWidth={1.5} />;
+  if (["mp4", "avi", "mov", "mkv"].includes(ext))
+    return <Film size={26} color={C.gold} strokeWidth={1.5} />;
+  if (["pdf", "doc", "docx", "txt"].includes(ext))
+    return <FileText size={26} color={C.gold} strokeWidth={1.5} />;
+  return <File size={26} color={C.gold} strokeWidth={1.5} />;
+};
+
+const getFileTypeBadge = (fileName: string) => {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "file";
+  const map: Record<string, { label: string; color: string }> = {
+    jpg: { label: "Image", color: "#7c4fa0" },
+    jpeg: { label: "Image", color: "#7c4fa0" },
+    png: { label: "Image", color: "#7c4fa0" },
+    webp: { label: "Image", color: "#7c4fa0" },
+    gif: { label: "Image", color: "#7c4fa0" },
+    mp4: { label: "Video", color: "#2d6e9a" },
+    mov: { label: "Video", color: "#2d6e9a" },
+    avi: { label: "Video", color: "#2d6e9a" },
+    pdf: { label: "PDF", color: "#c0392b" },
+    doc: { label: "Document", color: "#2d6e3a" },
+    docx: { label: "Document", color: "#2d6e3a" },
+    txt: { label: "Text", color: "#5c4a30" },
+  };
+  return map[ext] ?? { label: ext.toUpperCase(), color: C.inkSoft };
+};
 
 export const ManageMediaPage = () => {
   const navigate = useNavigate();
@@ -67,24 +98,23 @@ export const ManageMediaPage = () => {
     }
   };
 
-  // تحديد الأيقونة المناسبة بناءً على امتداد الملف
-  const getFileIcon = (fileName: string) => {
-    const ext = fileName.split(".").pop()?.toLowerCase();
-    if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext || ""))
-      return <ImageIcon size={28} color={C.gold} />;
-    if (["mp4", "avi", "mov"].includes(ext || ""))
-      return <Film size={28} color={C.gold} />;
-    if (["pdf", "doc", "docx", "txt"].includes(ext || ""))
-      return <FileText size={28} color={C.gold} />;
-    return <File size={28} color={C.gold} />;
-  };
-
-  const filteredMedia = mediaList.filter(
+  const filtered = mediaList.filter(
     (m) =>
       !search ||
       m.fileName.toLowerCase().includes(search.toLowerCase()) ||
       m.itemId.toString() === search
   );
+
+  // Stats
+  const imageCount = mediaList.filter((m) =>
+    /\.(jpg|jpeg|png|gif|webp)$/i.test(m.fileName)
+  ).length;
+  const videoCount = mediaList.filter((m) =>
+    /\.(mp4|mov|avi|mkv)$/i.test(m.fileName)
+  ).length;
+  const docCount = mediaList.filter((m) =>
+    /\.(pdf|doc|docx|txt)$/i.test(m.fileName)
+  ).length;
 
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
@@ -127,7 +157,7 @@ export const ManageMediaPage = () => {
             Media Management
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            Manage all uploaded files, images, and documents in the system.
+            View and manage all uploaded files, images, and documents.
           </p>
         </div>
         <button
@@ -155,8 +185,68 @@ export const ManageMediaPage = () => {
         </button>
       </div>
 
-      {/* ── Search Bar ── */}
-      <div style={{ maxWidth: 600, marginBottom: 24 }}>
+      {/* ── Stats row ── */}
+      {!loading && mediaList.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 14,
+            marginBottom: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          {[
+            { label: "Total Files", value: mediaList.length, icon: "🗂" },
+            { label: "Images", value: imageCount, icon: "🖼" },
+            { label: "Videos", value: videoCount, icon: "🎬" },
+            { label: "Documents", value: docCount, icon: "📄" },
+          ].map((s) => (
+            <div
+              key={s.label}
+              style={{
+                background: C.surface,
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 12,
+                padding: "10px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                boxShadow: "0 1px 6px rgba(0,0,0,0.03)",
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{s.icon}</span>
+              <div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.65rem",
+                    color: C.inkSoft,
+                    fontWeight: 700,
+                    letterSpacing: "0.07em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {s.label}
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "1.1rem",
+                    fontWeight: 800,
+                    color: C.ink,
+                    fontFamily: serif,
+                  }}
+                >
+                  {s.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Search bar ── */}
+      <div style={{ marginBottom: 24 }}>
         <div
           style={{
             background: C.surface,
@@ -166,10 +256,11 @@ export const ManageMediaPage = () => {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            maxWidth: 560,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
           }}
         >
-          <Search size={18} color={C.inkSoft} />
+          <Search size={17} color={C.inkSoft} style={{ flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Search by file name or Item ID..."
@@ -181,14 +272,37 @@ export const ManageMediaPage = () => {
               outline: "none",
               background: "transparent",
               fontFamily: sans,
-              fontSize: "0.9rem",
+              fontSize: "0.88rem",
               color: C.ink,
             }}
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: C.inkSoft,
+                fontSize: 18,
+                lineHeight: 1,
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          )}
+          {search && (
+            <span
+              style={{ fontSize: "0.75rem", color: C.inkSoft, flexShrink: 0 }}
+            >
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* ── Media Grid ── */}
+      {/* ── Content ── */}
       {loading ? (
         <div
           style={{
@@ -200,7 +314,7 @@ export const ManageMediaPage = () => {
         >
           Loading media files...
         </div>
-      ) : filteredMedia.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -233,7 +347,7 @@ export const ManageMediaPage = () => {
               margin: "0 0 8px",
             }}
           >
-            No media found
+            {search ? "No files match your search" : "No media files yet"}
           </h3>
           <p
             style={{
@@ -243,62 +357,145 @@ export const ManageMediaPage = () => {
             }}
           >
             {search
-              ? "No files match your search."
-              : "No files have been uploaded to the system yet."}
+              ? "Try different keywords or clear the search."
+              : "Upload your first file to get started."}
           </p>
+          {!search && (
+            <button
+              onClick={() => navigate("/media/new")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                background: C.gold,
+                color: "#fff",
+                border: "none",
+                borderRadius: 999,
+                padding: "11px 24px",
+                fontFamily: sans,
+                fontSize: "0.88rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 3px 12px rgba(200,169,110,0.35)",
+              }}
+            >
+              <Plus size={15} /> Upload File
+            </button>
+          )}
         </div>
       ) : (
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 20,
+            gap: 18,
           }}
         >
-          {filteredMedia.map((media) => (
-            <div
-              key={media.id}
-              style={{
-                background: C.surface,
-                border: `1.5px solid ${C.goldBorder}`,
-                borderRadius: 16,
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow =
-                  "0 8px 24px rgba(200,169,110,0.15)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.03)";
-              }}
-            >
-              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          {filtered.map((media) => {
+            const typeBadge = getFileTypeBadge(media.fileName);
+            return (
+              <div
+                key={media.id}
+                style={{
+                  background: C.surface,
+                  border: `1.5px solid ${C.goldBorder}`,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                  transition:
+                    "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.transform =
+                    "translateY(-4px)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 10px 28px rgba(200,169,110,0.18)";
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    C.gold;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.transform =
+                    "translateY(0)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 2px 10px rgba(0,0,0,0.04)";
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    C.goldBorder;
+                }}
+              >
+                {/* Top strip */}
                 <div
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 12,
+                    height: 72,
                     background: C.goldLight,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    flexShrink: 0,
+                    position: "relative",
+                    borderBottom: `1px solid ${C.goldBorder}`,
                   }}
                 >
-                  {getFileIcon(media.fileName)}
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      background: C.surface,
+                      border: `1.5px solid ${C.goldBorder}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    {getFileIcon(media.fileName)}
+                  </div>
+                  {/* Type badge */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 8,
+                      right: 10,
+                      background: typeBadge.color + "18",
+                      color: typeBadge.color,
+                      border: `1px solid ${typeBadge.color}30`,
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {typeBadge.label}
+                  </span>
+                  {/* Item ID badge */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 8,
+                      left: 10,
+                      background: "rgba(255,255,255,0.85)",
+                      backdropFilter: "blur(4px)",
+                      border: `1px solid ${C.goldBorder}`,
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      fontFamily: "monospace",
+                      color: C.inkSoft,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    Item #{media.itemId}
+                  </span>
                 </div>
-                <div style={{ overflow: "hidden" }}>
+
+                {/* Body */}
+                <div style={{ padding: "14px 16px", flexGrow: 1 }}>
                   <h3
                     style={{
                       fontFamily: serif,
-                      fontSize: "1rem",
+                      fontSize: "0.92rem",
                       fontWeight: 700,
                       color: C.ink,
                       margin: "0 0 4px",
@@ -313,67 +510,91 @@ export const ManageMediaPage = () => {
                   <p
                     style={{
                       margin: 0,
-                      fontSize: "0.75rem",
+                      fontSize: "0.7rem",
                       color: C.inkSoft,
                       fontFamily: "monospace",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
+                    title={media.storagePath}
                   >
-                    Linked to Item #{media.itemId}
+                    {media.storagePath}
                   </p>
                 </div>
-              </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingTop: 16,
-                  borderTop: `1px solid ${C.goldBorder}`,
-                }}
-              >
-                <a
-                  href={api.defaults.baseURL + media.storagePath}
-                  target="_blank"
-                  rel="noreferrer"
+                {/* Footer */}
+                <div
                   style={{
-                    display: "inline-flex",
+                    padding: "12px 16px",
+                    borderTop: `1px solid ${C.goldBorder}`,
+                    display: "flex",
                     alignItems: "center",
-                    gap: 6,
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    color: C.goldDark,
-                    textDecoration: "none",
+                    justifyContent: "space-between",
                   }}
                 >
-                  <ExternalLink size={14} /> View File
-                </a>
+                  <a
+                    href={`${BASE_URL}${media.storagePath}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      color: C.gold,
+                      textDecoration: "none",
+                      transition: "color 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      ((e.currentTarget as HTMLAnchorElement).style.color =
+                        C.goldDark)
+                    }
+                    onMouseLeave={(e) =>
+                      ((e.currentTarget as HTMLAnchorElement).style.color =
+                        C.gold)
+                    }
+                  >
+                    <ExternalLink size={13} /> View File
+                  </a>
 
-                <button
-                  onClick={() => handleDelete(media.id)}
-                  disabled={isDeleting === media.id}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: C.dangerBg,
-                    color: C.danger,
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "6px 12px",
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    cursor: isDeleting === media.id ? "not-allowed" : "pointer",
-                    opacity: isDeleting === media.id ? 0.5 : 1,
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <Trash2 size={14} />{" "}
-                  {isDeleting === media.id ? "..." : "Delete"}
-                </button>
+                  <button
+                    onClick={() => handleDelete(media.id)}
+                    disabled={isDeleting === media.id}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      background: C.dangerBg,
+                      color: C.danger,
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      fontFamily: sans,
+                      cursor:
+                        isDeleting === media.id ? "not-allowed" : "pointer",
+                      opacity: isDeleting === media.id ? 0.5 : 1,
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isDeleting !== media.id)
+                        e.currentTarget.style.background = "#fce8e5";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isDeleting !== media.id)
+                        e.currentTarget.style.background = C.dangerBg;
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    {isDeleting === media.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
