@@ -61,9 +61,14 @@ const NAV_GROUPS = [
         icon: <Library size={17} />,
       },
       {
+        title: "items",
+        path: "/admin/items",
+        icon: <Library size={17} />,
+      },
+      {
         title: "Media",
         path: "/admin/media",
-        icon: <HardDrive size={20} />,
+        icon: <HardDrive size={17} />,
       },
     ],
   },
