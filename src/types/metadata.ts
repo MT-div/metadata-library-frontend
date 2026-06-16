@@ -162,3 +162,7 @@ export interface CreateSystemUserCommand {
   bio?: string | null;
   profilePicturePath?: string | null;
 }
+
+export interface BookmarksResponse {
+  id: number;
+}

@@ -64,6 +64,15 @@ const COVER_COLORS: Record<string, string> = {
   default: "linear-gradient(145deg,#b09070,#6a4a2a)",
 };
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface PendingFilters {
+  tplId: string;
+  yearFrom: string;
+  yearTo: string;
+  languageFilter: string;
+  sortBy: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export const BrowseItemsPage = () => {
   const navigate = useNavigate();
@@ -73,38 +82,60 @@ export const BrowseItemsPage = () => {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
-  // Filters State
+  // ── Instant filters (top bar) ──
   const [search, setSearch] = useState("");
-  const [tplId, setTplId] = useState<string>(location.state?.template ?? "all");
-  const [setId, setSetId] = useState<string>(location.state?.itemSet ?? "all");
-  const [sortBy, setSortBy] = useState("newest");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [topTplId, setTopTplId] = useState<string>(
+    location.state?.template ?? "all"
+  );
+  const [topSetId, setTopSetId] = useState<string>(
+    location.state?.itemSet ?? "all"
+  );
+  const [topSortBy, setTopSortBy] = useState("newest");
   const [catFilter, setCatFilter] = useState("all");
-  const [languageFilter, setLanguageFilter] = useState("all");
+  const [view, setView] = useState<"grid" | "list">("grid");
 
-  // Date Range State
-  const [yearFrom, setYearFrom] = useState<string>("");
-  const [yearTo, setYearTo] = useState<string>("");
+  // ── Applied sidebar filters (only change on Apply click) ──
+  const [appliedFilters, setAppliedFilters] = useState<PendingFilters>({
+    tplId: "all",
+    yearFrom: "",
+    yearTo: "",
+    languageFilter: "all",
+    sortBy: "newest",
+  });
+
+  // ── Pending sidebar filters (change as user interacts) ──
+  const [pendingFilters, setPendingFilters] = useState<PendingFilters>({
+    tplId: "all",
+    yearFrom: "",
+    yearTo: "",
+    languageFilter: "all",
+    sortBy: "newest",
+  });
 
   // Load More State
   const [visibleCount, setVisibleCount] = useState(12);
 
-  // Bookmarks State
-  const [bookmarks, setBookmarks] = useState<number[]>(() => {
-    const savedBookmarks = localStorage.getItem("user_bookmarks");
-    return savedBookmarks ? JSON.parse(savedBookmarks) : [];
-  });
+  // Bookmarks State — loaded from API
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
 
   useEffect(() => {
     Promise.all([
       api.get("/api/items").then((r) => r.data),
       api.get("/api/resource-templates").then((r) => r.data),
       api.get("/api/item-sets").then((r) => r.data),
+      api.get("/api/bookmarks").then((r) => r.data),
     ])
-      .then(([i, t, s]) => {
+      .then(([i, t, s, b]) => {
         setItems(i);
         setTemplates(t);
         setItemSets(s);
+        // normalise: accept array of ids or array of objects with id field
+        const ids: number[] = Array.isArray(b)
+          ? b.map((x: number | { id: number }) =>
+              typeof x === "number" ? x : Number(x.id)
+            )
+          : [];
+        setBookmarks(ids);
         setLoading(false);
       })
       .catch((err) => {
@@ -117,7 +148,7 @@ export const BrowseItemsPage = () => {
     e.preventDefault();
     const isFavorited = bookmarks.includes(itemId);
 
-    // Optimistic UI Update
+    // Optimistic UI update
     setBookmarks((prev) =>
       isFavorited ? prev.filter((id) => id !== itemId) : [...prev, itemId]
     );
@@ -130,9 +161,9 @@ export const BrowseItemsPage = () => {
       }
     } catch (error) {
       console.error("Failed to toggle bookmark", error);
-      // Revert UI on failure
+      // Revert on failure
       setBookmarks((prev) =>
-        !isFavorited ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+        isFavorited ? [...prev, itemId] : prev.filter((id) => id !== itemId)
       );
     }
   };
@@ -181,7 +212,6 @@ export const BrowseItemsPage = () => {
       searchString.includes("video")
     )
       return "digital";
-
     return "other";
   };
 
@@ -194,7 +224,16 @@ export const BrowseItemsPage = () => {
     )
   );
 
+  // ── Apply sidebar filters ──
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...pendingFilters });
+    setVisibleCount(12);
+  };
+
   // ── Filtering Logic ──
+  // Merge: top-bar filters are instant; sidebar filters use appliedFilters
+  const effectiveTplId = topTplId !== "all" ? topTplId : appliedFilters.tplId;
+
   let filtered = items.filter((item) => {
     const matchSearch =
       !search ||
@@ -203,38 +242,47 @@ export const BrowseItemsPage = () => {
       ) ||
       item.id.toString() === search;
 
-    const matchTpl = tplId === "all" || item.templateId?.toString() === tplId;
+    const matchTpl =
+      effectiveTplId === "all" ||
+      item.templateId?.toString() === effectiveTplId;
 
     let matchSet = true;
-    if (setId !== "all") {
-      const s = itemSets.find((s) => s.id.toString() === setId);
+    if (topSetId !== "all") {
+      const s = itemSets.find((s) => s.id.toString() === topSetId);
       matchSet = s?.items?.some((i) => i.id === item.id) ?? false;
     }
 
     const matchCat =
       catFilter === "all" || determineCategory(item) === catFilter;
+
     const matchLang =
-      languageFilter === "all" ||
-      item.metadataValues.some((v) => v.language === languageFilter);
+      appliedFilters.languageFilter === "all" ||
+      item.metadataValues.some(
+        (v) => v.language === appliedFilters.languageFilter
+      );
 
     let matchDate = true;
     const itemYear = extractYear(item);
-    if (yearFrom && itemYear)
-      matchDate = matchDate && itemYear >= parseInt(yearFrom);
-    if (yearTo && itemYear)
-      matchDate = matchDate && itemYear <= parseInt(yearTo);
-    if ((yearFrom || yearTo) && !itemYear) matchDate = false;
+    if (appliedFilters.yearFrom && itemYear)
+      matchDate = matchDate && itemYear >= parseInt(appliedFilters.yearFrom);
+    if (appliedFilters.yearTo && itemYear)
+      matchDate = matchDate && itemYear <= parseInt(appliedFilters.yearTo);
+    if ((appliedFilters.yearFrom || appliedFilters.yearTo) && !itemYear)
+      matchDate = false;
 
     return (
       matchSearch && matchTpl && matchSet && matchCat && matchLang && matchDate
     );
   });
 
-  // ── Sorting Logic ──
+  // ── Sorting: top-bar sortBy takes priority ──
+  const effectiveSortBy =
+    topSortBy !== "newest" ? topSortBy : appliedFilters.sortBy;
+
   filtered = filtered.sort((a, b) => {
-    if (sortBy === "newest") return b.id - a.id;
-    if (sortBy === "oldest") return a.id - b.id;
-    if (sortBy === "title") {
+    if (effectiveSortBy === "newest") return b.id - a.id;
+    if (effectiveSortBy === "oldest") return a.id - b.id;
+    if (effectiveSortBy === "title") {
       const titleA = extract(a, ["title", "عنوان"]) || "";
       const titleB = extract(b, ["title", "عنوان"]) || "";
       return titleA.localeCompare(titleB);
@@ -252,10 +300,6 @@ export const BrowseItemsPage = () => {
         ? items.length
         : items.filter((it) => determineCategory(it) === c.key).length,
   }));
-
-  const handleApplyFilters = () => {
-    setVisibleCount(12); // Reset load more
-  };
 
   return (
     <div
@@ -297,7 +341,7 @@ export const BrowseItemsPage = () => {
         <div
           style={{
             maxWidth: 1280,
-            padding: "0  48px",
+            padding: "0 48px",
             margin: "0 auto",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -468,10 +512,11 @@ export const BrowseItemsPage = () => {
             />
           </div>
 
+          {/* Instant: All Types */}
           <Select
-            value={tplId}
+            value={topTplId}
             onChange={(v) => {
-              setTplId(v);
+              setTopTplId(v);
               setVisibleCount(12);
             }}
           >
@@ -483,10 +528,11 @@ export const BrowseItemsPage = () => {
             ))}
           </Select>
 
+          {/* Instant: All Collections */}
           <Select
-            value={setId}
+            value={topSetId}
             onChange={(v) => {
-              setSetId(v);
+              setTopSetId(v);
               setVisibleCount(12);
             }}
           >
@@ -498,16 +544,17 @@ export const BrowseItemsPage = () => {
             ))}
           </Select>
 
+          {/* Instant: Sort */}
           <Select
-            value={sortBy}
+            value={topSortBy}
             onChange={(v) => {
-              setSortBy(v);
+              setTopSortBy(v);
               setVisibleCount(12);
             }}
           >
             <option value="newest">Date Added</option>
             <option value="title">Title A–Z</option>
-            <option value="rating">Top Rated</option>
+            <option value="oldest">Oldest First</option>
           </Select>
 
           <div
@@ -656,7 +703,6 @@ export const BrowseItemsPage = () => {
               </p>
             </div>
           ) : view === "grid" ? (
-            /* ── GRID VIEW ── */
             <>
               <div
                 style={{
@@ -669,18 +715,18 @@ export const BrowseItemsPage = () => {
                   const title =
                     extract(item, ["عنوان", "Title"]) ?? `Untitled #${item.id}`;
                   const author =
-                    extract(item, ["مؤلف", "كاتب", "Author"]) ?? "Unknown";
+                    extract(item, ["مؤلف", "كاتب", "Author", "Creator"]) ??
+                    "Unknown";
                   const year = extractYear(item) ?? "—";
                   const catKey = determineCategory(item);
                   const badgeConfig =
                     CAT_CONFIG.find((c) => c.key === catKey) || CAT_CONFIG[0];
-
                   const coverGrad =
                     COVER_COLORS[catKey] ?? COVER_COLORS.default;
                   const badgeColor =
                     BADGE_COLORS[catKey] ?? BADGE_COLORS.default;
                   const rating = MOCK_RATING(item.id);
-                  const isFavorited = bookmarks.includes(item.id);
+                  const isFavorited = bookmarks.includes(Number(item.id));
 
                   return (
                     <Link
@@ -714,7 +760,7 @@ export const BrowseItemsPage = () => {
                             "0 2px 12px rgba(0,0,0,0.05)";
                         }}
                       >
-                        {/* Cover image */}
+                        {/* Cover */}
                         <div
                           style={{
                             height: 140,
@@ -723,7 +769,6 @@ export const BrowseItemsPage = () => {
                             padding: 10,
                           }}
                         >
-                          {/* Type badge */}
                           <span
                             style={{
                               position: "absolute",
@@ -744,9 +789,8 @@ export const BrowseItemsPage = () => {
                             {badgeConfig.label}
                           </span>
 
-                          {/* Favorites Heart */}
                           <button
-                            onClick={(e) => toggleBookmark(e, item.id)}
+                            onClick={(e) => toggleBookmark(e, Number(item.id))}
                             style={{
                               position: "absolute",
                               top: 8,
@@ -863,7 +907,6 @@ export const BrowseItemsPage = () => {
                 })}
               </div>
 
-              {/* Load More Button */}
               {hasMore && (
                 <div
                   style={{
@@ -1096,11 +1139,8 @@ export const BrowseItemsPage = () => {
 
           <FilterLabel>Item Type</FilterLabel>
           <SelectFull
-            value={tplId}
-            onChange={(v) => {
-              setTplId(v);
-              setVisibleCount(12);
-            }}
+            value={pendingFilters.tplId}
+            onChange={(v) => setPendingFilters((p) => ({ ...p, tplId: v }))}
           >
             <option value="all">All Types</option>
             {templates.map((t) => (
@@ -1112,17 +1152,15 @@ export const BrowseItemsPage = () => {
 
           <div style={{ height: 18 }} />
 
-          {/* Date Range Inputs */}
           <FilterLabel>Publication Year</FilterLabel>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="number"
               placeholder="From"
-              value={yearFrom}
-              onChange={(e) => {
-                setYearFrom(e.target.value);
-                setVisibleCount(12);
-              }}
+              value={pendingFilters.yearFrom}
+              onChange={(e) =>
+                setPendingFilters((p) => ({ ...p, yearFrom: e.target.value }))
+              }
               style={{
                 width: "100%",
                 padding: "8px 10px",
@@ -1139,11 +1177,10 @@ export const BrowseItemsPage = () => {
             <input
               type="number"
               placeholder="To"
-              value={yearTo}
-              onChange={(e) => {
-                setYearTo(e.target.value);
-                setVisibleCount(12);
-              }}
+              value={pendingFilters.yearTo}
+              onChange={(e) =>
+                setPendingFilters((p) => ({ ...p, yearTo: e.target.value }))
+              }
               style={{
                 width: "100%",
                 padding: "8px 10px",
@@ -1160,14 +1197,12 @@ export const BrowseItemsPage = () => {
 
           <div style={{ height: 18 }} />
 
-          {/* Dynamic Language Filter */}
           <FilterLabel>Language</FilterLabel>
           <SelectFull
-            value={languageFilter}
-            onChange={(v) => {
-              setLanguageFilter(v);
-              setVisibleCount(12);
-            }}
+            value={pendingFilters.languageFilter}
+            onChange={(v) =>
+              setPendingFilters((p) => ({ ...p, languageFilter: v }))
+            }
           >
             <option value="all">All Languages</option>
             {availableLanguages.map((lang) => (
@@ -1181,11 +1216,8 @@ export const BrowseItemsPage = () => {
 
           <FilterLabel>Sort By</FilterLabel>
           <SelectFull
-            value={sortBy}
-            onChange={(v) => {
-              setSortBy(v);
-              setVisibleCount(12);
-            }}
+            value={pendingFilters.sortBy}
+            onChange={(v) => setPendingFilters((p) => ({ ...p, sortBy: v }))}
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -1194,7 +1226,6 @@ export const BrowseItemsPage = () => {
 
           <div style={{ height: 20 }} />
 
-          {/* Apply Filters Button */}
           <button
             onClick={handleApplyFilters}
             style={{

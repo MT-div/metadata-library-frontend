@@ -11,6 +11,7 @@ import { BrowseItemsPage } from "./features/items/BrowseItemsPage";
 import { BrowseItemSetsPage } from "./features/itemSets/BrowseItemSetsPage";
 import { ItemDetailsPage } from "./features/items/ItemDetailsPage";
 import { LoginPage } from "./features/auth/LoginPage"; // <-- صفحة الدخول
+import { FavoritePage } from "./features/items/FavoritePage";
 
 // صفحات الإدارة
 import { ManageMetadataPage } from "./features/admin/ManageMetadataPage";
@@ -37,6 +38,8 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<WelcomePage />} />
           <Route path="browse" element={<BrowseItemsPage />} />
+          <Route path="favorite" element={<FavoritePage />} />
+
           <Route path="items/:id" element={<ItemDetailsPage />} />
           <Route path="itemsets" element={<BrowseItemSetsPage />} />
           <Route path="/login" element={<LoginPage />} />
