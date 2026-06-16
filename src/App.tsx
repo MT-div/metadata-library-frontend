@@ -27,6 +27,7 @@ import { ManageMediaPage } from "./features/admin/ManageMediaPage";
 import { ManageItemsPage } from "./features/admin/ManageItemsPage";
 import { ManageUsersPage } from "./features/admin/ManageUsersPage";
 import { CreateUserPage } from "./features/admin/CreateUserPage";
+import { RegisterPage } from "./features/auth/RegisterPage";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="items/:id" element={<ItemDetailsPage />} />
           <Route path="itemsets" element={<BrowseItemSetsPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
 
         {/* صفحة تسجيل الدخول (مستقلة بدون Layout أو يمكن وضعها في MainLayout) */}

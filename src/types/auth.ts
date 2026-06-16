@@ -1,8 +1,13 @@
-// src/types/auth.ts
-
 export interface LoginRequest {
   email: string;
-  password?: string; // اختياري في الفرونت اند لأننا قد نستخدم جوجل
+  password?: string;
+}
+
+export interface RegisterRequest {
+  userName: string;
+  email: string;
+  password: string;
+  fullName: string;
 }
 
 export interface AuthResponse {
@@ -10,5 +15,3 @@ export interface AuthResponse {
   email: string;
   token: string;
 }
-
-// يمكننا إضافة الباقي (Register, Google) لاحقاً عند بناء شاشاتهم

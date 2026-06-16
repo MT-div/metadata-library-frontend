@@ -9,6 +9,8 @@ import { AxiosError } from "axios";
 import vasePng from "../../assets/icons/vase.png";
 import backVase from "../../assets/icons/backVase.png";
 import libraryHero from "../../assets/images/libraryHero6.png";
+import { GoogleLogin } from "@react-oauth/google";
+import type { CredentialResponse } from "@react-oauth/google";
 
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
@@ -151,7 +153,31 @@ export const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse | null
+  ) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      // نرسل الـ idToken للباك اند
+      if (!credentialResponse || !credentialResponse.credential) {
+        throw new Error("Missing credential from Google response");
+      }
+      const response = await api.post<AuthResponse>("/api/Auth/login-google", {
+        idToken: credentialResponse.credential,
+      });
+      login(response.data);
+      navigate("/admin/metadata");
+    } catch (err: unknown) {
+      if (err instanceof AxiosError && err.response) {
+        setError(err.response.data || "Google login failed.");
+      } else {
+        setError("Network error. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // ─── نفس الـ wrapper بالضبط من WelcomePage ───────────────────────────────
   return (
     <div
@@ -652,6 +678,7 @@ export const LoginPage = () => {
             </div>
 
             {/* Social — نفس زر "Explore Features" بالضبط */}
+            {/* Social */}
             <div
               style={{
                 display: "flex",
@@ -659,45 +686,34 @@ export const LoginPage = () => {
                 alignItems: "center",
                 flexWrap: "wrap",
                 marginBottom: 24,
+                justifyContent: "center",
               }}
             >
-              <button
-                type="button"
-                onClick={() => alert("سيتم تفعيل Google Auth لاحقاً")}
+              {/* الزر الرسمي لجوجل */}
+              <div
                 style={{
                   flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
+                  display: "flex",
                   justifyContent: "center",
-                  gap: 8,
-                  background: "transparent",
-                  color: "#3d2b0e",
-                  border: "2px solid #c8a96e",
-                  borderRadius: 999,
-                  padding: "13px 28px",
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  fontFamily: "sans-serif",
-                  cursor: "pointer",
-                  transition: "background 0.2s",
+                  minWidth: 200,
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f0e8d8")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
               >
-                <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google"
-                  style={{ width: 18, height: 18 }}
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() =>
+                    setError("Google Sign-In was cancelled or failed.")
+                  }
+                  theme="outline"
+                  size="large"
+                  text="signin_with"
+                  shape="pill"
                 />
-                Google
-              </button>
+              </div>
+
+              {/* زر مايكروسوفت كما هو */}
               <button
                 type="button"
-                onClick={() => alert("سيتم تفعيل Microsoft Auth لاحقاً")}
+                onClick={() => alert("Microsoft Auth coming soon")}
                 style={{
                   flex: 1,
                   display: "inline-flex",
@@ -708,12 +724,13 @@ export const LoginPage = () => {
                   color: "#3d2b0e",
                   border: "2px solid #c8a96e",
                   borderRadius: 999,
-                  padding: "13px 28px",
+                  padding: "8px 28px",
                   fontSize: "0.95rem",
                   fontWeight: 600,
                   fontFamily: "sans-serif",
                   cursor: "pointer",
                   transition: "background 0.2s",
+                  minWidth: 200,
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.background = "#f0e8d8")
@@ -746,6 +763,7 @@ export const LoginPage = () => {
                 style={{ color: "#c8a96e", fontWeight: 600, cursor: "pointer" }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#a07840")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#c8a96e")}
+                onClick={() => navigate("/register")}
               >
                 Create one
               </span>
