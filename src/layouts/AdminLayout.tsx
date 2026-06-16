@@ -6,7 +6,7 @@ import {
   LayoutTemplate,
   Library,
   FilePlus,
-  UploadCloud,
+  // UploadCloud,
   Menu,
   X,
   LogOut,
@@ -78,17 +78,17 @@ const NAV_GROUPS = [
       },
     ],
   },
-  {
-    label: "Content",
-    links: [
-      { title: "Add Item", path: "/items/new", icon: <FilePlus size={17} /> },
-      {
-        title: "Upload Media",
-        path: "/media/new",
-        icon: <UploadCloud size={17} />,
-      },
-    ],
-  },
+  // {
+  //   label: "Content",
+  //   links: [
+  //     { title: "Add Item", path: "/items/new", icon: <FilePlus size={17} /> },
+  //     {
+  //       title: "Upload Media",
+  //       path: "/media/new",
+  //       icon: <UploadCloud size={17} />,
+  //     },
+  //   ],
+  // },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
