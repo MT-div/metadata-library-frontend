@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import type { UserResponse } from "../../types/metadata";
-import { useNavigate } from "react-router-dom";
 import {
   Users,
   Shield,
@@ -14,6 +14,8 @@ import {
   X,
   Save,
   BookOpen,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
 const C = {
@@ -29,29 +31,45 @@ const C = {
   inkSoft: "#9a8060",
   danger: "#c0392b",
   dangerBg: "#fdf0ee",
+  success: "#2d6e3a",
+  successBg: "#edf7ee",
 };
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
-// الأدوار المتاحة في النظام (طابقها مع C# SystemRoles)
+// الأدوار المتاحة في النظام
 const AVAILABLE_ROLES = ["Admin", "Librarian", "User", "Guest"];
+
+// تمديد الواجهة لتشمل حالة الحذف
+interface ExtendedUserResponse extends UserResponse {
+  isDeleted?: boolean;
+}
 
 export const ManageUsersPage = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<UserResponse[]>([]);
+  const [users, setUsers] = useState<ExtendedUserResponse[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Filters State ──
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "active" | "deleted" | "all"
+  >("active");
+
   const [isProcessing, setIsProcessing] = useState<number | null>(null);
 
-  // ── حالات النافذة المنبثقة لتعديل الأدوار ──
+  // ── Role Modal State ──
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
+  const [editingUser, setEditingUser] = useState<ExtendedUserResponse | null>(
+    null
+  );
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   useEffect(() => {
+    // 👇 استخدام الـ API الذي يجلب الكل بما فيهم المحذوفين
     api
-      .get<UserResponse[]>("/api/users")
+      .get<ExtendedUserResponse[]>("/api/users/withDeleted")
       .then((res) => {
         setUsers(res.data);
       })
@@ -62,7 +80,7 @@ export const ManageUsersPage = () => {
   const handleDelete = async (id: number) => {
     if (
       !confirm(
-        "هل أنت متأكد من حذف هذا المستخدم نهائياً؟ لا يمكن التراجع عن هذا الإجراء."
+        "هل أنت متأكد من حذف هذا المستخدم؟ (سيتم إيقاف الحساب / Soft Delete)"
       )
     )
       return;
@@ -70,7 +88,9 @@ export const ManageUsersPage = () => {
     setIsProcessing(id);
     try {
       await api.delete(`/api/users/${id}`);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, isDeleted: true } : u))
+      );
     } catch (error) {
       console.error("Error deleting user:", error);
       alert("حدث خطأ أثناء الحذف.");
@@ -79,27 +99,42 @@ export const ManageUsersPage = () => {
     }
   };
 
-  // فتح نافذة تعديل الأدوار
-  const openRoleModal = (user: UserResponse) => {
+  const handleRestore = async (id: number) => {
+    if (!confirm("هل تريد استرجاع حساب هذا المستخدم؟")) return;
+
+    setIsProcessing(id);
+    try {
+      // إرسال { id } في ה- Body كما تعودنا في كل عمليات ה- Undelete
+      await api.put(`/api/users/Undelet/${id}`, { id });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, isDeleted: false } : u))
+      );
+    } catch (error) {
+      console.error("Error restoring user:", error);
+      alert("حدث خطأ أثناء الاسترجاع.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const openRoleModal = (user: ExtendedUserResponse) => {
+    if (user.isDeleted) return;
     setEditingUser(user);
     setSelectedRoles(user.roles || []);
     setIsRoleModalOpen(true);
   };
 
-  // تغيير حالة الـ Checkbox للأدوار
   const toggleRole = (role: string) => {
     setSelectedRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
   };
 
-  // إرسال طلب PUT لتحديث الأدوار
   const submitRoleChange = async () => {
     if (!editingUser) return;
     setIsProcessing(editingUser.id);
 
     try {
-      // بناء ה- Command ليتطابق مع الـ Swagger تماماً
       const command = {
         id: editingUser.id,
         roleNames: selectedRoles,
@@ -108,7 +143,6 @@ export const ManageUsersPage = () => {
       const res = await api.put(`/api/users/${editingUser.id}/roles`, command);
 
       if (res.status === 200 || res.status === 204) {
-        // تحديث حالة الواجهة لتظهر الأدوار الجديدة فوراً
         setUsers((prev) =>
           prev.map((u) =>
             u.id === editingUser.id ? { ...u, roles: selectedRoles } : u
@@ -124,15 +158,18 @@ export const ManageUsersPage = () => {
     }
   };
 
-  // إحصائيات سريعة
-  const totalUsers = users.length;
-  const adminCount = users.filter((u) => u.roles?.includes("Admin")).length;
-  const librarianCount = users.filter((u) =>
+  // ── الإحصائيات (تُحسب للمستخدمين النشطين فقط) ──
+  const activeUsers = users.filter((u) => !u.isDeleted);
+  const totalUsers = activeUsers.length;
+  const adminCount = activeUsers.filter((u) =>
+    u.roles?.includes("Admin")
+  ).length;
+  const librarianCount = activeUsers.filter((u) =>
     u.roles?.includes("Librarian")
   ).length;
   const normalCount = totalUsers - adminCount - librarianCount;
 
-  // تطبيق الفلاتر
+  // ── الفلترة ──
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -141,7 +178,11 @@ export const ManageUsersPage = () => {
     const matchesRole =
       roleFilter === "all" || (u.roles && u.roles.includes(roleFilter));
 
-    return matchesSearch && matchesRole;
+    let matchesStatus = true;
+    if (statusFilter === "active") matchesStatus = !u.isDeleted;
+    if (statusFilter === "deleted") matchesStatus = u.isDeleted === true;
+
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   return (
@@ -185,7 +226,7 @@ export const ManageUsersPage = () => {
             User Management
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            Manage staff, researchers, and system roles.
+            Manage staff, researchers, system roles, and account statuses.
           </p>
         </div>
         <button
@@ -219,7 +260,7 @@ export const ManageUsersPage = () => {
       >
         {[
           {
-            label: "Total Users",
+            label: "Active Users",
             value: totalUsers,
             icon: <Users size={22} color={C.goldDark} />,
           },
@@ -288,61 +329,135 @@ export const ManageUsersPage = () => {
 
       {/* ── Search & Filters ── */}
       <div
-        style={{
-          background: C.surface,
-          border: `1.5px solid ${C.goldBorder}`,
-          borderRadius: 14,
-          padding: "12px 18px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 24,
-          boxShadow: "0 2px 12px rgba(0,0,0,0.02)",
-        }}
+        style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}
       >
-        <Search size={18} color={C.inkSoft} />
-        <input
-          type="text"
-          placeholder="Search users by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            fontFamily: sans,
-            fontSize: "0.9rem",
-            color: C.ink,
-          }}
-        />
+        {/* Search */}
         <div
           style={{
-            width: "1px",
-            height: "24px",
-            background: C.goldBorder,
-            margin: "0 8px",
-          }}
-        ></div>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          style={{
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            color: C.inkMid,
-            fontWeight: 600,
-            cursor: "pointer",
+            background: C.surface,
+            border: `1.5px solid ${C.goldBorder}`,
+            borderRadius: 12,
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flex: "1 1 300px",
+            maxWidth: 480,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
           }}
         >
-          <option value="all">All Roles</option>
-          <option value="Admin">Admins Only</option>
-          <option value="Librarian">Librarians Only</option>
-          <option value="User">Users Only</option>
-        </select>
+          <Search size={17} color={C.inkSoft} style={{ flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search users by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              flex: 1,
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              fontFamily: sans,
+              fontSize: "0.88rem",
+              color: C.ink,
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: C.inkSoft,
+                fontSize: 18,
+                lineHeight: 1,
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Role Filter */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            style={{
+              appearance: "none",
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 12,
+              padding: "10px 36px 10px 14px",
+              fontFamily: sans,
+              fontSize: "0.85rem",
+              color: C.inkMid,
+              outline: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            }}
+          >
+            <option value="all">All Roles</option>
+            <option value="Admin">Admins Only</option>
+            <option value="Librarian">Librarians Only</option>
+            <option value="User">Users Only</option>
+          </select>
+          <span
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: C.inkSoft,
+              fontSize: 12,
+            }}
+          >
+            ▾
+          </span>
+        </div>
+
+        {/* Status Filter */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as "all" | "active" | "deleted")
+            }
+            style={{
+              appearance: "none",
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 12,
+              padding: "10px 36px 10px 14px",
+              fontFamily: sans,
+              fontSize: "0.85rem",
+              color: statusFilter === "deleted" ? C.danger : C.inkMid,
+              outline: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            }}
+          >
+            <option value="active">Active Users</option>
+            <option value="deleted">Suspended / Deleted</option>
+            <option value="all">Show All</option>
+          </select>
+          <span
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: C.inkSoft,
+              fontSize: 12,
+            }}
+          >
+            ▾
+          </span>
+        </div>
       </div>
 
       {/* ── Users Table ── */}
@@ -431,6 +546,7 @@ export const ManageUsersPage = () => {
                 {filteredUsers.map((user, idx) => {
                   const isAdmin = user.roles?.includes("Admin");
                   const isLibrarian = user.roles?.includes("Librarian");
+                  const isDeleted = user.isDeleted;
 
                   return (
                     <tr
@@ -441,12 +557,18 @@ export const ManageUsersPage = () => {
                             ? `1px solid ${C.goldBorder}`
                             : "none",
                         transition: "background 0.15s",
+                        background: isDeleted ? "#fafafa" : "transparent",
+                        opacity: isDeleted ? 0.6 : 1,
                       }}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "#fdfaf6")
+                        (e.currentTarget.style.background = isDeleted
+                          ? "#f1f1f1"
+                          : "#fdfaf6")
                       }
                       onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
+                        (e.currentTarget.style.background = isDeleted
+                          ? "#fafafa"
+                          : "transparent")
                       }
                     >
                       {/* User Info (Avatar + Name) */}
@@ -458,41 +580,63 @@ export const ManageUsersPage = () => {
                           gap: 12,
                         }}
                       >
-                        {user.profilePicturePath ? (
-                          <img
-                            src={api.defaults.baseURL + user.profilePicturePath}
-                            alt="avatar"
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              objectFit: "cover",
-                              border: `1px solid ${C.goldBorder}`,
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              background: C.goldLight,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: C.goldDark,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {user.fullName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        <div style={{ position: "relative" }}>
+                          {user.profilePicturePath ? (
+                            <img
+                              src={
+                                api.defaults.baseURL + user.profilePicturePath
+                              }
+                              alt="avatar"
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                border: `1px solid ${C.goldBorder}`,
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                background: C.goldLight,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: C.goldDark,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {user.fullName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {isDeleted && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                bottom: -2,
+                                right: -2,
+                                background: C.surface,
+                                borderRadius: "50%",
+                              }}
+                            >
+                              <AlertCircle
+                                size={14}
+                                color={C.danger}
+                                fill={C.dangerBg}
+                              />
+                            </div>
+                          )}
+                        </div>
                         <span
                           style={{
                             fontFamily: serif,
                             fontWeight: 700,
                             fontSize: "0.95rem",
-                            color: C.ink,
+                            color: isDeleted ? C.inkSoft : C.ink,
+                            textDecoration: isDeleted ? "line-through" : "none",
                           }}
                         >
                           {user.fullName}
@@ -576,90 +720,113 @@ export const ManageUsersPage = () => {
                           <button
                             title="Manage Roles"
                             onClick={() => openRoleModal(user)}
+                            disabled={isDeleted}
                             style={{
                               width: 32,
                               height: 32,
                               borderRadius: 8,
-                              background: C.goldLight,
+                              background: isDeleted ? "#e0e0e0" : C.goldLight,
                               border: "none",
-                              color: C.goldDark,
+                              color: isDeleted ? "#9e9e9e" : C.goldDark,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              cursor: "pointer",
+                              cursor: isDeleted ? "not-allowed" : "pointer",
                               transition: "opacity 0.15s",
                             }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.opacity = "0.75")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.opacity = "1")
-                            }
+                            onMouseEnter={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "0.75";
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "1";
+                            }}
                           >
                             <Shield size={15} />
                           </button>
 
                           <button
                             title="Edit Profile"
-                            onClick={() =>
-                              alert(
-                                "تعديل الملف الشخصي (يحتاج Endpoint PUT /api/users/{id})"
-                              )
-                            }
+                            disabled={isDeleted}
+                            onClick={() => alert("تعديل الملف الشخصي")}
                             style={{
                               width: 32,
                               height: 32,
                               borderRadius: 8,
-                              background: C.goldLight,
+                              background: isDeleted ? "#e0e0e0" : C.goldLight,
                               border: "none",
-                              color: C.goldDark,
+                              color: isDeleted ? "#9e9e9e" : C.goldDark,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              cursor: "pointer",
+                              cursor: isDeleted ? "not-allowed" : "pointer",
                               transition: "opacity 0.15s",
                             }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.opacity = "0.75")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.opacity = "1")
-                            }
+                            onMouseEnter={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "0.75";
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "1";
+                            }}
                           >
                             <Edit size={15} />
                           </button>
 
-                          <button
-                            title="Delete User"
-                            onClick={() => handleDelete(user.id)}
-                            disabled={isProcessing === user.id || isAdmin}
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 8,
-                              background: C.dangerBg,
-                              border: "none",
-                              color: C.danger,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor:
-                                isProcessing === user.id || isAdmin
-                                  ? "not-allowed"
-                                  : "pointer",
-                              transition: "opacity 0.15s",
-                              opacity:
-                                isProcessing === user.id || isAdmin ? 0.5 : 1,
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.opacity = "0.75")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.opacity = "1")
-                            }
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {isDeleted ? (
+                            <button
+                              title="Restore User"
+                              onClick={() => handleRestore(user.id)}
+                              disabled={isProcessing === user.id}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                background: C.successBg,
+                                border: "none",
+                                color: C.success,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor:
+                                  isProcessing === user.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                transition: "opacity 0.15s",
+                                opacity: isProcessing === user.id ? 0.5 : 1,
+                              }}
+                            >
+                              <RefreshCw size={15} />
+                            </button>
+                          ) : (
+                            <button
+                              title="Suspend User"
+                              onClick={() => handleDelete(user.id)}
+                              disabled={isProcessing === user.id || isAdmin}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                background: C.dangerBg,
+                                border: "none",
+                                color: C.danger,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor:
+                                  isProcessing === user.id || isAdmin
+                                    ? "not-allowed"
+                                    : "pointer",
+                                transition: "opacity 0.15s",
+                                opacity:
+                                  isProcessing === user.id || isAdmin ? 0.5 : 1,
+                              }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -672,7 +839,7 @@ export const ManageUsersPage = () => {
       </div>
 
       {/* ── Role Management Modal ── */}
-      {isRoleModalOpen && editingUser && (
+      {isRoleModalOpen && editingUser && !editingUser.isDeleted && (
         <div
           style={{
             position: "fixed",

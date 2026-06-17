@@ -9,6 +9,8 @@ import {
   Trash2,
   ChevronRight,
   GripVertical,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { api } from "../../services/api";
 
@@ -37,6 +39,10 @@ const C = {
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
+interface ExtendedTemplateResponse extends ResourceTemplateResponse {
+  isDeleted?: boolean;
+}
+
 type EditableProperty = TemplatePropertyRequest & { propertyLabel?: string };
 type PropertyOption = {
   id: number;
@@ -47,19 +53,26 @@ type PropertyOption = {
 
 export const ManageTemplatesPage = () => {
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
+  const [templates, setTemplates] = useState<ExtendedTemplateResponse[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
     null
   );
+
+  // Status Filter State
+  const [filterStatus, setFilterStatus] = useState<
+    "active" | "deleted" | "all"
+  >("active");
+
   const [editableProps, setEditableProps] = useState<EditableProperty[]>([]);
   const [allProperties, setAllProperties] = useState<PropertyOption[]>([]);
   const [propToAdd, setPropToAdd] = useState<number>(0);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isProcessingTpl, setIsProcessingTpl] = useState<number | null>(null);
 
   const selectTemplate = (
     id: number | null,
-    list: ResourceTemplateResponse[] = templates
+    list: ExtendedTemplateResponse[] = templates
   ) => {
     setSelectedTemplateId(id);
     if (!id) {
@@ -84,7 +97,8 @@ export const ManageTemplatesPage = () => {
 
   useEffect(() => {
     Promise.all([
-      api.get("/api/resource-templates").then((r) => r.data),
+      // 👇 استخدام الـ API الجديد الذي يجلب المحذوفة وغير المحذوفة
+      api.get("/api/resource-templates/WithDeleted").then((r) => r.data),
       api.get("/api/properties").then((r) => r.data),
     ])
       .then(([tpls, props]) => {
@@ -96,12 +110,59 @@ export const ManageTemplatesPage = () => {
   }, []);
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const isSelectedTplDeleted = selectedTemplate?.isDeleted === true;
+
+  // ── TEMPLATE ACTIONS (SOFT DELETE & RESTORE) ──
+
+  const handleDeleteTemplate = async (id: number) => {
+    if (
+      !confirm("Are you sure you want to delete this template? (Soft Delete)")
+    )
+      return;
+
+    setIsProcessingTpl(id);
+    try {
+      await api.delete(`/api/resource-templates/${id}`);
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isDeleted: true } : t))
+      );
+
+      if (filterStatus === "active" && selectedTemplateId === id) {
+        setSelectedTemplateId(null);
+      }
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      alert("An error occurred while deleting the template.");
+    } finally {
+      setIsProcessingTpl(null);
+    }
+  };
+
+  const handleRestoreTemplate = async (id: number) => {
+    if (!confirm("Are you sure you want to restore this template?")) return;
+
+    setIsProcessingTpl(id);
+    try {
+      // إرسال { id } لتطابق ה- Command وتجنب خطأ 400
+      await api.put(`/api/resource-templates/Undelet/${id}`, { id: id });
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isDeleted: false } : t))
+      );
+    } catch (error) {
+      console.error("Error restoring template:", error);
+      alert("An error occurred while restoring the template.");
+    } finally {
+      setIsProcessingTpl(null);
+    }
+  };
+
+  // ── EDITOR LOGIC ──
 
   const recalc = (list: EditableProperty[]) =>
     setEditableProps(list.map((p, i) => ({ ...p, displayOrder: i + 1 })));
 
   const handleAdd = () => {
-    if (!propToAdd) return;
+    if (!propToAdd || isSelectedTplDeleted) return;
     if (editableProps.some((p) => p.propertyId === propToAdd)) {
       alert("Property already exists in this template.");
       return;
@@ -120,28 +181,34 @@ export const ManageTemplatesPage = () => {
     setPropToAdd(0);
   };
 
-  const handleRemove = (i: number) =>
+  const handleRemove = (i: number) => {
+    if (isSelectedTplDeleted) return;
     recalc(editableProps.filter((_, idx) => idx !== i));
+  };
+
   const moveUp = (i: number) => {
-    if (i === 0) return;
+    if (i === 0 || isSelectedTplDeleted) return;
     const a = [...editableProps];
     [a[i - 1], a[i]] = [a[i], a[i - 1]];
     recalc(a);
   };
+
   const moveDown = (i: number) => {
-    if (i === editableProps.length - 1) return;
+    if (i === editableProps.length - 1 || isSelectedTplDeleted) return;
     const a = [...editableProps];
     [a[i + 1], a[i]] = [a[i], a[i + 1]];
     recalc(a);
   };
+
   const toggleReq = (i: number) => {
+    if (isSelectedTplDeleted) return;
     const a = [...editableProps];
     a[i].isRequired = !a[i].isRequired;
     setEditableProps(a);
   };
 
   const handleSave = async () => {
-    if (!selectedTemplateId) return;
+    if (!selectedTemplateId || isSelectedTplDeleted) return;
     setIsSaving(true);
     try {
       const command = {
@@ -154,7 +221,6 @@ export const ManageTemplatesPage = () => {
         })),
       };
 
-      // 👇 استخدام api.put مع الرابط الحقيقي
       const res = await api.put(
         `/api/resource-templates/${selectedTemplateId}/properties`,
         command
@@ -164,7 +230,6 @@ export const ManageTemplatesPage = () => {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2500);
       }
-      console.log("UpdateTemplatePropertiesCommand:", command);
     } catch (e) {
       console.error("Save error:", e);
       alert("حدث خطأ أثناء الحفظ. تأكد من الكونسول.");
@@ -172,6 +237,13 @@ export const ManageTemplatesPage = () => {
       setIsSaving(false);
     }
   };
+
+  // ── FILTER TEMPLATES ──
+  const filteredTemplates = templates.filter((tpl) => {
+    if (filterStatus === "active") return !tpl.isDeleted;
+    if (filterStatus === "deleted") return tpl.isDeleted;
+    return true;
+  });
 
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
@@ -251,7 +323,7 @@ export const ManageTemplatesPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "220px 1fr",
+          gridTemplateColumns: "260px 1fr",
           gap: 24,
           alignItems: "start",
         }}
@@ -301,64 +373,141 @@ export const ManageTemplatesPage = () => {
               </span>
             </h2>
           </div>
+
+          {/* Status Filter */}
+          <div
+            style={{
+              padding: "10px 12px",
+              borderBottom: `1px solid ${C.goldBorder}`,
+              background: "#fdfaf6",
+            }}
+          >
+            <select
+              value={filterStatus}
+              onChange={(e) =>
+                setFilterStatus(e.target.value as "active" | "deleted" | "all")
+              }
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 8,
+                border: `1px solid ${C.goldBorder}`,
+                background: C.surface,
+                color: filterStatus === "deleted" ? C.danger : C.inkMid,
+                fontSize: "0.8rem",
+                outline: "none",
+                fontFamily: sans,
+                cursor: "pointer",
+              }}
+            >
+              <option value="active">Active Only</option>
+              <option value="deleted">Deleted (Trash) Only</option>
+              <option value="all">Show All</option>
+            </select>
+          </div>
+
           <div style={{ padding: "10px" }}>
-            {templates.map((tpl) => {
-              const isActive = tpl.id === selectedTemplateId;
-              return (
-                <button
-                  key={tpl.id}
-                  onClick={() => selectTemplate(tpl.id)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "11px 12px",
-                    borderRadius: 10,
-                    marginBottom: 3,
-                    border: `1.5px solid ${isActive ? C.gold : "transparent"}`,
-                    background: isActive ? C.goldLight : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = C.bg;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive)
-                      e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  <div>
-                    <p
+            {filteredTemplates.length === 0 ? (
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.8rem",
+                  color: C.inkSoft,
+                  padding: "20px 0",
+                }}
+              >
+                No templates found.
+              </p>
+            ) : (
+              filteredTemplates.map((tpl) => {
+                const isActive = tpl.id === selectedTemplateId;
+                const isDeleted = tpl.isDeleted;
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => selectTemplate(tpl.id)}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "11px 12px",
+                      borderRadius: 10,
+                      marginBottom: 3,
+                      border: `1.5px solid ${
+                        isActive ? C.gold : "transparent"
+                      }`,
+                      background: isActive ? C.goldLight : "transparent",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      opacity: isDeleted ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive)
+                        e.currentTarget.style.background = isDeleted
+                          ? "#f1f1f1"
+                          : C.bg;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive)
+                        e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div
                       style={{
-                        margin: 0,
-                        fontSize: "0.85rem",
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? C.goldDark : C.inkMid,
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
                     >
-                      {tpl.label}
-                    </p>
-                    <p
-                      style={{
-                        margin: "2px 0 0",
-                        fontSize: "0.68rem",
-                        color: C.inkSoft,
-                      }}
-                    >
-                      {tpl.properties?.length ?? 0} fields
-                    </p>
-                  </div>
-                  <ChevronRight
-                    size={14}
-                    color={isActive ? C.gold : C.inkSoft}
-                    style={{ flexShrink: 0 }}
-                  />
-                </button>
-              );
-            })}
+                      {isDeleted && (
+                        <AlertCircle
+                          size={12}
+                          color={C.danger}
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.85rem",
+                            fontWeight: isActive ? 700 : 500,
+                            color: isDeleted
+                              ? C.inkSoft
+                              : isActive
+                              ? C.goldDark
+                              : C.inkMid,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            textDecoration: isDeleted ? "line-through" : "none",
+                          }}
+                        >
+                          {tpl.label}
+                        </p>
+                        <p
+                          style={{
+                            margin: "2px 0 0",
+                            fontSize: "0.68rem",
+                            color: C.inkSoft,
+                          }}
+                        >
+                          {tpl.properties?.length ?? 0} fields
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight
+                      size={14}
+                      color={isActive ? C.gold : C.inkSoft}
+                      style={{ flexShrink: 0 }}
+                    />
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -371,6 +520,7 @@ export const ManageTemplatesPage = () => {
               borderRadius: 16,
               overflow: "hidden",
               boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              opacity: isSelectedTplDeleted ? 0.8 : 1,
             }}
           >
             {/* Editor header */}
@@ -391,11 +541,27 @@ export const ManageTemplatesPage = () => {
                     fontFamily: serif,
                     fontSize: "1.05rem",
                     fontWeight: 700,
-                    color: C.ink,
+                    color: isSelectedTplDeleted ? C.inkSoft : C.ink,
                     margin: "0 0 3px",
+                    textDecoration: isSelectedTplDeleted
+                      ? "line-through"
+                      : "none",
                   }}
                 >
                   {selectedTemplate.label}
+                  {isSelectedTplDeleted && (
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        color: C.danger,
+                        marginLeft: 8,
+                        textDecoration: "none",
+                        display: "inline-block",
+                      }}
+                    >
+                      (Deleted)
+                    </span>
+                  )}
                 </h2>
                 {selectedTemplate.description && (
                   <p
@@ -406,40 +572,96 @@ export const ManageTemplatesPage = () => {
                 )}
               </div>
 
-              {/* Save button */}
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: saveSuccess ? C.successBg : C.gold,
-                  color: saveSuccess ? C.success : "#fff",
-                  border: saveSuccess
-                    ? `1.5px solid rgba(45,110,58,0.3)`
-                    : "none",
-                  borderRadius: 10,
-                  padding: "10px 22px",
-                  fontFamily: sans,
-                  fontSize: "0.88rem",
-                  fontWeight: 700,
-                  cursor: isSaving ? "not-allowed" : "pointer",
-                  opacity: isSaving ? 0.7 : 1,
-                  transition: "all 0.2s",
-                  boxShadow: saveSuccess
-                    ? "none"
-                    : "0 2px 10px rgba(200,169,110,0.3)",
-                  whiteSpace: "nowrap",
-                }}
+              {/* Actions (Delete/Restore + Save) */}
+              <div
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
               >
-                <Save size={16} />
-                {isSaving
-                  ? "Saving..."
-                  : saveSuccess
-                  ? "✓ Saved!"
-                  : "Save Changes"}
-              </button>
+                {isSelectedTplDeleted ? (
+                  <button
+                    onClick={() => handleRestoreTemplate(selectedTemplate.id)}
+                    disabled={isProcessingTpl === selectedTemplate.id}
+                    title="Restore Template"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      background: C.successBg,
+                      border: "none",
+                      color: C.success,
+                      cursor: "pointer",
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                    disabled={isProcessingTpl === selectedTemplate.id}
+                    title="Delete Template"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      background: C.dangerBg,
+                      border: "none",
+                      color: C.danger,
+                      cursor: "pointer",
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || isSelectedTplDeleted}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: saveSuccess
+                      ? C.successBg
+                      : isSelectedTplDeleted
+                      ? C.goldBorder
+                      : C.gold,
+                    color: saveSuccess ? C.success : "#fff",
+                    border: saveSuccess
+                      ? `1.5px solid rgba(45,110,58,0.3)`
+                      : "none",
+                    borderRadius: 10,
+                    padding: "10px 22px",
+                    fontFamily: sans,
+                    fontSize: "0.88rem",
+                    fontWeight: 700,
+                    cursor:
+                      isSaving || isSelectedTplDeleted
+                        ? "not-allowed"
+                        : "pointer",
+                    opacity: isSaving ? 0.7 : 1,
+                    transition: "all 0.2s",
+                    boxShadow:
+                      saveSuccess || isSelectedTplDeleted
+                        ? "none"
+                        : "0 2px 10px rgba(200,169,110,0.3)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Save size={16} />
+                  {isSaving
+                    ? "Saving..."
+                    : saveSuccess
+                    ? "✓ Saved!"
+                    : "Save Changes"}
+                </button>
+              </div>
             </div>
 
             {/* Add property row */}
@@ -451,6 +673,8 @@ export const ManageTemplatesPage = () => {
                 display: "flex",
                 gap: 10,
                 alignItems: "center",
+                opacity: isSelectedTplDeleted ? 0.6 : 1,
+                pointerEvents: isSelectedTplDeleted ? "none" : "auto",
               }}
             >
               <div style={{ flex: 1, position: "relative" }}>
@@ -496,12 +720,13 @@ export const ManageTemplatesPage = () => {
               </div>
               <button
                 onClick={handleAdd}
-                disabled={!propToAdd}
+                disabled={!propToAdd || isSelectedTplDeleted}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 7,
-                  background: propToAdd ? C.gold : C.goldBorder,
+                  background:
+                    propToAdd && !isSelectedTplDeleted ? C.gold : C.goldBorder,
                   color: "#fff",
                   border: "none",
                   borderRadius: 10,
@@ -509,15 +734,20 @@ export const ManageTemplatesPage = () => {
                   fontFamily: sans,
                   fontSize: "0.85rem",
                   fontWeight: 700,
-                  cursor: propToAdd ? "pointer" : "not-allowed",
+                  cursor:
+                    propToAdd && !isSelectedTplDeleted
+                      ? "pointer"
+                      : "not-allowed",
                   transition: "background 0.15s",
                   whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
-                  if (propToAdd) e.currentTarget.style.background = C.goldDark;
+                  if (propToAdd && !isSelectedTplDeleted)
+                    e.currentTarget.style.background = C.goldDark;
                 }}
                 onMouseLeave={(e) => {
-                  if (propToAdd) e.currentTarget.style.background = C.gold;
+                  if (propToAdd && !isSelectedTplDeleted)
+                    e.currentTarget.style.background = C.gold;
                 }}
               >
                 <Plus size={15} /> Add Field
@@ -525,7 +755,13 @@ export const ManageTemplatesPage = () => {
             </div>
 
             {/* Properties list */}
-            <div style={{ padding: "16px 22px" }}>
+            <div
+              style={{
+                padding: "16px 22px",
+                opacity: isSelectedTplDeleted ? 0.6 : 1,
+                pointerEvents: isSelectedTplDeleted ? "none" : "auto",
+              }}
+            >
               {editableProps.length === 0 ? (
                 <div
                   style={{
@@ -590,16 +826,22 @@ export const ManageTemplatesPage = () => {
                         transition: "box-shadow 0.15s, border-color 0.15s",
                       }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.boxShadow =
-                          "0 2px 12px rgba(200,169,110,0.15)";
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
-                          C.gold;
+                        if (!isSelectedTplDeleted) {
+                          (e.currentTarget as HTMLDivElement).style.boxShadow =
+                            "0 2px 12px rgba(200,169,110,0.15)";
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.borderColor = C.gold;
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.boxShadow =
-                          "none";
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
-                          C.goldBorder;
+                        if (!isSelectedTplDeleted) {
+                          (e.currentTarget as HTMLDivElement).style.boxShadow =
+                            "none";
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.borderColor = C.goldBorder;
+                        }
                       }}
                     >
                       {/* Order number */}
@@ -626,7 +868,10 @@ export const ManageTemplatesPage = () => {
                       <GripVertical
                         size={16}
                         color={C.inkSoft}
-                        style={{ cursor: "grab", flexShrink: 0 }}
+                        style={{
+                          cursor: isSelectedTplDeleted ? "default" : "grab",
+                          flexShrink: 0,
+                        }}
                       />
 
                       {/* Property label */}
@@ -660,7 +905,7 @@ export const ManageTemplatesPage = () => {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          cursor: "pointer",
+                          cursor: isSelectedTplDeleted ? "default" : "pointer",
                           flexShrink: 0,
                         }}
                       >
@@ -673,7 +918,9 @@ export const ManageTemplatesPage = () => {
                             background: prop.isRequired ? C.gold : C.goldBorder,
                             position: "relative",
                             transition: "background 0.2s",
-                            cursor: "pointer",
+                            cursor: isSelectedTplDeleted
+                              ? "default"
+                              : "pointer",
                           }}
                         >
                           <div
@@ -706,13 +953,16 @@ export const ManageTemplatesPage = () => {
                       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                         <MoveBtn
                           onClick={() => moveUp(idx)}
-                          disabled={idx === 0}
+                          disabled={idx === 0 || isSelectedTplDeleted}
                         >
                           <ArrowUp size={13} />
                         </MoveBtn>
                         <MoveBtn
                           onClick={() => moveDown(idx)}
-                          disabled={idx === editableProps.length - 1}
+                          disabled={
+                            idx === editableProps.length - 1 ||
+                            isSelectedTplDeleted
+                          }
                         >
                           <ArrowDown size={13} />
                         </MoveBtn>
@@ -721,26 +971,31 @@ export const ManageTemplatesPage = () => {
                       {/* Remove */}
                       <button
                         onClick={() => handleRemove(idx)}
+                        disabled={isSelectedTplDeleted}
                         style={{
                           width: 30,
                           height: 30,
                           borderRadius: 8,
-                          background: C.dangerBg,
+                          background: isSelectedTplDeleted
+                            ? C.goldLight
+                            : C.dangerBg,
                           border: "none",
-                          color: C.danger,
-                          cursor: "pointer",
+                          color: isSelectedTplDeleted ? C.goldBorder : C.danger,
+                          cursor: isSelectedTplDeleted ? "default" : "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           transition: "opacity 0.15s",
                           flexShrink: 0,
                         }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.opacity = "0.7")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.opacity = "1")
-                        }
+                        onMouseEnter={(e) => {
+                          if (!isSelectedTplDeleted)
+                            e.currentTarget.style.opacity = "0.7";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelectedTplDeleted)
+                            e.currentTarget.style.opacity = "1";
+                        }}
                       >
                         <Trash2 size={14} />
                       </button>

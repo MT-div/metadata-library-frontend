@@ -11,8 +11,11 @@ import {
   Plus,
   Search,
   HardDrive,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { api } from "../../services/api";
+
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -26,12 +29,17 @@ const C = {
   inkSoft: "#9a8060",
   danger: "#c0392b",
   dangerBg: "#fdf0ee",
+  success: "#2d6e3a",
+  successBg: "#edf7ee",
 };
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
-// TODO: replace with your actual backend base URL or env variable
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+
+interface ExtendedMediaResponse extends MediaResponse {
+  isDeleted?: boolean;
+}
 
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
@@ -65,15 +73,17 @@ const getFileTypeBadge = (fileName: string) => {
 
 export const ManageMediaPage = () => {
   const navigate = useNavigate();
-  const [mediaList, setMediaList] = useState<MediaResponse[]>([]);
+  const [mediaList, setMediaList] = useState<ExtendedMediaResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [filterStatus, setFilterStatus] = useState<
+    "active" | "deleted" | "all"
+  >("active");
+  const [isProcessing, setIsProcessing] = useState<number | null>(null);
 
   useEffect(() => {
-    // 💡 ملاحظة: هذا يتطلب وجود GetAllMediaQuery في الـ Backend
     api
-      .get<MediaResponse[]>("/api/media")
+      .get<ExtendedMediaResponse[]>("/api/media/WithDeleted")
       .then((res) => {
         setMediaList(res.data);
       })
@@ -84,35 +94,62 @@ export const ManageMediaPage = () => {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الملف نهائياً؟")) return;
+    if (!confirm("Are you sure you want to delete this file? (Soft Delete)"))
+      return;
 
-    setIsDeleting(id);
+    setIsProcessing(id);
     try {
       await api.delete(`/api/media/${id}`);
-      setMediaList((prev) => prev.filter((m) => m.id !== id));
+      setMediaList((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, isDeleted: true } : m))
+      );
     } catch (error) {
       console.error("Error deleting media:", error);
       alert("حدث خطأ أثناء الحذف.");
     } finally {
-      setIsDeleting(null);
+      setIsProcessing(null);
     }
   };
 
-  const filtered = mediaList.filter(
-    (m) =>
+  const handleRestore = async (id: number) => {
+    if (!confirm("Are you sure you want to restore this file?")) return;
+
+    setIsProcessing(id);
+    try {
+      await api.put(`/api/media/Undelet/${id}`, { id: id });
+      setMediaList((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, isDeleted: false } : m))
+      );
+    } catch (error) {
+      console.error("Error restoring media:", error);
+      alert("حدث خطأ أثناء الاسترجاع.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const filtered = mediaList.filter((m) => {
+    const matchSearch =
       !search ||
       m.fileName.toLowerCase().includes(search.toLowerCase()) ||
-      m.itemId.toString() === search
-  );
+      m.itemId.toString() === search;
 
-  // Stats
-  const imageCount = mediaList.filter((m) =>
+    let matchStatus = true;
+    if (filterStatus === "active") matchStatus = !m.isDeleted;
+    if (filterStatus === "deleted") matchStatus = m.isDeleted === true;
+
+    return matchSearch && matchStatus;
+  });
+
+  // Stats (only for active items)
+  const activeMedia = mediaList.filter((m) => !m.isDeleted);
+  const imageCount = activeMedia.filter((m) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(m.fileName)
   ).length;
-  const videoCount = mediaList.filter((m) =>
+  const videoCount = activeMedia.filter((m) =>
     /\.(mp4|mov|avi|mkv)$/i.test(m.fileName)
   ).length;
-  const docCount = mediaList.filter((m) =>
+  const docCount = activeMedia.filter((m) =>
     /\.(pdf|doc|docx|txt)$/i.test(m.fileName)
   ).length;
 
@@ -157,7 +194,7 @@ export const ManageMediaPage = () => {
             Media Management
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            View and manage all uploaded files, images, and documents.
+            View, delete, and restore all uploaded files, images, and documents.
           </p>
         </div>
         <button
@@ -186,7 +223,7 @@ export const ManageMediaPage = () => {
       </div>
 
       {/* ── Stats row ── */}
-      {!loading && mediaList.length > 0 && (
+      {!loading && activeMedia.length > 0 && (
         <div
           style={{
             display: "flex",
@@ -196,7 +233,7 @@ export const ManageMediaPage = () => {
           }}
         >
           {[
-            { label: "Total Files", value: mediaList.length, icon: "🗂" },
+            { label: "Active Files", value: activeMedia.length, icon: "🗂" },
             { label: "Images", value: imageCount, icon: "🖼" },
             { label: "Videos", value: videoCount, icon: "🎬" },
             { label: "Documents", value: docCount, icon: "📄" },
@@ -245,8 +282,10 @@ export const ManageMediaPage = () => {
         </div>
       )}
 
-      {/* ── Search bar ── */}
-      <div style={{ marginBottom: 24 }}>
+      {/* ── Search & Filter bar ── */}
+      <div
+        style={{ marginBottom: 24, display: "flex", gap: 12, flexWrap: "wrap" }}
+      >
         <div
           style={{
             background: C.surface,
@@ -256,8 +295,9 @@ export const ManageMediaPage = () => {
             display: "flex",
             alignItems: "center",
             gap: 12,
+            flex: "1 1 300px",
             maxWidth: 560,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
           }}
         >
           <Search size={17} color={C.inkSoft} style={{ flexShrink: 0 }} />
@@ -299,6 +339,46 @@ export const ManageMediaPage = () => {
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
           )}
+        </div>
+
+        {/* Status Filter */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={filterStatus}
+            onChange={(e) =>
+              setFilterStatus(e.target.value as "all" | "active" | "deleted")
+            }
+            style={{
+              appearance: "none",
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 12,
+              padding: "10px 36px 10px 14px",
+              fontFamily: sans,
+              fontSize: "0.85rem",
+              color: filterStatus === "deleted" ? C.danger : C.inkMid,
+              outline: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            }}
+          >
+            <option value="active">Active Files Only</option>
+            <option value="deleted">Deleted (Trash) Only</option>
+            <option value="all">Show All Files</option>
+          </select>
+          <span
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: C.inkSoft,
+              fontSize: 12,
+            }}
+          >
+            ▾
+          </span>
         </div>
       </div>
 
@@ -347,7 +427,7 @@ export const ManageMediaPage = () => {
               margin: "0 0 8px",
             }}
           >
-            {search ? "No files match your search" : "No media files yet"}
+            No media found
           </h3>
           <p
             style={{
@@ -357,31 +437,9 @@ export const ManageMediaPage = () => {
             }}
           >
             {search
-              ? "Try different keywords or clear the search."
-              : "Upload your first file to get started."}
+              ? "Try different keywords or filters."
+              : "No files have been uploaded to the system yet."}
           </p>
-          {!search && (
-            <button
-              onClick={() => navigate("/media/new")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                background: C.gold,
-                color: "#fff",
-                border: "none",
-                borderRadius: 999,
-                padding: "11px 24px",
-                fontFamily: sans,
-                fontSize: "0.88rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 3px 12px rgba(200,169,110,0.35)",
-              }}
-            >
-              <Plus size={15} /> Upload File
-            </button>
-          )}
         </div>
       ) : (
         <div
@@ -393,35 +451,39 @@ export const ManageMediaPage = () => {
         >
           {filtered.map((media) => {
             const typeBadge = getFileTypeBadge(media.fileName);
+            const isDeleted = media.isDeleted;
+
             return (
               <div
                 key={media.id}
                 style={{
-                  background: C.surface,
+                  background: isDeleted ? "#fafafa" : C.surface,
                   border: `1.5px solid ${C.goldBorder}`,
                   borderRadius: 16,
-                  overflow: "hidden",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
                   boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
                   transition:
                     "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
-                  display: "flex",
-                  flexDirection: "column",
+                  opacity: isDeleted ? 0.6 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.transform =
-                    "translateY(-4px)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow =
-                    "0 10px 28px rgba(200,169,110,0.18)";
-                  (e.currentTarget as HTMLDivElement).style.borderColor =
-                    C.gold;
+                  if (!isDeleted) {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 10px 28px rgba(200,169,110,0.18)";
+                    e.currentTarget.style.borderColor = C.gold;
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.transform =
-                    "translateY(0)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow =
-                    "0 2px 10px rgba(0,0,0,0.04)";
-                  (e.currentTarget as HTMLDivElement).style.borderColor =
-                    C.goldBorder;
+                  if (!isDeleted) {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 2px 10px rgba(0,0,0,0.04)";
+                    e.currentTarget.style.borderColor = C.goldBorder;
+                  }
                 }}
               >
                 {/* Top strip */}
@@ -484,9 +546,13 @@ export const ManageMediaPage = () => {
                       color: C.inkSoft,
                       padding: "2px 8px",
                       borderRadius: 999,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
                     Item #{media.itemId}
+                    {isDeleted && <AlertCircle size={10} color={C.danger} />}
                   </span>
                 </div>
 
@@ -497,11 +563,12 @@ export const ManageMediaPage = () => {
                       fontFamily: serif,
                       fontSize: "0.92rem",
                       fontWeight: 700,
-                      color: C.ink,
+                      color: isDeleted ? C.inkSoft : C.ink,
                       margin: "0 0 4px",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      textDecoration: isDeleted ? "line-through" : "none",
                     }}
                     title={media.fileName}
                   >
@@ -534,8 +601,8 @@ export const ManageMediaPage = () => {
                   }}
                 >
                   <a
-                    href={`${BASE_URL}${media.storagePath}`}
-                    target="_blank"
+                    href={isDeleted ? "#" : `${BASE_URL}${media.storagePath}`}
+                    target={isDeleted ? "_self" : "_blank"}
                     rel="noreferrer"
                     style={{
                       display: "inline-flex",
@@ -543,54 +610,84 @@ export const ManageMediaPage = () => {
                       gap: 5,
                       fontSize: "0.78rem",
                       fontWeight: 600,
-                      color: C.gold,
+                      color: isDeleted ? C.inkSoft : C.gold,
                       textDecoration: "none",
                       transition: "color 0.15s",
+                      pointerEvents: isDeleted ? "none" : "auto",
                     }}
-                    onMouseEnter={(e) =>
-                      ((e.currentTarget as HTMLAnchorElement).style.color =
-                        C.goldDark)
-                    }
-                    onMouseLeave={(e) =>
-                      ((e.currentTarget as HTMLAnchorElement).style.color =
-                        C.gold)
-                    }
+                    onMouseEnter={(e) => {
+                      if (!isDeleted)
+                        (e.currentTarget as HTMLAnchorElement).style.color =
+                          C.goldDark;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isDeleted)
+                        (e.currentTarget as HTMLAnchorElement).style.color =
+                          C.gold;
+                    }}
                   >
                     <ExternalLink size={13} /> View File
                   </a>
 
-                  <button
-                    onClick={() => handleDelete(media.id)}
-                    disabled={isDeleting === media.id}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 5,
-                      background: C.dangerBg,
-                      color: C.danger,
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 12px",
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                      fontFamily: sans,
-                      cursor:
-                        isDeleting === media.id ? "not-allowed" : "pointer",
-                      opacity: isDeleting === media.id ? 0.5 : 1,
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isDeleting !== media.id)
-                        e.currentTarget.style.background = "#fce8e5";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (isDeleting !== media.id)
-                        e.currentTarget.style.background = C.dangerBg;
-                    }}
-                  >
-                    <Trash2 size={13} />
-                    {isDeleting === media.id ? "Deleting..." : "Delete"}
-                  </button>
+                  {isDeleted ? (
+                    <button
+                      onClick={() => handleRestore(media.id)}
+                      disabled={isProcessing === media.id}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        background: C.successBg,
+                        color: C.success,
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        fontFamily: sans,
+                        cursor:
+                          isProcessing === media.id ? "not-allowed" : "pointer",
+                        opacity: isProcessing === media.id ? 0.5 : 1,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <RefreshCw size={13} />
+                      {isProcessing === media.id ? "..." : "Restore"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(media.id)}
+                      disabled={isProcessing === media.id}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        background: C.dangerBg,
+                        color: C.danger,
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        fontFamily: sans,
+                        cursor:
+                          isProcessing === media.id ? "not-allowed" : "pointer",
+                        opacity: isProcessing === media.id ? 0.5 : 1,
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isProcessing !== media.id)
+                          e.currentTarget.style.background = "#fce8e5";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isProcessing !== media.id)
+                          e.currentTarget.style.background = C.dangerBg;
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      {isProcessing === media.id ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
                 </div>
               </div>
             );

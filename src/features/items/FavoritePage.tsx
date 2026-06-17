@@ -166,7 +166,6 @@ export const FavoritePage = () => {
               height: "100%",
               objectFit: "cover",
               display: "block",
-              opacity: 0.8,
             }}
           />
         </div>

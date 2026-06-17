@@ -13,6 +13,8 @@ import {
   Trash2,
   ExternalLink,
   Archive,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
 const C = {
@@ -28,22 +30,38 @@ const C = {
   inkSoft: "#9a8060",
   danger: "#c0392b",
   dangerBg: "#fdf0ee",
+  success: "#2d6e3a",
+  successBg: "#edf7ee",
 };
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
+// ── Extended ItemResponse to include isDeleted ──
+interface ExtendedItemResponse extends ItemResponse {
+  isDeleted?: boolean;
+}
+
 export const ManageItemsPage = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<ItemResponse[]>([]);
+  const [items, setItems] = useState<ExtendedItemResponse[]>([]);
   const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Filters State ──
   const [search, setSearch] = useState("");
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [filterTpl, setFilterTpl] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "deleted"
+  >("active"); // افتراضياً يعرض النشط
+
+  const [isProcessing, setIsProcessing] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
-      api.get<ItemResponse[]>("/api/items").then((res) => res.data),
+      // 👇 استخدام الـ API الجديد الذي يجلب المحذوفة وغير المحذوفة
+      api
+        .get<ExtendedItemResponse[]>("/api/items/withDeleted")
+        .then((res) => res.data),
       api
         .get<ResourceTemplateResponse[]>("/api/resource-templates")
         .then((res) => res.data),
@@ -57,45 +75,82 @@ export const ManageItemsPage = () => {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("هل أنت متأكد من حذف هذا العنصر؟ (Soft Delete)")) return;
+    if (!confirm("هل أنت متأكد من حذف هذا العنصر؟ (سيتم نقله لسلة المهملات)"))
+      return;
 
-    setIsDeleting(id);
+    setIsProcessing(id);
     try {
       await api.delete(`/api/items/${id}`);
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      // تحديث الحالة محلياً بدلاً من حذفه من المصفوفة
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isDeleted: true } : item
+        )
+      );
     } catch (error) {
       console.error("Error deleting item:", error);
       alert("حدث خطأ أثناء محاولة الحذف.");
     } finally {
-      setIsDeleting(null);
+      setIsProcessing(null);
     }
   };
 
-  const getItemTitle = (item: ItemResponse) =>
+  const handleUndelete = async (id: number) => {
+    if (!confirm("هل تريد استرجاع هذا العنصر؟")) return;
+
+    setIsProcessing(id);
+    try {
+      await api.put(`/api/items/Undelet/${id}`, { id: id });
+      // تحديث الحالة محلياً
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isDeleted: false } : item
+        )
+      );
+    } catch (error) {
+      console.error("Error restoring item:", error);
+      alert("حدث خطأ أثناء محاولة الاسترجاع.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const getItemTitle = (item: ExtendedItemResponse) =>
     item.metadataValues.find(
       (v) =>
-        v.propertyLabel.includes("عنوان") || v.propertyLabel.includes("Title")
+        v.propertyLabel.includes("عنوان") ||
+        v.propertyLabel.toLowerCase().includes("title")
     )?.valueText ?? `Untitled #${item.id}`;
 
-  const getItemAuthor = (item: ItemResponse) =>
+  const getItemAuthor = (item: ExtendedItemResponse) =>
     item.metadataValues.find(
       (v) =>
         v.propertyLabel.includes("مؤلف") ||
         v.propertyLabel.includes("كاتب") ||
-        v.propertyLabel.includes("Author")
+        v.propertyLabel.toLowerCase().includes("author")
     )?.valueText ?? "—";
 
   const filteredItems = items.filter((item) => {
     const title = getItemTitle(item).toLowerCase();
     const author = getItemAuthor(item).toLowerCase();
     const query = search.toLowerCase();
+
+    // 1. Text Search
     const matchSearch =
       title.includes(query) ||
       author.includes(query) ||
       item.id.toString() === query;
+
+    // 2. Template Filter
     const matchTpl =
       filterTpl === "all" || item.templateId?.toString() === filterTpl;
-    return matchSearch && matchTpl;
+
+    // 3. Status Filter (Soft Delete Logic)
+    let matchStatus = true;
+    if (filterStatus === "active") matchStatus = !item.isDeleted;
+    if (filterStatus === "deleted") matchStatus = item.isDeleted === true;
+
+    return matchSearch && matchTpl && matchStatus;
   });
 
   return (
@@ -139,7 +194,7 @@ export const ManageItemsPage = () => {
             Items Management
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            View, edit, and manage all metadata records in the library.
+            View, edit, delete, and restore all metadata records in the library.
           </p>
         </div>
         <button
@@ -260,6 +315,46 @@ export const ManageItemsPage = () => {
             ▾
           </span>
         </div>
+
+        {/* Status Filter (Soft Delete) */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={filterStatus}
+            onChange={(e) =>
+              setFilterStatus(e.target.value as "all" | "active" | "deleted")
+            }
+            style={{
+              appearance: "none",
+              background: C.surface,
+              border: `1.5px solid ${C.goldBorder}`,
+              borderRadius: 12,
+              padding: "10px 36px 10px 14px",
+              fontFamily: sans,
+              fontSize: "0.85rem",
+              color: filterStatus === "deleted" ? C.danger : C.inkMid,
+              outline: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            }}
+          >
+            <option value="active">Active Items Only</option>
+            <option value="deleted">Deleted (Trash) Only</option>
+            <option value="all">Show All Items</option>
+          </select>
+          <span
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: C.inkSoft,
+              fontSize: 12,
+            }}
+          >
+            ▾
+          </span>
+        </div>
       </div>
 
       {/* ── Table card ── */}
@@ -352,7 +447,7 @@ export const ManageItemsPage = () => {
             </p>
             <p style={{ color: C.inkSoft, fontSize: "0.85rem", margin: 0 }}>
               {search
-                ? "Try a different search term."
+                ? "Try a different search term or filter."
                 : "The catalog is currently empty."}
             </p>
           </div>
@@ -402,6 +497,7 @@ export const ManageItemsPage = () => {
                   const tpl = templates.find((t) => t.id === item.templateId);
                   const title = getItemTitle(item);
                   const author = getItemAuthor(item);
+                  const isDeleted = item.isDeleted;
 
                   return (
                     <tr
@@ -412,12 +508,18 @@ export const ManageItemsPage = () => {
                             ? `1px solid ${C.goldBorder}`
                             : "none",
                         transition: "background 0.12s",
+                        background: isDeleted ? "#fafafa" : "transparent",
+                        opacity: isDeleted ? 0.6 : 1, // Visual hint for soft deleted items
                       }}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "#fdfaf6")
+                        (e.currentTarget.style.background = isDeleted
+                          ? "#f1f1f1"
+                          : "#fdfaf6")
                       }
                       onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
+                        (e.currentTarget.style.background = isDeleted
+                          ? "#fafafa"
+                          : "transparent")
                       }
                     >
                       {/* ID */}
@@ -426,10 +528,20 @@ export const ManageItemsPage = () => {
                           style={{
                             fontFamily: "monospace",
                             fontSize: "0.78rem",
-                            color: C.inkSoft,
+                            color: isDeleted ? C.danger : C.inkSoft,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
                           }}
                         >
                           #{item.id}
+                          {isDeleted && (
+                            <AlertCircle
+                              size={12}
+                              aria-label="Deleted Item"
+                              role="img"
+                            />
+                          )}
                         </span>
                       </td>
 
@@ -441,10 +553,11 @@ export const ManageItemsPage = () => {
                             fontFamily: serif,
                             fontWeight: 700,
                             fontSize: "0.92rem",
-                            color: C.ink,
+                            color: isDeleted ? C.inkSoft : C.ink,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
+                            textDecoration: isDeleted ? "line-through" : "none",
                           }}
                           title={title}
                         >
@@ -524,66 +637,104 @@ export const ManageItemsPage = () => {
                             <ExternalLink size={14} />
                           </Link>
 
-                          {/* Edit */}
+                          {/* Edit (Disabled if deleted) */}
                           <button
                             title="Edit Item"
+                            disabled={isDeleted}
                             onClick={() => alert("Edit feature coming soon!")}
                             style={{
                               width: 30,
                               height: 30,
                               borderRadius: 7,
-                              background: C.goldLight,
+                              background: isDeleted ? "#e0e0e0" : C.goldLight,
                               border: "none",
-                              color: C.goldDark,
-                              cursor: "pointer",
+                              color: isDeleted ? "#9e9e9e" : C.goldDark,
+                              cursor: isDeleted ? "not-allowed" : "pointer",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               transition: "opacity 0.15s",
                             }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.opacity = "0.7")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.opacity = "1")
-                            }
+                            onMouseEnter={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "0.7";
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isDeleted)
+                                e.currentTarget.style.opacity = "1";
+                            }}
                           >
                             <Edit size={14} />
                           </button>
 
-                          {/* Delete */}
-                          <button
-                            title="Delete Item"
-                            onClick={() => handleDelete(item.id)}
-                            disabled={isDeleting === item.id}
-                            style={{
-                              width: 30,
-                              height: 30,
-                              borderRadius: 7,
-                              background: C.dangerBg,
-                              border: "none",
-                              color: C.danger,
-                              cursor:
-                                isDeleting === item.id
-                                  ? "not-allowed"
-                                  : "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isDeleting === item.id ? 0.5 : 1,
-                              transition: "opacity 0.15s",
-                            }}
-                            onMouseEnter={(e) => {
-                              if (isDeleting !== item.id)
-                                e.currentTarget.style.opacity = "0.7";
-                            }}
-                            onMouseLeave={(e) => {
-                              if (isDeleting !== item.id)
-                                e.currentTarget.style.opacity = "1";
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {/* Delete OR Restore */}
+                          {isDeleted ? (
+                            <button
+                              title="Restore Item"
+                              onClick={() => handleUndelete(item.id)}
+                              disabled={isProcessing === item.id}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 7,
+                                background: C.successBg,
+                                border: "none",
+                                color: C.success,
+                                cursor:
+                                  isProcessing === item.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isProcessing === item.id ? 0.5 : 1,
+                                transition: "opacity 0.15s",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (isProcessing !== item.id)
+                                  e.currentTarget.style.opacity = "0.7";
+                              }}
+                              onMouseLeave={(e) => {
+                                if (isProcessing !== item.id)
+                                  e.currentTarget.style.opacity = "1";
+                              }}
+                            >
+                              <RefreshCw size={14} />
+                            </button>
+                          ) : (
+                            <button
+                              title="Soft Delete Item"
+                              onClick={() => handleDelete(item.id)}
+                              disabled={isProcessing === item.id}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 7,
+                                background: C.dangerBg,
+                                border: "none",
+                                color: C.danger,
+                                cursor:
+                                  isProcessing === item.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isProcessing === item.id ? 0.5 : 1,
+                                transition: "opacity 0.15s",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (isProcessing !== item.id)
+                                  e.currentTarget.style.opacity = "0.7";
+                              }}
+                              onMouseLeave={(e) => {
+                                if (isProcessing !== item.id)
+                                  e.currentTarget.style.opacity = "1";
+                              }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

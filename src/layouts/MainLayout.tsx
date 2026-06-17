@@ -15,7 +15,6 @@ export const MainLayout = () => {
     { title: "Explore", path: "/browse" },
     { title: "Favorite", path: "/favorite" },
     { title: "Collections", path: "/itemsets" },
-    { title: "About", path: "/about" },
   ];
 
   return (

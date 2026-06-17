@@ -9,16 +9,15 @@ import {
   Trash2,
   ExternalLink,
   ChevronRight,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import type {
   VocabularyResponse,
   PropertyResponse,
 } from "../../types/metadata";
-
-// 👇 1. استيراد Axios (الجاسوس الحقيقي الذي يحمل الـ Token)
 import { api } from "../../services/api";
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -32,57 +31,155 @@ const C = {
   inkSoft: "#9a8060",
   danger: "#c0392b",
   dangerBg: "#fdf0ee",
+  success: "#2d6e3a",
+  successBg: "#edf7ee",
 };
 const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
+interface ExtendedVocab extends VocabularyResponse {
+  isDeleted?: boolean;
+}
+interface ExtendedProp extends PropertyResponse {
+  isDeleted?: boolean;
+}
+
 export const ManageMetadataPage = () => {
   const navigate = useNavigate();
-  const [vocabularies, setVocabularies] = useState<VocabularyResponse[]>([]);
+  const [vocabularies, setVocabularies] = useState<ExtendedVocab[]>([]);
   const [selectedVocabId, setSelectedVocabId] = useState<number>(0);
-  const [properties, setProperties] = useState<PropertyResponse[]>([]);
+  const [properties, setProperties] = useState<ExtendedProp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [propsLoading, setPropsLoading] = useState(false);
+
+  // Status Filters
+  const [vocabFilterStatus, setVocabFilterStatus] = useState<
+    "active" | "deleted" | "all"
+  >("active");
+  const [propFilterStatus, setPropFilterStatus] = useState<
+    "active" | "deleted" | "all"
+  >("active");
+
+  const [isProcessingVocab, setIsProcessingVocab] = useState<number | null>(
+    null
+  );
+  const [isProcessingProp, setIsProcessingProp] = useState<number | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      api
+        .get<ExtendedVocab[]>("/api/vocabularies/WithDeleted")
+        .then((r) => r.data),
+      api
+        .get<ExtendedProp[]>("/api/properties/WithDeleted")
+        .then((r) => r.data),
+    ])
+      .then(([vocabsData, propsData]) => {
+        setVocabularies(vocabsData);
+        setProperties(propsData);
+        if (vocabsData.length > 0) setSelectedVocabId(vocabsData[0].id);
+      })
+      .catch((err) => console.error("Error fetching metadata:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const selectVocab = (id: number) => {
     if (id === selectedVocabId) return;
     setSelectedVocabId(id);
-    setPropsLoading(true);
   };
 
-  // 👇 2. جلب القواميس باستخدام Axios
-  useEffect(() => {
-    api
-      .get<VocabularyResponse[]>("/api/vocabularies")
-      .then((res) => {
-        const data = res.data; // Axios يضع البيانات داخل .data
-        setVocabularies(data);
-        if (data.length > 0) selectVocab(data[0].id);
-      })
-      .catch((err) => console.error("Error fetching vocabularies:", err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // 👇 3. جلب الخصائص باستخدام الرابط الحقيقي من الـ Swagger
-  useEffect(() => {
-    if (!selectedVocabId) return;
-
-    // لاحظ المسار: يطابق /api/properties/by-vocabulary/{vocabularyId}
-    api
-      .get<PropertyResponse[]>(
-        `/api/properties/by-vocabulary/${selectedVocabId}`
-      )
-      .then((res) => {
-        setProperties(res.data);
-      })
-      .catch((err) => console.error("Error fetching properties:", err))
-      .finally(() => setPropsLoading(false));
-  }, [selectedVocabId]);
-
   const selectedVocab = vocabularies.find((v) => v.id === selectedVocabId);
+  const isSelectedVocabDeleted = selectedVocab?.isDeleted;
+
+  // ── VOCABULARY ACTIONS ──
+  const handleDeleteVocab = async (id: number) => {
+    if (
+      !confirm("Are you sure you want to delete this vocabulary? (Soft Delete)")
+    )
+      return;
+    setIsProcessingVocab(id);
+    try {
+      await api.delete(`/api/vocabularies/${id}`);
+      setVocabularies((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, isDeleted: true } : v))
+      );
+      if (vocabFilterStatus === "active" && selectedVocabId === id)
+        setSelectedVocabId(0);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete vocabulary.");
+    } finally {
+      setIsProcessingVocab(null);
+    }
+  };
+
+  const handleRestoreVocab = async (id: number) => {
+    if (!confirm("Restore this vocabulary?")) return;
+    setIsProcessingVocab(id);
+    try {
+      await api.put(`/api/vocabularies/Undelet/${id}`, { id });
+      setVocabularies((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, isDeleted: false } : v))
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Failed to restore vocabulary.");
+    } finally {
+      setIsProcessingVocab(null);
+    }
+  };
+
+  // ── PROPERTY ACTIONS ──
+  const handleDeleteProp = async (id: number) => {
+    if (
+      !confirm("Are you sure you want to delete this property? (Soft Delete)")
+    )
+      return;
+    setIsProcessingProp(id);
+    try {
+      await api.delete(`/api/properties/${id}`);
+      setProperties((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, isDeleted: true } : p))
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete property.");
+    } finally {
+      setIsProcessingProp(null);
+    }
+  };
+
+  const handleRestoreProp = async (id: number) => {
+    if (!confirm("Restore this property?")) return;
+    setIsProcessingProp(id);
+    try {
+      await api.put(`/api/properties/Undelet/${id}`, { id });
+      setProperties((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, isDeleted: false } : p))
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Failed to restore property.");
+    } finally {
+      setIsProcessingProp(null);
+    }
+  };
 
   const handleNotImplemented = (action: string) =>
-    alert(`"${action}" will be available after backend integration.`);
+    alert(`"${action}" feature coming soon!`);
+
+  // Filtering Data
+  const filteredVocabs = vocabularies.filter((v) => {
+    if (vocabFilterStatus === "active") return !v.isDeleted;
+    if (vocabFilterStatus === "deleted") return v.isDeleted;
+    return true;
+  });
+
+  const filteredProps = properties.filter((p) => {
+    if (p.vocabularyId !== selectedVocabId) return false;
+    if (propFilterStatus === "active") return !p.isDeleted;
+    if (propFilterStatus === "deleted") return p.isDeleted;
+    return true;
+  });
 
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
@@ -152,13 +249,13 @@ export const ManageMetadataPage = () => {
             fontStyle: "italic",
           }}
         >
-          Loading vocabularies...
+          Loading metadata schema...
         </div>
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "240px 1fr",
+            gridTemplateColumns: "260px 1fr",
             gap: 24,
             alignItems: "start",
           }}
@@ -175,7 +272,6 @@ export const ManageMetadataPage = () => {
               top: 24,
             }}
           >
-            {/* Header */}
             <div
               style={{
                 background: C.goldLight,
@@ -210,10 +306,45 @@ export const ManageMetadataPage = () => {
               </h2>
             </div>
 
+            {/* Vocab Status Filter */}
+            <div
+              style={{
+                padding: "10px 12px",
+                borderBottom: `1px solid ${C.goldBorder}`,
+                background: "#fdfaf6",
+              }}
+            >
+              <select
+                value={vocabFilterStatus}
+                onChange={(e) =>
+                  setVocabFilterStatus(
+                    e.target.value as "active" | "deleted" | "all"
+                  )
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: 8,
+                  border: `1px solid ${C.goldBorder}`,
+                  background: C.surface,
+                  color: vocabFilterStatus === "deleted" ? C.danger : C.inkMid,
+                  fontSize: "0.8rem",
+                  outline: "none",
+                  fontFamily: sans,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="active">Active Only</option>
+                <option value="deleted">Deleted (Trash)</option>
+                <option value="all">Show All</option>
+              </select>
+            </div>
+
             {/* List */}
             <div style={{ padding: "10px" }}>
-              {vocabularies.map((vocab) => {
+              {filteredVocabs.map((vocab) => {
                 const isActive = vocab.id === selectedVocabId;
+                const isDeleted = vocab.isDeleted;
                 return (
                   <button
                     key={vocab.id}
@@ -233,37 +364,57 @@ export const ManageMetadataPage = () => {
                       alignItems: "center",
                       justifyContent: "space-between",
                       marginBottom: 3,
+                      opacity: isDeleted ? 0.6 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      if (!isActive) e.currentTarget.style.background = C.bg;
+                      if (!isActive)
+                        e.currentTarget.style.background = isDeleted
+                          ? "#f1f1f1"
+                          : C.bg;
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive)
                         e.currentTarget.style.background = "transparent";
                     }}
                   >
-                    <div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "0.85rem",
-                          fontWeight: isActive ? 700 : 500,
-                          color: isActive ? C.goldDark : C.inkMid,
-                        }}
-                      >
-                        {vocab.label}
-                      </p>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "0.68rem",
-                          fontFamily: "monospace",
-                          color: C.inkSoft,
-                          marginTop: 2,
-                        }}
-                      >
-                        {vocab.prefix}
-                      </p>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      {isDeleted && (
+                        <AlertCircle
+                          size={12}
+                          color={C.danger}
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.85rem",
+                            fontWeight: isActive ? 700 : 500,
+                            color: isDeleted
+                              ? C.inkSoft
+                              : isActive
+                              ? C.goldDark
+                              : C.inkMid,
+                            textDecoration: isDeleted ? "line-through" : "none",
+                          }}
+                        >
+                          {vocab.label}
+                        </p>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.68rem",
+                            fontFamily: "monospace",
+                            color: C.inkSoft,
+                            marginTop: 2,
+                          }}
+                        >
+                          {vocab.prefix}
+                        </p>
+                      </div>
                     </div>
                     <ChevronRight
                       size={14}
@@ -275,7 +426,7 @@ export const ManageMetadataPage = () => {
               })}
             </div>
 
-            {/* Selected vocab info */}
+            {/* Selected vocab info & actions */}
             {selectedVocab && (
               <div
                 style={{
@@ -284,6 +435,7 @@ export const ManageMetadataPage = () => {
                   background: C.bg,
                   borderRadius: 10,
                   border: `1px solid ${C.goldBorder}`,
+                  opacity: isSelectedVocabDeleted ? 0.7 : 1,
                 }}
               >
                 <p
@@ -319,18 +471,44 @@ export const ManageMetadataPage = () => {
                   />
                   {selectedVocab.namespaceUri}
                 </a>
+
                 <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
                   <IconBtn
                     icon={<Edit size={14} />}
                     color={C.gold}
                     onClick={() => handleNotImplemented("Edit Vocabulary")}
+                    disabled={isSelectedVocabDeleted}
                   />
-                  <IconBtn
-                    icon={<Trash2 size={14} />}
-                    color={C.danger}
-                    onClick={() => handleNotImplemented("Delete Vocabulary")}
-                    danger
-                  />
+
+                  {isSelectedVocabDeleted ? (
+                    <button
+                      onClick={() => handleRestoreVocab(selectedVocab.id)}
+                      disabled={isProcessingVocab === selectedVocab.id}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        border: "none",
+                        background: C.successBg,
+                        color: C.success,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  ) : (
+                    <IconBtn
+                      icon={<Trash2 size={14} />}
+                      color={C.danger}
+                      onClick={() => handleDeleteVocab(selectedVocab.id)}
+                      danger
+                      disabled={isProcessingVocab === selectedVocab.id}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -369,40 +547,63 @@ export const ManageMetadataPage = () => {
                   }}
                 >
                   Properties
-                  {!propsLoading && (
-                    <span
-                      style={{
-                        marginLeft: 8,
-                        fontSize: "0.72rem",
-                        fontWeight: 400,
-                        color: C.inkSoft,
-                      }}
-                    >
-                      ({properties.length})
-                    </span>
-                  )}
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontSize: "0.72rem",
+                      fontWeight: 400,
+                      color: C.inkSoft,
+                    }}
+                  >
+                    ({filteredProps.length})
+                  </span>
                 </h2>
               </div>
-              {selectedVocab && (
-                <span
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <select
+                  value={propFilterStatus}
+                  onChange={(e) =>
+                    setPropFilterStatus(
+                      e.target.value as "active" | "deleted" | "all"
+                    )
+                  }
                   style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    fontFamily: "monospace",
-                    background: C.goldMid,
-                    color: C.goldDark,
-                    padding: "3px 10px",
-                    borderRadius: 999,
+                    padding: "4px 8px",
+                    borderRadius: 6,
                     border: `1px solid ${C.goldBorder}`,
+                    background: C.surface,
+                    color: propFilterStatus === "deleted" ? C.danger : C.inkMid,
+                    fontSize: "0.75rem",
+                    outline: "none",
+                    fontFamily: sans,
+                    cursor: "pointer",
                   }}
                 >
-                  {selectedVocab.prefix}:*
-                </span>
-              )}
+                  <option value="active">Active Only</option>
+                  <option value="deleted">Trash</option>
+                  <option value="all">All</option>
+                </select>
+                {selectedVocab && (
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      fontFamily: "monospace",
+                      background: C.goldMid,
+                      color: C.goldDark,
+                      padding: "3px 10px",
+                      borderRadius: 999,
+                      border: `1px solid ${C.goldBorder}`,
+                    }}
+                  >
+                    {selectedVocab.prefix}:*
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Content */}
-            {propsLoading ? (
+            {!selectedVocabId ? (
               <div
                 style={{
                   padding: 48,
@@ -411,9 +612,9 @@ export const ManageMetadataPage = () => {
                   fontStyle: "italic",
                 }}
               >
-                Loading properties...
+                Please select a vocabulary from the list.
               </div>
-            ) : properties.length === 0 ? (
+            ) : filteredProps.length === 0 ? (
               <div style={{ padding: "56px 24px", textAlign: "center" }}>
                 <div
                   style={{
@@ -437,16 +638,7 @@ export const ManageMetadataPage = () => {
                     margin: "0 0 6px",
                   }}
                 >
-                  No properties yet
-                </p>
-                <p
-                  style={{
-                    color: C.inkSoft,
-                    fontSize: "0.85rem",
-                    margin: "0 0 20px",
-                  }}
-                >
-                  Add a property to this vocabulary.
+                  No properties found
                 </p>
                 <GoldBtn
                   icon={<Plus size={14} />}
@@ -486,51 +678,61 @@ export const ManageMetadataPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {properties.map((prop, idx) => (
+                    {filteredProps.map((prop, idx) => (
                       <tr
                         key={prop.id}
                         style={{
                           borderBottom:
-                            idx < properties.length - 1
+                            idx < filteredProps.length - 1
                               ? `1px solid ${C.goldBorder}`
                               : "none",
                           transition: "background 0.12s",
+                          background: prop.isDeleted
+                            ? "#fafafa"
+                            : "transparent",
+                          opacity: prop.isDeleted ? 0.6 : 1,
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = "#fdfaf6")
+                          (e.currentTarget.style.background = prop.isDeleted
+                            ? "#f1f1f1"
+                            : "#fdfaf6")
                         }
                         onMouseLeave={(e) =>
-                          (e.currentTarget.style.background = "transparent")
+                          (e.currentTarget.style.background = prop.isDeleted
+                            ? "#fafafa"
+                            : "transparent")
                         }
                       >
-                        {/* ID */}
                         <td style={{ padding: "13px 16px" }}>
                           <span
                             style={{
                               fontFamily: "monospace",
                               fontSize: "0.78rem",
-                              color: C.inkSoft,
+                              color: prop.isDeleted ? C.danger : C.inkSoft,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
                             }}
                           >
-                            #{prop.id}
+                            #{prop.id}{" "}
+                            {prop.isDeleted && <AlertCircle size={12} />}
                           </span>
                         </td>
-
-                        {/* Label */}
                         <td style={{ padding: "13px 16px" }}>
                           <span
                             style={{
                               fontFamily: serif,
                               fontWeight: 700,
                               fontSize: "0.9rem",
-                              color: C.ink,
+                              color: prop.isDeleted ? C.inkSoft : C.ink,
+                              textDecoration: prop.isDeleted
+                                ? "line-through"
+                                : "none",
                             }}
                           >
                             {prop.label}
                           </span>
                         </td>
-
-                        {/* Local name */}
                         <td style={{ padding: "13px 16px" }}>
                           <span
                             style={{
@@ -548,8 +750,6 @@ export const ManageMetadataPage = () => {
                             {prop.vocabularyPrefix}:{prop.localName}
                           </span>
                         </td>
-
-                        {/* URI */}
                         <td style={{ padding: "13px 16px", maxWidth: 220 }}>
                           <a
                             href={prop.termUri}
@@ -566,24 +766,13 @@ export const ManageMetadataPage = () => {
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
+                              pointerEvents: prop.isDeleted ? "none" : "auto",
                             }}
-                            onMouseEnter={(e) =>
-                              ((
-                                e.currentTarget as HTMLAnchorElement
-                              ).style.textDecoration = "underline")
-                            }
-                            onMouseLeave={(e) =>
-                              ((
-                                e.currentTarget as HTMLAnchorElement
-                              ).style.textDecoration = "none")
-                            }
                           >
                             <ExternalLink size={11} style={{ flexShrink: 0 }} />
                             {prop.termUri}
                           </a>
                         </td>
-
-                        {/* Actions */}
                         <td style={{ padding: "13px 16px" }}>
                           <div style={{ display: "flex", gap: 6 }}>
                             <IconBtn
@@ -592,15 +781,38 @@ export const ManageMetadataPage = () => {
                               onClick={() =>
                                 handleNotImplemented("Edit Property")
                               }
+                              disabled={prop.isDeleted}
                             />
-                            <IconBtn
-                              icon={<Trash2 size={14} />}
-                              color={C.danger}
-                              onClick={() =>
-                                handleNotImplemented("Delete Property")
-                              }
-                              danger
-                            />
+
+                            {prop.isDeleted ? (
+                              <button
+                                onClick={() => handleRestoreProp(prop.id)}
+                                disabled={isProcessingProp === prop.id}
+                                style={{
+                                  width: 30,
+                                  height: 30,
+                                  borderRadius: 8,
+                                  border: "none",
+                                  background: C.successBg,
+                                  color: C.success,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s",
+                                }}
+                              >
+                                <RefreshCw size={14} />
+                              </button>
+                            ) : (
+                              <IconBtn
+                                icon={<Trash2 size={14} />}
+                                color={C.danger}
+                                onClick={() => handleDeleteProp(prop.id)}
+                                danger
+                                disabled={isProcessingProp === prop.id}
+                              />
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -694,29 +906,36 @@ const IconBtn = ({
   icon,
   onClick,
   danger,
+  disabled,
 }: {
   icon: React.ReactNode;
   color: string;
   onClick: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
     style={{
       width: 30,
       height: 30,
       borderRadius: 8,
       border: "none",
-      background: danger ? C.dangerBg : C.goldLight,
-      color: danger ? C.danger : C.goldDark,
+      background: disabled ? "#f1f5f9" : danger ? C.dangerBg : C.goldLight,
+      color: disabled ? "#94a3b8" : danger ? C.danger : C.goldDark,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      cursor: "pointer",
+      cursor: disabled ? "not-allowed" : "pointer",
       transition: "all 0.15s",
     }}
-    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
-    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+    onMouseEnter={(e) => {
+      if (!disabled) e.currentTarget.style.opacity = "0.75";
+    }}
+    onMouseLeave={(e) => {
+      if (!disabled) e.currentTarget.style.opacity = "1";
+    }}
   >
     {icon}
   </button>
