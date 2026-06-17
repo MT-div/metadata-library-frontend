@@ -97,7 +97,6 @@ export const ManageTemplatesPage = () => {
 
   useEffect(() => {
     Promise.all([
-      // 👇 استخدام الـ API الجديد الذي يجلب المحذوفة وغير المحذوفة
       api.get("/api/resource-templates/WithDeleted").then((r) => r.data),
       api.get("/api/properties").then((r) => r.data),
     ])
@@ -107,6 +106,8 @@ export const ManageTemplatesPage = () => {
         if (tpls.length > 0) selectTemplate(tpls[0].id, tpls);
       })
       .catch((err) => console.error("Error loading builder data:", err));
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);

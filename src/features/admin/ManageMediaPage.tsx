@@ -233,10 +233,26 @@ export const ManageMediaPage = () => {
           }}
         >
           {[
-            { label: "Active Files", value: activeMedia.length, icon: "🗂" },
-            { label: "Images", value: imageCount, icon: "🖼" },
-            { label: "Videos", value: videoCount, icon: "🎬" },
-            { label: "Documents", value: docCount, icon: "📄" },
+            {
+              label: "Active Files",
+              value: activeMedia.length,
+              icon: <HardDrive size={22} color={C.goldDark} />,
+            },
+            {
+              label: "Images",
+              value: imageCount,
+              icon: <ImageIcon size={22} color={C.goldDark} />,
+            },
+            {
+              label: "Videos",
+              value: videoCount,
+              icon: <Film size={22} color={C.goldDark} />,
+            },
+            {
+              label: "Documents",
+              value: docCount,
+              icon: <FileText size={22} color={C.goldDark} />,
+            },
           ].map((s) => (
             <div
               key={s.label}

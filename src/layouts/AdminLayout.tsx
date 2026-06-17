@@ -47,6 +47,11 @@ const NAV_GROUPS = [
     label: "Management",
     links: [
       {
+        title: "Home",
+        path: "/admin/dashboard",
+        icon: <LayoutDashboard size={17} />,
+      },
+      {
         title: "Metadata",
         path: "/admin/metadata",
         icon: <Settings size={17} />,

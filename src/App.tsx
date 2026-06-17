@@ -28,7 +28,7 @@ import { ManageItemsPage } from "./features/admin/ManageItemsPage";
 import { ManageUsersPage } from "./features/admin/ManageUsersPage";
 import { CreateUserPage } from "./features/admin/CreateUserPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
-
+import { AdminDashboardPage } from "./features/admin/AdminDashboardPage";
 function App() {
   return (
     <BrowserRouter>
@@ -56,8 +56,9 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route
               path="/admin"
-              element={<Navigate to="/admin/metadata" replace />}
+              element={<Navigate to="/admin/dashboard" replace />}
             />
+            <Route path="admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="admin/media" element={<ManageMediaPage />} />
             <Route path="admin/metadata" element={<ManageMetadataPage />} />
             <Route path="admin/templates" element={<ManageTemplatesPage />} />

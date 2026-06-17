@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Plus,
   Search,
+  Paperclip,
+  DockIcon,
 } from "lucide-react";
 import type { ItemSetResponse } from "../../types/metadata";
 import { api } from "../../services/api";
@@ -188,10 +190,26 @@ export const BrowseItemSetsPage = () => {
             }}
           >
             {[
-              { label: "Total Collections", value: itemSets.length, icon: "🗂" },
-              { label: "Public", value: publicCount, icon: "🌐" },
-              { label: "Private", value: privateCount, icon: "🔒" },
-              { label: "Total Items", value: totalItems, icon: "📄" },
+              {
+                label: "Total Collections",
+                value: itemSets.length,
+                icon: <Folder size={22} color={C.goldDark} />,
+              },
+              {
+                label: "Public",
+                value: publicCount,
+                icon: <DockIcon size={22} color={C.goldDark} />,
+              },
+              {
+                label: "Private",
+                value: privateCount,
+                icon: <Lock size={22} color={C.goldDark} />,
+              },
+              {
+                label: "Total Items",
+                value: totalItems,
+                icon: <Paperclip size={22} color={C.goldDark} />,
+              },
             ].map((stat) => (
               <div
                 key={stat.label}
