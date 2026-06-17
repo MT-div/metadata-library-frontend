@@ -14,6 +14,7 @@ import {
   Info,
   GripVertical,
 } from "lucide-react";
+import { api } from "../../services/api";
 
 const C = {
   bg: "#F7F3ED",
@@ -154,28 +155,35 @@ export const CreateTemplatePage = () => {
   const [propCache, setPropCache] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    fetch("/api/vocabularies")
-      .then((r) => r.json())
-      .then((data) => {
+    api
+      .get("/api/vocabularies")
+      .then((res) => {
+        const data = res.data;
         setVocabularies(data);
         if (data.length > 0) setSelectedVocabId(data[0].id);
-      });
+      })
+      .catch((err) => console.error("Error fetching vocabularies:", err));
   }, []);
 
   useEffect(() => {
     if (!selectedVocabId) return;
-    fetch(`/api/vocabularies/${selectedVocabId}/properties`)
-      .then((r) => r.json())
-      .then((data) => {
+
+    // 👇 الرابط الحقيقي المطابق للـ Swagger
+    api
+      .get(`/api/properties/by-vocabulary/${selectedVocabId}`)
+      .then((res) => {
+        const data = res.data;
         setAvailableProps(data);
         setSelectedPropId(data.length > 0 ? data[0].id : 0);
+
         // build cache
         const entries: Record<number, string> = {};
         data.forEach((p: AvailableProperty) => {
           entries[p.id] = p.label;
         });
         setPropCache((prev) => ({ ...prev, ...entries }));
-      });
+      })
+      .catch((err) => console.error("Error fetching properties:", err));
   }, [selectedVocabId]);
 
   const handleAddProperty = () => {
@@ -217,20 +225,18 @@ export const CreateTemplatePage = () => {
     }
     setIsSubmitting(true);
     try {
-      const createRes = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templateData),
+      // 1. إنشاء القالب الأساسي
+      const createRes = await api.post("/api/resource-templates", templateData);
+
+      // Axios يعيد البيانات في .data (قد يكون ID مباشرة أو كائن يحتوي على ID حسب إعدادات الـ C#)
+      const createdId = createRes.data.id ?? createRes.data;
+
+      // 2. ربط الخصائص بالقالب الجديد
+      await api.put(`/api/resource-templates/${createdId}/properties`, {
+        templateId: createdId,
+        properties: selectedProperties,
       });
-      const created = await createRes.json();
-      await fetch(`/api/templates/${created.id}/properties`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: created.id,
-          properties: selectedProperties,
-        }),
-      });
+
       setSuccess(true);
       setTimeout(() => {
         setTemplateData({ label: "", description: "" });
@@ -238,7 +244,8 @@ export const CreateTemplatePage = () => {
         setSuccess(false);
       }, 2200);
     } catch (err) {
-      console.error(err);
+      console.error("Error creating template:", err);
+      alert("حدث خطأ أثناء حفظ القالب. راجع الكونسول.");
     } finally {
       setIsSubmitting(false);
     }
@@ -257,8 +264,6 @@ export const CreateTemplatePage = () => {
     outline: "none",
     transition: "border-color 0.2s",
   });
-
-  const selectedVocab = vocabularies.find((v) => v.id === selectedVocabId);
 
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
@@ -460,21 +465,6 @@ export const CreateTemplatePage = () => {
                     ▾
                   </span>
                 </div>
-                {selectedVocab && (
-                  <p
-                    style={{
-                      margin: "4px 0 0",
-                      fontSize: "0.68rem",
-                      color: C.inkSoft,
-                      fontFamily: "monospace",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {selectedVocab.namespaceUri}
-                  </p>
-                )}
               </div>
 
               {/* Property */}
