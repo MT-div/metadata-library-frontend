@@ -8,11 +8,13 @@ import {
   ChevronRight,
   Plus,
   Search,
+  Book,
   Paperclip,
-  DockIcon,
 } from "lucide-react";
 import type { ItemSetResponse } from "../../types/metadata";
 import { api } from "../../services/api";
+import { useAuthStore } from "../../store/useAuthStore";
+
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -33,7 +35,8 @@ export const BrowseItemSetsPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-
+  const { isAdmin, isLibrarian } = useAuthStore();
+  const canAccessAdmin = isAdmin() || isLibrarian();
   useEffect(() => {
     api
       .get<ItemSetResponse[]>("/api/item-sets")
@@ -156,7 +159,7 @@ export const BrowseItemSetsPage = () => {
             <button
               onClick={() => navigate("/itemsets/new")}
               style={{
-                display: "inline-flex",
+                display: canAccessAdmin ? "inline-flex" : "none",
                 alignItems: "center",
                 gap: 8,
                 background: C.gold,
@@ -193,12 +196,12 @@ export const BrowseItemSetsPage = () => {
               {
                 label: "Total Collections",
                 value: itemSets.length,
-                icon: <Folder size={22} color={C.goldDark} />,
+                icon: <FolderOpen size={22} color={C.goldDark} />,
               },
               {
                 label: "Public",
                 value: publicCount,
-                icon: <DockIcon size={22} color={C.goldDark} />,
+                icon: <Paperclip size={22} color={C.goldDark} />,
               },
               {
                 label: "Private",
@@ -208,7 +211,7 @@ export const BrowseItemSetsPage = () => {
               {
                 label: "Total Items",
                 value: totalItems,
-                icon: <Paperclip size={22} color={C.goldDark} />,
+                icon: <Book size={22} color={C.goldDark} />,
               },
             ].map((stat) => (
               <div

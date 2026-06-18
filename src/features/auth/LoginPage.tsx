@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/useAuthStore";
 import { Loader2 } from "lucide-react";
 import type { LoginRequest, AuthResponse } from "../../types/auth";
 import { api } from "../../services/api";
@@ -11,6 +10,7 @@ import backVase from "../../assets/icons/backVase.png";
 import libraryHero from "../../assets/images/libraryHero6.png";
 import { GoogleLogin } from "@react-oauth/google";
 import type { CredentialResponse } from "@react-oauth/google";
+import { useAuthStore } from "../../store/useAuthStore";
 
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
@@ -107,6 +107,9 @@ const EyeIcon = ({ open }: { open: boolean }) =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const LoginPage = () => {
+  const { isAdmin, isLibrarian } = useAuthStore();
+  const canAccessAdmin = isAdmin() || isLibrarian();
+
   const [formData, setFormData] = useState<LoginRequest>({
     email: "",
     password: "",
@@ -138,7 +141,8 @@ export const LoginPage = () => {
       login(data);
 
       // الدخول للوحة التحكم
-      navigate("/admin/metadata");
+      if (canAccessAdmin) navigate("/admin/metadata");
+      else navigate("/browse");
     } catch (err: unknown) {
       // معالجة رسائل الخطأ القادمة من الباك اند (مثل: Invalid email or password)
       if (err instanceof AxiosError && err.response) {

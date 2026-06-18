@@ -1,16 +1,25 @@
-// src/components/auth/ProtectedRoute.tsx
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export const ProtectedRoute = () => {
-  // قراءة حالة الدخول من الـ Store
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  // 1. جلب حالة الدخول والصلاحيات من المحفظة
+  const { isAuthenticated, isAdmin, isLibrarian } = useAuthStore();
 
-  // إذا لم يكن مسجلاً، اطرده لصفحة الدخول
+  // 2. التحقق من المصادقة (Authentication)
   if (!isAuthenticated) {
+    // إذا لم يكن مسجلاً، اطرده لصفحة تسجيل الدخول
     return <Navigate to="/login" replace />;
   }
 
-  // إذا كان مسجلاً، اسمح له بالمرور (رندرة المكونات الأبناء)
+  // 3. التحقق من الصلاحيات (Authorization)
+  const canAccessAdmin = isAdmin() || isLibrarian();
+
+  if (!canAccessAdmin) {
+    // إذا كان مستخدماً عادياً وحاول كتابة /admin في الرابط يدوياً،
+    // نطرده فوراً إلى الصفحة الرئيسية (أو لصفحة 403 مخصصة).
+    return <Navigate to="/" replace />;
+  }
+
+  // 4. إذا كان مسجل دخول + يملك الصلاحية ➔ تفضل بالدخول للوحة التحكم
   return <Outlet />;
 };

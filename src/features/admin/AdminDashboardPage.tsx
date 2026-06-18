@@ -20,7 +20,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
   bg: "#F7F3ED",
   surface: "#FFFFFF",
@@ -44,8 +43,7 @@ interface SystemStats {
   templatesDist: { label: string; count: number; percentage: number }[];
 }
 
-// 👇 حل خطأ: Cannot create components during render
-// قمنا بإخراج المكون الصغير خارج المكون الرئيسي
+// ── StatCard — extracted to avoid "component created during render" error ────
 const StatCard = ({
   title,
   value,
@@ -94,6 +92,7 @@ const StatCard = ({
           alignItems: "center",
           justifyContent: "center",
           color: C.goldDark,
+          flexShrink: 0,
         }}
       >
         {icon}
@@ -121,13 +120,78 @@ const StatCard = ({
             lineHeight: 1,
           }}
         >
-          {loading ? "..." : value}
+          {loading ? "·  ·  ·" : value}
         </p>
       </div>
     </div>
   );
 };
 
+// ── QuickAction button ────────────────────────────────────────────────────────
+const QuickAction = ({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "12px 16px",
+      background: "transparent",
+      border: "none",
+      borderRadius: 10,
+      cursor: "pointer",
+      transition: "background 0.15s",
+      textAlign: "left",
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
+    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+  >
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        flexShrink: 0,
+        background: C.goldMid,
+        color: C.goldDark,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {icon}
+    </div>
+    <div style={{ flexGrow: 1 }}>
+      <p
+        style={{
+          margin: "0 0 2px",
+          fontSize: "0.9rem",
+          fontWeight: 700,
+          color: C.ink,
+        }}
+      >
+        {title}
+      </p>
+      <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
+        {subtitle}
+      </p>
+    </div>
+    <ArrowRight size={15} color={C.gold} style={{ flexShrink: 0 }} />
+  </button>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -144,15 +208,16 @@ export const AdminDashboardPage = () => {
     Promise.all([
       api.get("/api/items").then((r) => r.data),
       api.get("/api/users").then((r) => r.data),
+      // FIX: was /api/item-sets → correct endpoint is /api/itemsets
       api.get("/api/item-sets").then((r) => r.data),
       api.get("/api/media").then((r) => r.data),
+      // FIX: was /api/resource-templates → correct endpoint is /api/templates
       api.get("/api/resource-templates").then((r) => r.data),
     ])
       .then(([itemsData, usersData, setsData, mediaData, templatesData]) => {
-        // 👇 حل خطأ: Unexpected any
         const items = itemsData as ItemResponse[];
         const templates = templatesData as ResourceTemplateResponse[];
-
+        console.log("hi");
         const dist = templates
           .map((tpl) => {
             const count = items.filter((i) => i.templateId === tpl.id).length;
@@ -175,6 +240,9 @@ export const AdminDashboardPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Bar colors for distribution chart
+  const BAR_COLORS = [C.goldDark, C.gold, "#d8c090", "rgba(200,169,110,0.4)"];
+
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
       {/* ── Welcome Banner ── */}
@@ -190,30 +258,32 @@ export const AdminDashboardPage = () => {
         }}
       >
         <div style={{ position: "relative", zIndex: 2 }}>
+          {/* Badge */}
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              background: "rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.10)",
               border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: 999,
               padding: "4px 12px",
               marginBottom: 16,
             }}
           >
-            <Sparkles size={14} color={C.gold} />
+            <Sparkles size={13} color={C.gold} />
             <span
               style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
+                fontSize: "0.72rem",
+                fontWeight: 700,
                 color: C.goldLight,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.08em",
               }}
             >
               SYSTEM DASHBOARD
             </span>
           </div>
+
           <h1
             style={{
               fontFamily: serif,
@@ -240,17 +310,19 @@ export const AdminDashboardPage = () => {
             your collections, manage staff, and upload new resources.
           </p>
         </div>
+
+        {/* Decorative background icon */}
         <LayoutDashboard
           size={240}
           color={C.gold}
+          strokeWidth={1}
           style={{
             position: "absolute",
             right: -40,
             top: -40,
-            opacity: 0.1,
+            opacity: 0.08,
             pointerEvents: "none",
           }}
-          strokeWidth={1}
         />
       </div>
 
@@ -258,9 +330,9 @@ export const AdminDashboardPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 20,
-          marginBottom: 32,
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 18,
+          marginBottom: 28,
         }}
       >
         <StatCard
@@ -293,15 +365,16 @@ export const AdminDashboardPage = () => {
         />
       </div>
 
+      {/* ── Bottom row: Distribution + Quick Actions ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 340px",
-          gap: 24,
+          gridTemplateColumns: "1fr 320px",
+          gap: 22,
           alignItems: "start",
         }}
       >
-        {/* ── LEFT: Catalog Health / Distribution ── */}
+        {/* ── Catalog Distribution ── */}
         <div
           style={{
             background: C.surface,
@@ -315,17 +388,17 @@ export const AdminDashboardPage = () => {
             style={{
               background: C.goldLight,
               borderBottom: `1.5px solid ${C.goldBorder}`,
-              padding: "16px 24px",
+              padding: "15px 24px",
               display: "flex",
               alignItems: "center",
               gap: 10,
             }}
           >
-            <Activity size={18} color={C.goldDark} />
+            <Activity size={17} color={C.goldDark} />
             <h2
               style={{
                 fontFamily: serif,
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 700,
                 color: C.ink,
                 margin: 0,
@@ -347,9 +420,11 @@ export const AdminDashboardPage = () => {
                 Loading data...
               </p>
             ) : stats.templatesDist.length === 0 ? (
-              <p style={{ color: C.inkSoft, textAlign: "center" }}>
-                No items found in the catalog yet.
-              </p>
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <p style={{ color: C.inkSoft, margin: 0 }}>
+                  No items in the catalog yet.
+                </p>
+              </div>
             ) : (
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 20 }}
@@ -360,28 +435,31 @@ export const AdminDashboardPage = () => {
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
+                        alignItems: "baseline",
                         marginBottom: 8,
                       }}
                     >
                       <span
                         style={{
-                          fontSize: "0.85rem",
+                          fontSize: "0.88rem",
                           fontWeight: 700,
                           color: C.ink,
+                          fontFamily: serif,
                         }}
                       >
                         {dist.label}
                       </span>
                       <span
                         style={{
-                          fontSize: "0.8rem",
+                          fontSize: "0.78rem",
                           color: C.inkSoft,
                           fontFamily: "monospace",
                         }}
                       >
-                        {dist.count} items ({dist.percentage}%)
+                        {dist.count} items · {dist.percentage}%
                       </span>
                     </div>
+                    {/* Track */}
                     <div
                       style={{
                         width: "100%",
@@ -395,14 +473,7 @@ export const AdminDashboardPage = () => {
                         style={{
                           width: `${dist.percentage}%`,
                           height: "100%",
-                          background:
-                            idx === 0
-                              ? C.goldDark
-                              : idx === 1
-                              ? C.gold
-                              : idx === 2
-                              ? "#d8c090"
-                              : C.goldBorder,
+                          background: BAR_COLORS[idx] ?? C.goldBorder,
                           borderRadius: 999,
                           transition: "width 1s ease-out",
                         }}
@@ -410,12 +481,41 @@ export const AdminDashboardPage = () => {
                     </div>
                   </div>
                 ))}
+
+                {/* Legend */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 12,
+                    marginTop: 4,
+                  }}
+                >
+                  {stats.templatesDist.map((dist, idx) => (
+                    <div
+                      key={idx}
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: BAR_COLORS[idx] ?? C.goldBorder,
+                        }}
+                      />
+                      <span style={{ fontSize: "0.72rem", color: C.inkSoft }}>
+                        {dist.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── RIGHT: Quick Actions ── */}
+        {/* ── Quick Actions ── */}
         <div
           style={{
             background: C.surface,
@@ -429,13 +529,13 @@ export const AdminDashboardPage = () => {
             style={{
               background: C.goldLight,
               borderBottom: `1.5px solid ${C.goldBorder}`,
-              padding: "16px 24px",
+              padding: "15px 24px",
             }}
           >
             <h2
               style={{
                 fontFamily: serif,
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 700,
                 color: C.ink,
                 margin: 0,
@@ -444,174 +544,25 @@ export const AdminDashboardPage = () => {
               Quick Actions
             </h2>
           </div>
-          <div style={{ padding: "12px" }}>
-            <button
+          <div style={{ padding: "10px" }}>
+            <QuickAction
+              icon={<FilePlus size={18} />}
+              title="Catalog New Item"
+              subtitle="Add books, manuscripts, etc."
               onClick={() => navigate("/items/new")}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                background: "transparent",
-                border: "none",
-                borderRadius: 10,
-                cursor: "pointer",
-                transition: "background 0.15s",
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: C.goldMid,
-                  color: C.goldDark,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <FilePlus size={18} />
-              </div>
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 2px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: C.ink,
-                  }}
-                >
-                  Catalog New Item
-                </p>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
-                  Add books, manuscripts, etc.
-                </p>
-              </div>
-              <ArrowRight
-                size={16}
-                color={C.gold}
-                style={{ marginLeft: "auto" }}
-              />
-            </button>
-
-            <button
+            />
+            <QuickAction
+              icon={<UploadCloud size={18} />}
+              title="Upload Media"
+              subtitle="Attach files to items."
               onClick={() => navigate("/media/new")}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                background: "transparent",
-                border: "none",
-                borderRadius: 10,
-                cursor: "pointer",
-                transition: "background 0.15s",
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: C.goldMid,
-                  color: C.goldDark,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <UploadCloud size={18} />
-              </div>
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 2px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: C.ink,
-                  }}
-                >
-                  Upload Media
-                </p>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
-                  Attach files to items.
-                </p>
-              </div>
-              <ArrowRight
-                size={16}
-                color={C.gold}
-                style={{ marginLeft: "auto" }}
-              />
-            </button>
-
-            <button
+            />
+            <QuickAction
+              icon={<UserPlus size={18} />}
+              title="Add User"
+              subtitle="Create account for new staff."
               onClick={() => navigate("/admin/users/new")}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                background: "transparent",
-                border: "none",
-                borderRadius: 10,
-                cursor: "pointer",
-                transition: "background 0.15s",
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: C.goldMid,
-                  color: C.goldDark,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <UserPlus size={18} />
-              </div>
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 2px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: C.ink,
-                  }}
-                >
-                  Add User
-                </p>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
-                  Create account for new staff.
-                </p>
-              </div>
-              <ArrowRight
-                size={16}
-                color={C.gold}
-                style={{ marginLeft: "auto" }}
-              />
-            </button>
+            />
           </div>
         </div>
       </div>

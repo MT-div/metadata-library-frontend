@@ -4,10 +4,9 @@ import openBookIcon from "../assets/icons/open-book.svg";
 import leafs from "../assets/images/leafs.png";
 import { useAuthStore } from "../store/useAuthStore";
 
-// تم حذف مكون BookLogoIcon القديم لأنه لم يعد مستخدماً
-
 export const MainLayout = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated); // 👈
+  const { isAuthenticated, isAdmin, isLibrarian, logout } = useAuthStore();
+  const canAccessAdmin = isAdmin() || isLibrarian();
 
   const navigate = useNavigate();
   const navLinks = [
@@ -70,12 +69,11 @@ export const MainLayout = () => {
               textDecoration: "none",
             }}
           >
-            {/* التعديل هنا: استبدال الـ SVG بـ وسم img */}
             <div
               style={{
                 width: "72px",
                 height: "72px",
-                backgroundColor: "#c8a96e", // 👈 اكتب اللون الذي تريده هنا مباشرة (مثال: اللون الذهبي الخاص بموقعك)
+                backgroundColor: "#c8a96e",
                 WebkitMaskImage: `url(${openBookIcon})`,
                 maskImage: `url(${openBookIcon})`,
                 WebkitMaskSize: "contain",
@@ -123,10 +121,11 @@ export const MainLayout = () => {
             ))}
           </nav>
 
-          {/* ── Right: Language + Sign In ── */}
+          {/* ── Right: Language + Sign In / User Action ── */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {/* Language selector */}
             <button
+              onClick={() => alert("سيتم اضافة الكسير من اللغات لاحقا ")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -144,9 +143,19 @@ export const MainLayout = () => {
               <ChevronDown size={14} color="#4a3a20" />
             </button>
 
-            {/* Sign In */}
+            {/* 👇 الزر الذكي المحدث */}
             <button
-              onClick={() => navigate(isAuthenticated ? "/admin" : "/login")}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  navigate("/login");
+                } else if (canAccessAdmin) {
+                  navigate("/admin");
+                } else {
+                  // المستخدم العادي: نقوم بتسجيل خروجه ونوجهه للرئيسية
+                  logout();
+                  navigate("/");
+                }
+              }}
               style={{
                 background: "#c8a96e",
                 color: "#fff",
@@ -166,7 +175,11 @@ export const MainLayout = () => {
                 (e.currentTarget.style.background = "#c8a96e")
               }
             >
-              {isAuthenticated ? "Admin Panel" : "Sign In"}
+              {!isAuthenticated
+                ? "Sign In"
+                : canAccessAdmin
+                ? "Admin Panel"
+                : "Sign Out"}
             </button>
           </div>
         </div>
@@ -192,6 +205,8 @@ export const MainLayout = () => {
           color: "#a08060",
           padding: "28px 32px",
           fontSize: "0.85rem",
+          zIndex: 10,
+          position: "relative",
         }}
       >
         <div

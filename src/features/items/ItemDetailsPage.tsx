@@ -19,6 +19,7 @@ import type {
   MediaResponse,
 } from "../../types/metadata";
 import { api } from "../../services/api";
+import { useAuthStore } from "../../store/useAuthStore";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -93,7 +94,8 @@ const SectionCard = ({
 export const ItemDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const { isAdmin, isLibrarian } = useAuthStore();
+  const canAccessAdmin = isAdmin() || isLibrarian();
   const [item, setItem] = useState<ItemResponse | null>(null);
   const [template, setTemplate] = useState<ResourceTemplateResponse | null>(
     null
@@ -215,6 +217,9 @@ export const ItemDetailsPage = () => {
   const handleBadgeClick = (type: "template" | "itemSet", filterId: string) =>
     navigate("/browse", { state: { [type]: filterId } });
 
+  const handleFilePlusClick = (type: "media", ItemId: string) =>
+    navigate("/media/new", { state: { [type]: ItemId } });
+
   const isImage = template?.label.includes("صورة");
 
   return (
@@ -266,7 +271,7 @@ export const ItemDetailsPage = () => {
             <ArrowLeft size={16} /> Back to list
           </button>
 
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ gap: 10, display: canAccessAdmin ? "flex" : "none" }}>
             <ActionBtn
               icon={<Edit size={15} />}
               label="Edit"
@@ -347,6 +352,7 @@ export const ItemDetailsPage = () => {
                     fontFamily: "monospace",
                     padding: "4px 12px",
                     borderRadius: 999,
+                    display: canAccessAdmin ? "block" : "none",
                   }}
                 >
                   ID: {item.id}
@@ -563,13 +569,16 @@ export const ItemDetailsPage = () => {
               icon={<ImageIcon size={18} />}
               action={
                 <button
+                  onClick={() =>
+                    handleFilePlusClick("media", item.id.toString())
+                  }
                   style={{
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
                     color: C.gold,
                     padding: 4,
-                    display: "flex",
+                    display: canAccessAdmin ? "flex" : "none",
                     alignItems: "center",
                     transition: "color 0.15s",
                   }}
@@ -683,6 +692,7 @@ const ActionBtn = ({
     onClick={onClick}
     style={{
       display: "inline-flex",
+
       alignItems: "center",
       gap: 7,
       background: danger ? "#fdf0ee" : C.surface,

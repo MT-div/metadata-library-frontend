@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { CreateValueRequest } from "../../types/metadata";
 import {
   UploadCloud,
@@ -36,9 +36,11 @@ interface PropertyOption {
 
 export const CreateMediaPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [itemId, setItemId] = useState<number>(0);
+  const [itemId, setItemId] = useState<number>(location.state?.media);
   const [mediaValues, setMediaValues] = useState<CreateValueRequest[]>([]);
   const [availableProps, setAvailableProps] = useState<PropertyOption[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<number>(0);
@@ -47,6 +49,7 @@ export const CreateMediaPage = () => {
   const [focusedField, setFocusedField] = useState<string | number | null>(
     null
   );
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

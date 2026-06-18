@@ -6,6 +6,7 @@ import usersIcon from "../assets/icons/users.svg";
 import bookMarkedIcon from "../assets/icons/book-marked.svg";
 import vasePng from "../assets/icons/vase.png";
 import backVase from "../assets/icons/backVase.png"; // uncomment when file is ready
+import { useAuthStore } from "../store/useAuthStore";
 
 import libraryHero from "../assets/images/libraryHero6.png";
 
@@ -69,7 +70,8 @@ const FEATURES = [
 // ─────────────────────────────────────────────────────────────────────────────
 export const WelcomePage = () => {
   const navigate = useNavigate();
-
+  const { isAdmin, isLibrarian } = useAuthStore();
+  const canAccessAdmin = isAdmin() || isLibrarian();
   return (
     <div
       style={{
@@ -343,6 +345,7 @@ export const WelcomePage = () => {
                 fontFamily: "sans-serif",
                 cursor: "pointer",
                 transition: "background 0.2s",
+                display: canAccessAdmin ? "block" : "none",
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.background = "#f0e8d8")
