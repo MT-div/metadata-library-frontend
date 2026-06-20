@@ -41,6 +41,7 @@ const spinStyle: React.CSSProperties = { animation: "spin 1s linear infinite" };
 interface Patron {
   id: number;
   fullName: string;
+  nationalId: string;
 }
 interface CirculationRecord {
   id: number;
@@ -163,8 +164,10 @@ export const CirculationPage = () => {
     })();
   }, [loadHistory]);
 
+  // ── Patron Verification ──
   const verifyPatron = async () => {
-    if (!patronId.trim()) {
+    const inputId = patronId.trim();
+    if (!inputId) {
       setPatronData(null);
       setPatronError(false);
       return;
@@ -172,10 +175,24 @@ export const CirculationPage = () => {
     setIsVerifyingPatron(true);
     setPatronError(false);
     try {
-      const res = await api.get<Patron>(`/api/Patrons/${patronId}`);
-      setPatronData(res.data);
-      setTimeout(() => checkoutBarcodeRef.current?.focus(), 100);
-    } catch {
+      // 👇 1. نستخدم الـ Endpoint الخاص بالبحث بدلاً من الـ ID المباشر
+      const res = await api.get<Patron[]>(`/api/Patrons?search=${inputId}`);
+
+      // 👇 2. بما أن البحث يعيد مصفوفة (قد تحتوي تشابهات)، نبحث عن التطابق التام للرقم الوطني
+      const exactMatch = res.data.find(
+        (p) => p.nationalId.toLowerCase() === inputId.toLowerCase()
+      );
+
+      if (exactMatch) {
+        setPatronData(exactMatch);
+        // Auto focus barcode input after successful patron scan
+        setTimeout(() => checkoutBarcodeRef.current?.focus(), 100);
+      } else {
+        // إذا لم نجد تطابقاً تاماً، نرمي خطأ ليتم التقاطه في الأسفل
+        throw new Error("Patron not found");
+      }
+    } catch (err: unknown) {
+      console.error("Patron verification failed:", err);
       setPatronData(null);
       setPatronError(true);
     } finally {
