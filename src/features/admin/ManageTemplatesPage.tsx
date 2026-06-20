@@ -64,7 +64,15 @@ export const ManageTemplatesPage = () => {
   >("active");
 
   const [editableProps, setEditableProps] = useState<EditableProperty[]>([]);
+  // 👇 1. سطر جديد لحفظ النسخة الأصلية للمقارنة
+  const [originalProps, setOriginalProps] = useState<EditableProperty[]>([]);
+
+  // باقي الحالات...
   const [allProperties, setAllProperties] = useState<PropertyOption[]>([]);
+
+  // 👇 2. سطر جديد يحسب هل يوجد تغييرات أم لا (بمقارنة النصوص)
+  const hasChanges =
+    JSON.stringify(originalProps) !== JSON.stringify(editableProps);
   const [propToAdd, setPropToAdd] = useState<number>(0);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -77,21 +85,24 @@ export const ManageTemplatesPage = () => {
     setSelectedTemplateId(id);
     if (!id) {
       setEditableProps([]);
+      setOriginalProps([]); // 👈 تصفير النسخة الأصلية
       return;
     }
     const tpl = list.find((t) => t.id === id);
     if (tpl) {
-      setEditableProps(
-        [...tpl.properties]
-          .map((p) => ({
-            propertyId: p.propertyId,
-            propertyLabel: p.propertyLabel,
-            isRequired: p.isRequired,
-            displayOrder: p.displayOrder,
-            alternateLabel: "",
-          }))
-          .sort((a, b) => a.displayOrder - b.displayOrder)
-      );
+      const mapped = [...tpl.properties]
+        .map((p) => ({
+          propertyId: p.propertyId,
+          propertyLabel: p.propertyLabel,
+          isRequired: p.isRequired,
+          displayOrder: p.displayOrder,
+          alternateLabel: "",
+        }))
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+
+      setEditableProps(mapped);
+      // 👇 أخذ نسخة عميقة (Deep Copy) من الخصائص لكي لا تتأثر بالتعديلات
+      setOriginalProps(JSON.parse(JSON.stringify(mapped)));
     }
   };
 
@@ -229,6 +240,8 @@ export const ManageTemplatesPage = () => {
 
       if (res.status === 200 || res.status === 204) {
         setSaveSuccess(true);
+        // 👇 تحديث النسخة الأصلية لتطابق التعديلات الجديدة بعد نجاح الحفظ
+        setOriginalProps(JSON.parse(JSON.stringify(editableProps)));
         setTimeout(() => setSaveSuccess(false), 2500);
       }
     } catch (e) {
@@ -623,17 +636,23 @@ export const ManageTemplatesPage = () => {
 
                 <button
                   onClick={handleSave}
-                  disabled={isSaving || isSelectedTplDeleted}
+                  // 👇 تعطيل الزر إذا كان يحفظ، أو القالب محذوف، أو لا يوجد تغييرات
+                  disabled={isSaving || isSelectedTplDeleted || !hasChanges}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
+                    // 👇 تغيير لون الخلفية حسب الحالة (باهت إذا لم يكن هناك تغيير)
                     background: saveSuccess
                       ? C.successBg
-                      : isSelectedTplDeleted
-                      ? C.goldBorder
+                      : isSelectedTplDeleted || !hasChanges
+                      ? C.goldLight
                       : C.gold,
-                    color: saveSuccess ? C.success : "#fff",
+                    color: saveSuccess
+                      ? C.success
+                      : isSelectedTplDeleted || !hasChanges
+                      ? C.inkSoft
+                      : "#fff",
                     border: saveSuccess
                       ? `1.5px solid rgba(45,110,58,0.3)`
                       : "none",
@@ -643,23 +662,26 @@ export const ManageTemplatesPage = () => {
                     fontSize: "0.88rem",
                     fontWeight: 700,
                     cursor:
-                      isSaving || isSelectedTplDeleted
+                      isSaving || isSelectedTplDeleted || !hasChanges
                         ? "not-allowed"
                         : "pointer",
-                    opacity: isSaving ? 0.7 : 1,
+                    opacity: isSaving || isSelectedTplDeleted ? 0.7 : 1,
                     transition: "all 0.2s",
                     boxShadow:
-                      saveSuccess || isSelectedTplDeleted
+                      saveSuccess || isSelectedTplDeleted || !hasChanges
                         ? "none"
                         : "0 2px 10px rgba(200,169,110,0.3)",
                     whiteSpace: "nowrap",
                   }}
                 >
                   <Save size={16} />
+                  {/* 👇 النص يتغير بذكاء */}
                   {isSaving
                     ? "Saving..."
                     : saveSuccess
                     ? "✓ Saved!"
+                    : !hasChanges
+                    ? "No changes yet"
                     : "Save Changes"}
                 </button>
               </div>

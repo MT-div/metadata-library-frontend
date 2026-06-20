@@ -2,7 +2,7 @@ import axios from "axios";
 
 // 1. إنشاء نسخة مخصصة من Axios مع الرابط الأساسي للباك اند
 export const api = axios.create({
-  baseURL: "http://localhost:5022", // رابط السيرفر الخاص بك من الـ Swagger
+  baseURL: "https://localhost:7206", // رابط السيرفر الخاص بك من الـ Swagger
   headers: {
     "Content-Type": "application/json",
   },

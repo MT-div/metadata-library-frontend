@@ -166,3 +166,94 @@ export interface CreateSystemUserCommand {
 export interface BookmarksResponse {
   id: number;
 }
+
+// ==========================================
+// ── Item Copies (النسخ الفيزيائية) ──
+// ==========================================
+
+export interface ItemCopyResponse {
+  id: number;
+  itemId: number;
+  barcode: string;
+  status: number; // 0=Available, 1=Borrowed, 2=Reference, 3=Maintenance
+  notes?: string | null;
+}
+
+export interface CreateCopyCommand {
+  itemId: number;
+  barcode: string;
+  notes?: string | null;
+}
+
+export interface UpdateCopyCommand {
+  id: number;
+  barcode: string;
+  status: number;
+  notes?: string | null;
+}
+
+// ==========================================
+// ── Patrons (المستعيرون) ──
+// ==========================================
+
+export interface PatronResponse {
+  id: number;
+  fullName: string;
+  nationalId: string;
+  phoneNumber: string;
+  email?: string | null;
+  // قد يرسل الباك اند حقولاً إحصائية إضافية لاحقاً
+}
+
+export interface CreatePatronCommand {
+  fullName: string;
+  nationalId: string;
+  phoneNumber: string;
+  email?: string | null;
+}
+
+export interface UpdatePatronCommand {
+  id: number;
+  fullName: string;
+  phoneNumber: string;
+  email?: string | null;
+}
+
+// ==========================================
+// ── Circulation (الإعارة والإرجاع) ──
+// ==========================================
+
+export interface CheckoutRequest {
+  barcode: string;
+  patronId: number;
+  customDueDate?: string | null; // ISO Date String
+}
+
+export interface ReturnRequest {
+  barcode: string;
+}
+
+// هذا الرد المتوقع من Active و History و Overdue
+export interface CirculationRecordResponse {
+  id: number;
+  copyId: number;
+  patronId: number;
+  patronName: string; // للسهولة في العرض
+  itemTitle: string; // للسهولة في العرض
+  barcode: string;
+  borrowDate: string;
+  dueDate: string;
+  returnDate?: string | null;
+  status: string; // "Active", "Returned", "Overdue"
+}
+
+// ==========================================
+// ── Settings & Search ──
+// ==========================================
+
+export interface SearchableFieldResponse {
+  propertyId: number;
+  label: string;
+  localName: string;
+  vocabularyPrefix: string;
+}

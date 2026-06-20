@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 // التخطيطات وحارس الأمن
 import { MainLayout } from "./layouts/MainLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute"; // <-- الحارس
+import { AdminRoute, LibrarianRoute } from "./components/auth/ProtectedRoute"; // <-- الحارس
 
 // الصفحات
 import { WelcomePage } from "./pages/WelcomePage";
@@ -29,6 +29,9 @@ import { ManageUsersPage } from "./features/admin/ManageUsersPage";
 import { CreateUserPage } from "./features/admin/CreateUserPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
 import { AdminDashboardPage } from "./features/admin/AdminDashboardPage";
+import { LibrarianLayout } from "./layouts/LibrarianLayout";
+import { LibrarianDashboardPage } from "./features/librarian/LibrarianDashboardPage";
+import { CirculationPage } from "./features/librarian/CirculationPage";
 function App() {
   return (
     <BrowserRouter>
@@ -46,13 +49,11 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
-
         {/* صفحة تسجيل الدخول (مستقلة بدون Layout أو يمكن وضعها في MainLayout) */}
-
         {/* ===================================== */}
         {/* 2. القسم الإداري (محمي بحارس الأمن!) */}
         {/* ===================================== */}
-        <Route element={<ProtectedRoute />}>
+        <Route element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route
               path="/admin"
@@ -73,6 +74,20 @@ function App() {
             <Route path="properties/new" element={<CreatePropertyPage />} />
             <Route path="templates/new" element={<CreateTemplatePage />} />
             <Route path="itemsets/new" element={<CreateItemSetPage />} />
+          </Route>
+        </Route>
+        // 3. قسم أمين المكتبة (Librarians & Admins)
+        <Route element={<LibrarianRoute />}>
+          <Route element={<LibrarianLayout />}>
+            <Route
+              path="/librarian"
+              element={<Navigate to="/librarian/dashboard" replace />}
+            />
+            <Route
+              path="librarian/dashboard"
+              element={<LibrarianDashboardPage />}
+            />
+            <Route path="librarian/circulation" element={<CirculationPage />} />
           </Route>
         </Route>
       </Routes>
