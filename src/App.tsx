@@ -32,6 +32,8 @@ import { AdminDashboardPage } from "./features/admin/AdminDashboardPage";
 import { LibrarianLayout } from "./layouts/LibrarianLayout";
 import { LibrarianDashboardPage } from "./features/librarian/LibrarianDashboardPage";
 import { CirculationPage } from "./features/librarian/CirculationPage";
+import { CreatePatronPage } from "./features/librarian/CreatePatronPage";
+import { ManagePatronsPage } from "./features/librarian/ManagePatronsPage";
 function App() {
   return (
     <BrowserRouter>
@@ -88,6 +90,12 @@ function App() {
               element={<LibrarianDashboardPage />}
             />
             <Route path="librarian/circulation" element={<CirculationPage />} />
+
+            <Route path="librarian/patrons" element={<ManagePatronsPage />} />
+            <Route
+              path="librarian/patrons/new"
+              element={<CreatePatronPage />}
+            />
           </Route>
         </Route>
       </Routes>
