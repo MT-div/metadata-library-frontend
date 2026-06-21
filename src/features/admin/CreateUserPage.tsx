@@ -1,6 +1,10 @@
+// src/features/admin/CreateUserPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import {
   UserPlus,
   Save,
@@ -11,23 +15,6 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-react";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 export const CreateUserPage = () => {
   const navigate = useNavigate();
@@ -83,7 +70,6 @@ export const CreateUserPage = () => {
       }
     } catch (err: unknown) {
       console.error("Error creating user:", err);
-      // محاولة عرض رسالة الخطأ القادمة من السيرفر (مثل: Email already exists)
       setErrorMsg(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
@@ -96,7 +82,7 @@ export const CreateUserPage = () => {
     border: `1.5px solid ${focusedField === field ? C.gold : C.goldBorder}`,
     borderRadius: 10,
     padding: "11px 14px 11px 40px", // مساحة للأيقونة على اليسار
-    fontFamily: sans,
+    fontFamily: fonts.sans,
     fontSize: "0.9rem",
     color: C.ink,
     background: C.surface,
@@ -105,7 +91,7 @@ export const CreateUserPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -134,7 +120,7 @@ export const CreateUserPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -148,34 +134,10 @@ export const CreateUserPage = () => {
             Create a new account for staff or researchers to access the system.
           </p>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: "transparent",
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 999,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: C.inkMid,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+
+        <OutlineBtn onClick={() => navigate(-1)} rounded>
           <ArrowLeft size={15} /> Back
-        </button>
+        </OutlineBtn>
       </div>
 
       {/* ── Form card ── */}
@@ -217,7 +179,7 @@ export const CreateUserPage = () => {
             <div>
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "1.05rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -522,66 +484,14 @@ export const CreateUserPage = () => {
                 gap: 10,
               }}
             >
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                style={{
-                  background: "transparent",
-                  border: `1.5px solid ${C.goldBorder}`,
-                  borderRadius: 10,
-                  padding: "10px 20px",
-                  fontFamily: sans,
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  color: C.inkMid,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
-              >
+              <OutlineBtn type="button" onClick={() => navigate(-1)}>
                 Cancel
-              </button>
+              </OutlineBtn>
 
-              <button
+              <GoldBtn
                 type="submit"
                 disabled={isSubmitting || !formData.email.trim()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: success
-                    ? "#edf7ee"
-                    : isSubmitting
-                    ? C.goldBorder
-                    : C.gold,
-                  color: success ? "#2d6e3a" : "#fff",
-                  border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
-                  borderRadius: 10,
-                  padding: "10px 24px",
-                  fontFamily: sans,
-                  fontSize: "0.88rem",
-                  fontWeight: 700,
-                  cursor:
-                    isSubmitting || !formData.email.trim()
-                      ? "not-allowed"
-                      : "pointer",
-                  transition: "all 0.2s",
-                  boxShadow:
-                    success || isSubmitting
-                      ? "none"
-                      : "0 2px 12px rgba(200,169,110,0.35)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting && formData.email.trim() && !success)
-                    e.currentTarget.style.background = C.goldDark;
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting && formData.email.trim() && !success)
-                    e.currentTarget.style.background = C.gold;
-                }}
+                success={success}
               >
                 <Save size={16} />
                 {isSubmitting
@@ -589,7 +499,7 @@ export const CreateUserPage = () => {
                   : success
                   ? "✓ User Created!"
                   : "Create Account"}
-              </button>
+              </GoldBtn>
             </div>
           </form>
         </div>

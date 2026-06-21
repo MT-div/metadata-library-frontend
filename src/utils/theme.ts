@@ -11,6 +11,7 @@ export const C = {
   ink: "#1a1208",
   inkMid: "#5c4a30",
   inkSoft: "#9a8060",
+  danger: "#c0392b",
 };
 
 export const fonts = {
