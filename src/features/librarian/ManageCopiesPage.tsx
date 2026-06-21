@@ -1,4 +1,7 @@
+// src/features/librarian/ManageCopiesPage.tsx
 import { useState, useEffect, useRef, useCallback } from "react";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
 import type { ItemResponse, ItemCopyResponse } from "../../types/metadata";
@@ -14,31 +17,8 @@ import {
   Edit,
   X,
   Check,
+  LayoutTemplate,
 } from "lucide-react";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-  blue: "#2d6e9a",
-  blueBg: "#e8f0f5",
-  orange: "#b8860b",
-  orangeBg: "#fcf6e8",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 export const ManageCopiesPage = () => {
   const [items, setItems] = useState<ItemResponse[]>([]);
@@ -159,7 +139,6 @@ export const ManageCopiesPage = () => {
     }
   };
 
-  // ── Edit Handlers ──
   const startEditing = (copy: ItemCopyResponse) => {
     setEditingCopyId(copy.id);
     setEditBarcode(copy.barcode);
@@ -182,10 +161,8 @@ export const ManageCopiesPage = () => {
         notes: editNotes.trim() || null,
       };
 
-      // 👇 الاتصال بالـ PUT Endpoint لتعديل النسخة
       await api.put(`/api/item-copies/${copyId}`, payload);
 
-      // تحديث الحالة محلياً للسرعة
       setCopies((prev) =>
         prev.map((c) => (c.id === copyId ? { ...c, ...payload } : c))
       );
@@ -231,7 +208,7 @@ export const ManageCopiesPage = () => {
   };
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       <div
         style={{
           display: "flex",
@@ -259,7 +236,7 @@ export const ManageCopiesPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -309,7 +286,7 @@ export const ManageCopiesPage = () => {
             <Archive size={16} color={C.goldDark} />
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "0.95rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -349,7 +326,7 @@ export const ManageCopiesPage = () => {
                   borderRadius: 8,
                   border: `1px solid ${C.goldBorder}`,
                   fontSize: "0.8rem",
-                  fontFamily: sans,
+                  fontFamily: fonts.sans,
                   outline: "none",
                 }}
               />
@@ -483,7 +460,7 @@ export const ManageCopiesPage = () => {
                 <div>
                   <h2
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontSize: "1.2rem",
                       fontWeight: 700,
                       color: C.ink,
@@ -577,43 +554,27 @@ export const ManageCopiesPage = () => {
                       borderRadius: 8,
                       border: `1px solid ${C.goldBorder}`,
                       fontSize: "0.9rem",
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       outline: "none",
                     }}
                   />
                 </div>
-                <button
+
+                <GoldBtn
                   type="submit"
                   disabled={isProcessing || !newBarcode.trim()}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background:
-                      isProcessing || !newBarcode.trim()
-                        ? C.goldBorder
-                        : C.gold,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "10px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    cursor:
-                      isProcessing || !newBarcode.trim()
-                        ? "not-allowed"
-                        : "pointer",
-                    transition: "all 0.2s",
-                    height: "42px",
-                  }}
+                  style={{ height: "42px" }}
                 >
                   {isProcessing ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2
+                      size={16}
+                      style={{ animation: "spin 1s linear infinite" }}
+                    />
                   ) : (
                     <Plus size={16} />
                   )}{" "}
                   Add Copy
-                </button>
+                </GoldBtn>
               </form>
             </div>
 
@@ -628,24 +589,28 @@ export const ManageCopiesPage = () => {
             >
               <div
                 style={{
-                  padding: "16px 24px",
-                  borderBottom: `1px solid ${C.goldBorder}`,
+                  background: C.goldLight,
+                  borderBottom: `1.5px solid ${C.goldBorder}`,
+                  padding: "14px 24px",
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontFamily: serif,
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                    color: C.ink,
-                  }}
-                >
-                  Physical Copies Inventory
-                </h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <LayoutTemplate size={16} color={C.gold} />
+                  <h2
+                    style={{
+                      fontFamily: fonts.serif,
+                      fontSize: "0.92rem",
+                      fontWeight: 700,
+                      color: C.ink,
+                      margin: 0,
+                    }}
+                  >
+                    Physical Copies Inventory
+                  </h2>
+                </div>
                 <span
                   style={{
                     background: C.goldMid,
@@ -675,7 +640,7 @@ export const ManageCopiesPage = () => {
                   />
                   <p
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontSize: "1.1rem",
                       color: C.inkMid,
                       margin: "0 0 6px",
@@ -799,7 +764,7 @@ export const ManageCopiesPage = () => {
                                     borderRadius: 6,
                                     border: `1px solid ${C.goldBorder}`,
                                     fontSize: "0.8rem",
-                                    fontFamily: sans,
+                                    fontFamily: fonts.sans,
                                   }}
                                 >
                                   <option value={0}>Available</option>
@@ -840,7 +805,7 @@ export const ManageCopiesPage = () => {
                                     borderRadius: 6,
                                     border: `1px solid ${C.goldBorder}`,
                                     fontSize: "0.8rem",
-                                    fontFamily: sans,
+                                    fontFamily: fonts.sans,
                                   }}
                                 />
                               ) : (
@@ -969,7 +934,7 @@ export const ManageCopiesPage = () => {
             />
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkSoft,
               }}
@@ -980,6 +945,7 @@ export const ManageCopiesPage = () => {
           </div>
         )}
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

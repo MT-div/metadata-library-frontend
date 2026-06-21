@@ -15,6 +15,10 @@ export const C = {
   dangerBg: "#fdf0ee",
   success: "#2d6e3a",
   successBg: "#edf7ee",
+  blue: "#2d6e9a",
+  blueBg: "#e8f0f5",
+  orange: "#b8860b",
+  orangeBg: "#fcf6e8",
 };
 
 export const fonts = {
