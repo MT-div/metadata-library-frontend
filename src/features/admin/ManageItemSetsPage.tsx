@@ -1,5 +1,8 @@
+// src/features/admin/ManageItemSetsPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
 import {
   Folder,
   Plus,
@@ -16,25 +19,6 @@ import {
 import type { ItemSetResponse, ItemResponse } from "../../types/metadata";
 import { api } from "../../services/api";
 
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
 // Extend ItemSetResponse to include isDeleted
 interface ExtendedItemSetResponse extends ItemSetResponse {
   isDeleted?: boolean;
@@ -45,9 +29,11 @@ export const ManageItemSetsPage = () => {
   const [itemSets, setItemSets] = useState<ExtendedItemSetResponse[]>([]);
   const [allItems, setAllItems] = useState<ItemResponse[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
-  
+
   // Status Filter State
-  const [filterStatus, setFilterStatus] = useState<"active" | "deleted" | "all">("active");
+  const [filterStatus, setFilterStatus] = useState<
+    "active" | "deleted" | "all"
+  >("active");
 
   const [itemToAdd, setItemToAdd] = useState<number | string>("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -74,19 +60,25 @@ export const ManageItemSetsPage = () => {
   const getItemTitle = (item: ItemResponse) =>
     item.metadataValues.find(
       (v) =>
-        v.propertyLabel.toLowerCase().includes("title") || v.propertyLabel.includes("عنوان")
+        v.propertyLabel.toLowerCase().includes("title") ||
+        v.propertyLabel.includes("عنوان")
     )?.valueText ?? `Untitled #${item.id}`;
 
   // ── COLLECTION ACTIONS (SOFT DELETE & RESTORE) ──
 
   const handleDeleteSet = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this collection? (Soft Delete)")) return;
+    if (
+      !confirm("Are you sure you want to delete this collection? (Soft Delete)")
+    )
+      return;
 
     setIsDeletingSet(id);
     try {
       await api.delete(`/api/item-sets/${id}`);
-      setItemSets((prev) => prev.map(s => s.id === id ? { ...s, isDeleted: true } : s));
-      
+      setItemSets((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isDeleted: true } : s))
+      );
+
       // If we are viewing active only, deselect if it gets deleted
       if (filterStatus === "active" && selectedSetId === id) {
         setSelectedSetId(null);
@@ -106,7 +98,9 @@ export const ManageItemSetsPage = () => {
     try {
       // Pass { id } in the body to match the Command expectations and avoid 400/415 errors
       await api.put(`/api/item-sets/Undelet/${id}`, { id: id });
-      setItemSets((prev) => prev.map(s => s.id === id ? { ...s, isDeleted: false } : s));
+      setItemSets((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isDeleted: false } : s))
+      );
     } catch (error) {
       console.error("Error restoring collection:", error);
       alert("An error occurred while restoring the collection.");
@@ -167,8 +161,14 @@ export const ManageItemSetsPage = () => {
 
   const handleRemove = async (itemId: number) => {
     if (isSelectedSetDeleted) return;
-    if (!selectedSetId || !confirm("Remove this item from the collection? (The item won't be deleted from the library)")) return;
-    
+    if (
+      !selectedSetId ||
+      !confirm(
+        "Remove this item from the collection? (The item won't be deleted from the library)"
+      )
+    )
+      return;
+
     setIsProcessing(true);
     try {
       const res = await api.delete(
@@ -193,14 +193,14 @@ export const ManageItemSetsPage = () => {
   };
 
   // ── FILTER COLLECTIONS ──
-  const filteredSets = itemSets.filter(set => {
+  const filteredSets = itemSets.filter((set) => {
     if (filterStatus === "active") return !set.isDeleted;
     if (filterStatus === "deleted") return set.isDeleted;
     return true; // all
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -229,7 +229,7 @@ export const ManageItemSetsPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -243,29 +243,13 @@ export const ManageItemSetsPage = () => {
             Create, delete, and link items to library collections.
           </p>
         </div>
-        <button
+
+        <GoldBtn
           onClick={() => navigate("/itemsets/new")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: C.gold,
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 20px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            transition: "background 0.15s",
-            boxShadow: "0 2px 10px rgba(200,169,110,0.3)",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = C.goldDark)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
+          style={{ padding: "10px 20px", fontSize: "0.85rem" }}
         >
           <Plus size={15} /> New Collection
-        </button>
+        </GoldBtn>
       </div>
 
       <div
@@ -302,7 +286,7 @@ export const ManageItemSetsPage = () => {
               <Folder size={16} color={C.gold} />
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "0.9rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -313,12 +297,20 @@ export const ManageItemSetsPage = () => {
               </h2>
             </div>
           </div>
-          
+
           {/* Status Filter */}
-          <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.goldBorder}`, background: "#fdfaf6" }}>
+          <div
+            style={{
+              padding: "10px 12px",
+              borderBottom: `1px solid ${C.goldBorder}`,
+              background: "#fdfaf6",
+            }}
+          >
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as "active" | "deleted" | "all")}
+              onChange={(e) =>
+                setFilterStatus(e.target.value as "active" | "deleted" | "all")
+              }
               style={{
                 width: "100%",
                 padding: "8px",
@@ -328,8 +320,8 @@ export const ManageItemSetsPage = () => {
                 color: filterStatus === "deleted" ? C.danger : C.inkMid,
                 fontSize: "0.8rem",
                 outline: "none",
-                fontFamily: sans,
-                cursor: "pointer"
+                fontFamily: fonts.sans,
+                cursor: "pointer",
               }}
             >
               <option value="active">Active Only</option>
@@ -340,7 +332,16 @@ export const ManageItemSetsPage = () => {
 
           <div style={{ padding: "10px" }}>
             {filteredSets.length === 0 ? (
-               <p style={{ textAlign: "center", fontSize: "0.8rem", color: C.inkSoft, padding: "20px 0" }}>No collections found.</p>
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.8rem",
+                  color: C.inkSoft,
+                  padding: "20px 0",
+                }}
+              >
+                No collections found.
+              </p>
             ) : (
               filteredSets.map((set) => {
                 const isActive = set.id === selectedSetId;
@@ -355,7 +356,9 @@ export const ManageItemSetsPage = () => {
                       padding: "11px 12px",
                       borderRadius: 10,
                       marginBottom: 3,
-                      border: `1.5px solid ${isActive ? C.gold : "transparent"}`,
+                      border: `1.5px solid ${
+                        isActive ? C.gold : "transparent"
+                      }`,
                       background: isActive ? C.goldLight : "transparent",
                       cursor: "pointer",
                       transition: "all 0.15s",
@@ -365,26 +368,46 @@ export const ManageItemSetsPage = () => {
                       opacity: isDeleted ? 0.6 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      if (!isActive) e.currentTarget.style.background = isDeleted ? "#f1f1f1" : C.bg;
+                      if (!isActive)
+                        e.currentTarget.style.background = isDeleted
+                          ? "#f1f1f1"
+                          : C.bg;
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive)
                         e.currentTarget.style.background = "transparent";
                     }}
                   >
-                    <div style={{ overflow: "hidden", display: "flex", alignItems: "center", gap: 6 }}>
-                      {isDeleted && <AlertCircle size={12} color={C.danger} style={{ flexShrink: 0 }} />}
+                    <div
+                      style={{
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      {isDeleted && (
+                        <AlertCircle
+                          size={12}
+                          color={C.danger}
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
                       <div>
                         <p
                           style={{
                             margin: 0,
                             fontSize: "0.85rem",
                             fontWeight: isActive ? 700 : 500,
-                            color: isDeleted ? C.inkSoft : (isActive ? C.goldDark : C.inkMid),
+                            color: isDeleted
+                              ? C.inkSoft
+                              : isActive
+                              ? C.goldDark
+                              : C.inkMid,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
-                            textDecoration: isDeleted ? "line-through" : "none"
+                            textDecoration: isDeleted ? "line-through" : "none",
                           }}
                         >
                           {set.title}
@@ -454,16 +477,30 @@ export const ManageItemSetsPage = () => {
                 <div>
                   <h2
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontSize: "1.1rem",
                       fontWeight: 700,
                       color: isSelectedSetDeleted ? C.inkSoft : C.ink,
                       margin: "0 0 4px",
-                      textDecoration: isSelectedSetDeleted ? "line-through" : "none"
+                      textDecoration: isSelectedSetDeleted
+                        ? "line-through"
+                        : "none",
                     }}
                   >
                     {selectedSet.title}
-                    {isSelectedSetDeleted && <span style={{ fontSize: "0.75rem", color: C.danger, marginLeft: 8, textDecoration: "none", display: "inline-block" }}>(Deleted)</span>}
+                    {isSelectedSetDeleted && (
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: C.danger,
+                          marginLeft: 8,
+                          textDecoration: "none",
+                          display: "inline-block",
+                        }}
+                      >
+                        (Deleted)
+                      </span>
+                    )}
                   </h2>
                   <p
                     style={{
@@ -502,12 +539,16 @@ export const ManageItemSetsPage = () => {
                   }}
                 >
                   {selectedSet.isPublic ? (
-                    <><Globe size={12} /> Public</>
+                    <>
+                      <Globe size={12} /> Public
+                    </>
                   ) : (
-                    <><Lock size={12} /> Private</>
+                    <>
+                      <Lock size={12} /> Private
+                    </>
                   )}
                 </span>
-                
+
                 {/* Delete / Restore Actions */}
                 {isSelectedSetDeleted ? (
                   <button
@@ -515,9 +556,17 @@ export const ManageItemSetsPage = () => {
                     disabled={isDeletingSet === selectedSet.id}
                     title="Restore Collection"
                     style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, borderRadius: 8, background: C.successBg, border: "none",
-                      color: C.success, cursor: "pointer", transition: "opacity 0.2s"
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: C.successBg,
+                      border: "none",
+                      color: C.success,
+                      cursor: "pointer",
+                      transition: "opacity 0.2s",
                     }}
                   >
                     <RefreshCw size={16} />
@@ -528,9 +577,17 @@ export const ManageItemSetsPage = () => {
                     disabled={isDeletingSet === selectedSet.id}
                     title="Delete Collection"
                     style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, borderRadius: 8, background: C.dangerBg, border: "none",
-                      color: C.danger, cursor: "pointer", transition: "opacity 0.2s"
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: C.dangerBg,
+                      border: "none",
+                      color: C.danger,
+                      cursor: "pointer",
+                      transition: "opacity 0.2s",
                     }}
                   >
                     <Trash2 size={16} />
@@ -580,7 +637,7 @@ export const ManageItemSetsPage = () => {
                       }`,
                       borderRadius: 10,
                       padding: "10px 36px 10px 14px",
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       fontSize: "0.85rem",
                       color: itemToAdd ? C.ink : C.inkSoft,
                       outline: "none",
@@ -609,38 +666,18 @@ export const ManageItemSetsPage = () => {
                     ▾
                   </span>
                 </div>
-                <button
+
+                <GoldBtn
                   onClick={handleAdd}
                   disabled={isProcessing || !itemToAdd || isSelectedSetDeleted}
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 7,
-                    background:
-                      !itemToAdd || isProcessing || isSelectedSetDeleted ? C.goldBorder : C.gold,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 10,
                     padding: "10px 20px",
-                    fontFamily: sans,
                     fontSize: "0.85rem",
-                    fontWeight: 700,
-                    cursor:
-                      !itemToAdd || isProcessing || isSelectedSetDeleted ? "not-allowed" : "pointer",
-                    transition: "background 0.15s",
                     whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (itemToAdd && !isProcessing && !isSelectedSetDeleted)
-                      e.currentTarget.style.background = C.goldDark;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (itemToAdd && !isProcessing && !isSelectedSetDeleted)
-                      e.currentTarget.style.background = C.gold;
                   }}
                 >
                   <Plus size={15} /> Add to Collection
-                </button>
+                </GoldBtn>
               </div>
             </div>
 
@@ -656,7 +693,7 @@ export const ManageItemSetsPage = () => {
               >
                 <h3
                   style={{
-                    fontFamily: serif,
+                    fontFamily: fonts.serif,
                     fontSize: "0.95rem",
                     fontWeight: 700,
                     color: C.ink,
@@ -706,7 +743,7 @@ export const ManageItemSetsPage = () => {
                   </div>
                   <p
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontSize: "1rem",
                       color: C.inkMid,
                       margin: "0 0 4px",
@@ -785,7 +822,7 @@ export const ManageItemSetsPage = () => {
                             <p
                               style={{
                                 margin: 0,
-                                fontFamily: serif,
+                                fontFamily: fonts.serif,
                                 fontWeight: 700,
                                 fontSize: "0.92rem",
                                 color: C.ink,
@@ -821,19 +858,25 @@ export const ManageItemSetsPage = () => {
                             color: C.danger,
                             borderRadius: 8,
                             padding: "7px 12px",
-                            fontFamily: sans,
+                            fontFamily: fonts.sans,
                             fontSize: "0.78rem",
                             fontWeight: 600,
-                            cursor: (isProcessing || isSelectedSetDeleted) ? "not-allowed" : "pointer",
-                            opacity: (isProcessing || isSelectedSetDeleted) ? 0.4 : 1,
+                            cursor:
+                              isProcessing || isSelectedSetDeleted
+                                ? "not-allowed"
+                                : "pointer",
+                            opacity:
+                              isProcessing || isSelectedSetDeleted ? 0.4 : 1,
                             transition: "all 0.15s",
                             whiteSpace: "nowrap",
                           }}
                           onMouseEnter={(e) => {
-                            if (!isProcessing && !isSelectedSetDeleted) e.currentTarget.style.background = "#fce8e5";
+                            if (!isProcessing && !isSelectedSetDeleted)
+                              e.currentTarget.style.background = "#fce8e5";
                           }}
                           onMouseLeave={(e) => {
-                            if (!isProcessing && !isSelectedSetDeleted) e.currentTarget.style.background = C.dangerBg;
+                            if (!isProcessing && !isSelectedSetDeleted)
+                              e.currentTarget.style.background = C.dangerBg;
                           }}
                         >
                           <Trash2 size={13} /> Remove
@@ -857,7 +900,7 @@ export const ManageItemSetsPage = () => {
           >
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkSoft,
               }}
