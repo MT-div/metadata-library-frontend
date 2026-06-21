@@ -37,6 +37,7 @@ import { ManagePatronsPage } from "./features/librarian/ManagePatronsPage";
 import { ManageCopiesPage } from "./features/librarian/ManageCopiesPage";
 import { ActiveLoansPage } from "./features/librarian/ActiveLoansPage";
 import { CirculationHistoryPage } from "./features/librarian/CirculationHistoryPage";
+import { SettingsPage } from "./features/admin/SettingsPage";
 function App() {
   return (
     <BrowserRouter>
@@ -79,6 +80,7 @@ function App() {
             <Route path="properties/new" element={<CreatePropertyPage />} />
             <Route path="templates/new" element={<CreateTemplatePage />} />
             <Route path="itemsets/new" element={<CreateItemSetPage />} />
+            <Route path="admin/settings" element={<SettingsPage />} />
           </Route>
         </Route>
         // 3. قسم أمين المكتبة (Librarians & Admins)

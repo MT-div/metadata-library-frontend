@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  Settings,
   LayoutTemplate,
   Library,
   FilePlus,
@@ -14,6 +13,8 @@ import {
   ChevronRight,
   HardDrive,
   Users,
+  Sliders,
+  Database,
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -54,7 +55,7 @@ const NAV_GROUPS = [
       {
         title: "Metadata",
         path: "/admin/metadata",
-        icon: <Settings size={17} />,
+        icon: <Database size={17} />,
       },
       {
         title: "Templates",
@@ -80,6 +81,11 @@ const NAV_GROUPS = [
         title: "Users",
         path: "/admin/users",
         icon: <HardDrive size={17} />,
+      },
+      {
+        title: "Global Settings",
+        path: "/admin/settings",
+        icon: <Sliders size={17} />,
       },
     ],
   },
