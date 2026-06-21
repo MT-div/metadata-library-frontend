@@ -1,5 +1,10 @@
+// src/features/itemSets/BrowseItemSetsPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { api } from "../../services/api";
+import { useAuthStore } from "../../store/useAuthStore";
 import {
   Folder,
   FolderOpen,
@@ -12,23 +17,6 @@ import {
   Paperclip,
 } from "lucide-react";
 import type { ItemSetResponse } from "../../types/metadata";
-import { api } from "../../services/api";
-import { useAuthStore } from "../../store/useAuthStore";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.30)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 export const BrowseItemSetsPage = () => {
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
@@ -72,13 +60,12 @@ export const BrowseItemSetsPage = () => {
       style={{
         background: C.bg,
         minHeight: "calc(100vh - 72px)",
-        fontFamily: sans,
+        fontFamily: fonts.sans,
       }}
     >
       {/* ══════════ HERO ══════════ */}
       <div
         style={{
-          // background: `linear-gradient(to bottom, #ede7db, ${C.bg})`,
           background: C.bg,
           borderBottom: `1.5px solid ${C.goldBorder}`,
           padding: "44px 48px 36px",
@@ -132,7 +119,7 @@ export const BrowseItemSetsPage = () => {
 
               <h1
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "clamp(1.8rem,3vw,2.6rem)",
                   fontWeight: 800,
                   color: C.ink,
@@ -156,31 +143,18 @@ export const BrowseItemSetsPage = () => {
             </div>
 
             {/* New collection button */}
-            <button
+            <GoldBtn
               onClick={() => navigate("/itemsets/new")}
               style={{
                 display: canAccessAdmin ? "inline-flex" : "none",
-                alignItems: "center",
-                gap: 8,
-                background: C.gold,
-                color: "#fff",
-                border: "none",
                 borderRadius: 999,
                 padding: "12px 24px",
                 fontSize: "0.88rem",
-                fontWeight: 700,
-                fontFamily: sans,
-                cursor: "pointer",
-                transition: "background 0.2s",
                 boxShadow: "0 4px 16px rgba(200,169,110,0.35)",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = C.goldDark)
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
             >
               <Plus size={16} /> New Collection
-            </button>
+            </GoldBtn>
           </div>
 
           {/* ── Stats row ── */}
@@ -248,7 +222,7 @@ export const BrowseItemSetsPage = () => {
                       fontSize: "1.3rem",
                       fontWeight: 800,
                       color: C.ink,
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                     }}
                   >
                     {stat.value.toLocaleString()}
@@ -289,7 +263,7 @@ export const BrowseItemSetsPage = () => {
               border: "none",
               outline: "none",
               background: "transparent",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.88rem",
               color: C.ink,
             }}
@@ -355,7 +329,7 @@ export const BrowseItemSetsPage = () => {
             </div>
             <h3
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.3rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -378,30 +352,21 @@ export const BrowseItemSetsPage = () => {
                 : "Create your first collection to organize items."}
             </p>
             {!search && (
-              <button
+              <GoldBtn
                 onClick={() => navigate("/itemsets/new")}
                 style={{
-                  background: C.gold,
-                  color: "#fff",
-                  border: "none",
                   borderRadius: 999,
                   padding: "11px 28px",
-                  fontFamily: sans,
                   fontSize: "0.88rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
                   boxShadow: "0 4px 16px rgba(200,169,110,0.35)",
                 }}
               >
                 <Plus size={15} /> Create Collection
-              </button>
+              </GoldBtn>
             )}
           </div>
         ) : (
-          /* ── Grid ── */
+          /* Grid */
           <div
             style={{
               display: "grid",
@@ -433,7 +398,6 @@ const CollectionCard = ({
 }) => {
   const itemCount = set.items?.length || 0;
 
-  // Deterministic pastel cover color based on id
   const COVERS = [
     "linear-gradient(145deg,#c8a040,#8b5e1a)",
     "linear-gradient(145deg,#b8860b,#5c3a0a)",
@@ -560,7 +524,7 @@ const CollectionCard = ({
       >
         <h3
           style={{
-            fontFamily: serif,
+            fontFamily: fonts.serif,
             fontSize: "1.05rem",
             fontWeight: 700,
             color: C.ink,
