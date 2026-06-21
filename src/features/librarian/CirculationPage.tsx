@@ -1,5 +1,8 @@
+// src/features/librarian/CirculationPage.tsx
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
 import {
@@ -16,26 +19,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
-// FIX: Tailwind animate-spin replaced with inline style throughout
 const spinStyle: React.CSSProperties = { animation: "spin 1s linear infinite" };
 
 interface Patron {
@@ -75,7 +58,7 @@ const FieldLabel = ({
       textTransform: "uppercase",
       letterSpacing: "0.05em",
       marginBottom: 10,
-      fontFamily: sans,
+      fontFamily: fonts.sans,
     }}
   >
     {icon} {children}
@@ -164,7 +147,6 @@ export const CirculationPage = () => {
     })();
   }, [loadHistory]);
 
-  // ── Patron Verification ──
   const verifyPatron = async () => {
     const inputId = patronId.trim();
     if (!inputId) {
@@ -175,20 +157,15 @@ export const CirculationPage = () => {
     setIsVerifyingPatron(true);
     setPatronError(false);
     try {
-      // 👇 1. نستخدم الـ Endpoint الخاص بالبحث بدلاً من الـ ID المباشر
       const res = await api.get<Patron[]>(`/api/Patrons?search=${inputId}`);
-
-      // 👇 2. بما أن البحث يعيد مصفوفة (قد تحتوي تشابهات)، نبحث عن التطابق التام للرقم الوطني
       const exactMatch = res.data.find(
         (p) => p.nationalId.toLowerCase() === inputId.toLowerCase()
       );
 
       if (exactMatch) {
         setPatronData(exactMatch);
-        // Auto focus barcode input after successful patron scan
         setTimeout(() => checkoutBarcodeRef.current?.focus(), 100);
       } else {
-        // إذا لم نجد تطابقاً تاماً، نرمي خطأ ليتم التقاطه في الأسفل
         throw new Error("Patron not found");
       }
     } catch (err: unknown) {
@@ -200,7 +177,6 @@ export const CirculationPage = () => {
     }
   };
 
-  // ── Checkout Action ──
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patronData || !checkoutBarcode.trim()) return;
@@ -222,14 +198,11 @@ export const CirculationPage = () => {
       setTimeout(() => setCheckoutSuccess(null), 3000);
     } catch (err: unknown) {
       console.error("Checkout error:", err);
-
-      // 👇 التعديل هنا: التقاط الرسالة الدقيقة القادمة من الباك اند (سواء كانت 400 أو 500)
       if (err instanceof AxiosError && err.response) {
         const serverMessage =
           err.response.data?.message ||
           err.response.data ||
           "Error processing checkout.";
-        // إذا كان الخطأ هو رفض الإعارة بسبب القالب، نعرضه بوضوح
         alert(`❌ فشل الإعارة:\n${serverMessage}`);
       } else {
         alert("Network error processing checkout.");
@@ -262,7 +235,6 @@ export const CirculationPage = () => {
   };
 
   const handleUndo = async (recordId: number) => {
-    // TODO: implement POST /api/Circulation/undo/{id} on the backend
     alert(
       "Backend note: add POST /api/Circulation/undo/{id} to reverse the operation."
     );
@@ -270,7 +242,7 @@ export const CirculationPage = () => {
   };
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -299,7 +271,7 @@ export const CirculationPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -359,7 +331,7 @@ export const CirculationPage = () => {
                   color: activeTab === tab ? C.goldDark : C.inkMid,
                   fontWeight: 700,
                   fontSize: "0.95rem",
-                  fontFamily: sans,
+                  fontFamily: fonts.sans,
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -434,37 +406,18 @@ export const CirculationPage = () => {
                       }}
                       onFocus={(e) => (e.target.style.borderColor = C.gold)}
                     />
-                    <button
+
+                    <GoldBtn
                       type="button"
                       onClick={verifyPatron}
-                      style={{
-                        background: C.gold,
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 8,
-                        padding: "0 20px",
-                        fontWeight: 700,
-                        fontFamily: sans,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        transition: "background 0.15s",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = C.goldDark)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = C.gold)
-                      }
+                      style={{ borderRadius: 8, padding: "0 20px" }}
                     >
-                      {/* FIX: was className="animate-spin" */}
                       {isVerifyingPatron ? (
                         <Loader2 size={17} style={spinStyle} />
                       ) : (
                         "Verify"
                       )}
-                    </button>
+                    </GoldBtn>
                   </div>
 
                   {/* Patron verified */}
@@ -561,8 +514,7 @@ export const CirculationPage = () => {
                   />
                 </div>
 
-                {/* Submit */}
-                <button
+                <GoldBtn
                   type="submit"
                   disabled={
                     !patronData || !checkoutBarcode.trim() || isCheckingOut
@@ -570,42 +522,15 @@ export const CirculationPage = () => {
                   style={{
                     width: "100%",
                     padding: "14px",
-                    background:
-                      !patronData || !checkoutBarcode.trim()
-                        ? C.goldBorder
-                        : C.gold,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 10,
                     fontSize: "1rem",
-                    fontWeight: 700,
-                    fontFamily: sans,
-                    cursor:
-                      !patronData || !checkoutBarcode.trim()
-                        ? "not-allowed"
-                        : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    transition: "background 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (patronData && checkoutBarcode.trim() && !isCheckingOut)
-                      e.currentTarget.style.background = C.goldDark;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (patronData && checkoutBarcode.trim())
-                      e.currentTarget.style.background = C.gold;
                   }}
                 >
-                  {/* FIX: was className="animate-spin" */}
                   {isCheckingOut ? (
                     <Loader2 size={19} style={spinStyle} />
                   ) : (
                     "Complete Checkout"
                   )}
-                </button>
+                </GoldBtn>
 
                 {checkoutSuccess && (
                   <div
@@ -663,42 +588,21 @@ export const CirculationPage = () => {
                   </p>
                 </div>
 
-                <button
+                <GoldBtn
                   type="submit"
                   disabled={!returnBarcode.trim() || isReturning}
                   style={{
                     width: "100%",
                     padding: "14px",
-                    background: !returnBarcode.trim() ? C.goldBorder : C.gold,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 10,
                     fontSize: "1rem",
-                    fontWeight: 700,
-                    fontFamily: sans,
-                    cursor: !returnBarcode.trim() ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    transition: "background 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (returnBarcode.trim() && !isReturning)
-                      e.currentTarget.style.background = C.goldDark;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (returnBarcode.trim())
-                      e.currentTarget.style.background = C.gold;
                   }}
                 >
-                  {/* FIX: was className="animate-spin" */}
                   {isReturning ? (
                     <Loader2 size={19} style={spinStyle} />
                   ) : (
                     "Process Return"
                   )}
-                </button>
+                </GoldBtn>
 
                 {returnSuccess && (
                   <div
@@ -746,7 +650,7 @@ export const CirculationPage = () => {
             <h3
               style={{
                 margin: 0,
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontWeight: 700,
                 fontSize: "0.92rem",
                 color: C.ink,
@@ -897,7 +801,6 @@ export const CirculationPage = () => {
         </div>
       </div>
 
-      {/* FIX: keyframe for spin animation (was relying on Tailwind animate-spin) */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
