@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
-import type { PatronResponse } from "../../types/metadata";
+import type { PatronResponse } from "../../types/patron.types";
 import {
   Users,
   Search,

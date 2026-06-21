@@ -21,7 +21,7 @@ import {
 import type {
   ResourceTemplateResponse,
   TemplatePropertyRequest,
-} from "../../types/metadata";
+} from "../../types/template.types";
 
 interface ExtendedTemplateResponse extends ResourceTemplateResponse {
   isDeleted?: boolean;

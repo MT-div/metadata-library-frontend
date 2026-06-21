@@ -4,10 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
-import type {
-  ItemResponse,
-  ResourceTemplateResponse,
-} from "../../types/metadata";
+import type { ItemResponse } from "../../types/item.types";
+import type { ResourceTemplateResponse } from "../../types/template.types";
 import {
   FileText,
   Plus,

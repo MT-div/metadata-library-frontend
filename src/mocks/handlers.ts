@@ -1,9 +1,7 @@
 // src/mocks/handlers.ts
 import { http, HttpResponse } from "msw";
-import type {
-  ResourceTemplateResponse,
-  VocabularyResponse,
-} from "../types/metadata";
+import type { ResourceTemplateResponse } from "../types/template.types";
+import type { VocabularyResponse } from "../types/vocabulary.types";
 // أضف هذه المصفوفات الوهمية في أعلى الملف
 const mockItems = [
   {

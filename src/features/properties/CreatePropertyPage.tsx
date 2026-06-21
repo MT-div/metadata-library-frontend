@@ -6,10 +6,8 @@ import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
-import type {
-  CreatePropertyCommand,
-  VocabularyResponse,
-} from "../../types/metadata";
+import type { CreatePropertyCommand } from "../../types/property.types";
+import type { VocabularyResponse } from "../../types/vocabulary.types";
 
 // واجهة خصائص المكون FormLabel
 interface FormLabelProps {

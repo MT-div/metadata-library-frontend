@@ -6,10 +6,8 @@ import { api } from "../../services/api";
 import { C, fonts } from "../../utils/theme";
 import { StatCard } from "../../components/ui/StatCard";
 import { QuickAction } from "../../components/ui/QuickAction";
-import type {
-  ItemResponse,
-  ResourceTemplateResponse,
-} from "../../types/metadata";
+import type { ItemResponse } from "../../types/item.types";
+import type { ResourceTemplateResponse } from "../../types/template.types";
 import {
   LayoutDashboard,
   Users,

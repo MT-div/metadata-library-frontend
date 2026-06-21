@@ -5,11 +5,9 @@ import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
-import type {
-  ItemResponse,
-  ResourceTemplateResponse,
-  ItemSetResponse,
-} from "../../types/metadata";
+import type { ItemResponse } from "../../types/item.types";
+import type { ResourceTemplateResponse } from "../../types/template.types";
+import type { ItemSetResponse } from "../../types/itemSet.types";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
 import {

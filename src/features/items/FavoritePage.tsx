@@ -4,11 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
-import type {
-  ItemResponse,
-  ResourceTemplateResponse,
-  BookmarksResponse,
-} from "../../types/metadata";
+import type { ItemResponse, BookmarksResponse } from "../../types/item.types";
+import type { ResourceTemplateResponse } from "../../types/template.types";
 import { Heart, Search } from "lucide-react";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";

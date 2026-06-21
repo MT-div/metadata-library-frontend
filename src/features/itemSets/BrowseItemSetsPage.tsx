@@ -16,7 +16,7 @@ import {
   Book,
   Paperclip,
 } from "lucide-react";
-import type { ItemSetResponse } from "../../types/metadata";
+import type { ItemSetResponse } from "../../types/itemSet.types";
 
 export const BrowseItemSetsPage = () => {
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);

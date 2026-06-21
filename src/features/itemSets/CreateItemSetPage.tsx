@@ -6,7 +6,7 @@ import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { Save, FolderPlus, Globe, Lock, Info, ArrowLeft } from "lucide-react";
-import type { CreateItemSetCommand } from "../../types/metadata";
+import type { CreateItemSetCommand } from "../../types/itemSet.types";
 
 export const CreateItemSetPage = () => {
   const navigate = useNavigate();

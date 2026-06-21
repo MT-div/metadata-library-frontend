@@ -11,7 +11,7 @@ import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { Save, BookOpen, ArrowLeft, Info, ExternalLink } from "lucide-react";
-import type { CreateVocabularyCommand } from "../../types/metadata";
+import type { CreateVocabularyCommand } from "../../types/vocabulary.types";
 
 const FieldLabel = ({
   children,

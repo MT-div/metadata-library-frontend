@@ -16,7 +16,8 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import type { ItemSetResponse, ItemResponse } from "../../types/metadata";
+import type { ItemSetResponse } from "../../types/itemSet.types";
+import type { ItemResponse } from "../../types/item.types";
 import { api } from "../../services/api";
 
 // Extend ItemSetResponse to include isDeleted

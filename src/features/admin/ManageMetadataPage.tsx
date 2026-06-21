@@ -5,10 +5,8 @@ import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
-import type {
-  VocabularyResponse,
-  PropertyResponse,
-} from "../../types/metadata";
+import type { VocabularyResponse } from "../../types/vocabulary.types";
+import type { PropertyResponse } from "../../types/property.types";
 import {
   Book,
   Tags,

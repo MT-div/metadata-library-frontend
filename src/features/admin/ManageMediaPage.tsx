@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
-import type { MediaResponse } from "../../types/metadata";
+import type { MediaResponse } from "../../types/media.types";
 import {
   Image as ImageIcon,
   Film,

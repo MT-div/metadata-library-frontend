@@ -5,7 +5,7 @@ import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
-import type { CreateValueRequest } from "../../types/metadata";
+import type { CreateValueRequest } from "../../types/item.types";
 import {
   UploadCloud,
   Save,

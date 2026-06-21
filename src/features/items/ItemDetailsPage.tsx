@@ -12,14 +12,12 @@ import {
   FileText,
   ChevronRight,
 } from "lucide-react";
-import type {
-  ItemResponse,
-  ResourceTemplateResponse,
-  ItemSetResponse,
-  MediaResponse,
-} from "../../types/metadata";
+import type { ItemResponse } from "../../types/item.types";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/useAuthStore";
+import type { ResourceTemplateResponse } from "../../types/template.types";
+import type { MediaResponse } from "../../types/media.types";
+import type { ItemSetResponse } from "../../types/itemSet.types";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {

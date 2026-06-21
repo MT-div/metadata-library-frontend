@@ -8,8 +8,8 @@ import { api } from "../../services/api";
 import type {
   CreateResourceTemplateCommand,
   TemplatePropertyRequest,
-  VocabularyResponse,
-} from "../../types/metadata";
+} from "../../types/template.types";
+import type { VocabularyResponse } from "../../types/vocabulary.types";
 import {
   Save,
   LayoutTemplate,

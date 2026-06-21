@@ -6,7 +6,7 @@ import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
-import type { CreatePatronCommand } from "../../types/metadata";
+import type { CreatePatronCommand } from "../../types/patron.types";
 import { UserPlus, Save, ArrowLeft, Loader2, Info } from "lucide-react";
 
 export const CreatePatronPage = () => {
