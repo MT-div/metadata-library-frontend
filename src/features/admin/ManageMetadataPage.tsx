@@ -1,6 +1,14 @@
 // src/features/admin/ManageMetadataPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
+import type {
+  VocabularyResponse,
+  PropertyResponse,
+} from "../../types/metadata";
 import {
   Book,
   Tags,
@@ -12,30 +20,6 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import type {
-  VocabularyResponse,
-  PropertyResponse,
-} from "../../types/metadata";
-import { api } from "../../services/api";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 interface ExtendedVocab extends VocabularyResponse {
   isDeleted?: boolean;
@@ -182,7 +166,7 @@ export const ManageMetadataPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -211,7 +195,7 @@ export const ManageMetadataPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -227,16 +211,12 @@ export const ManageMetadataPage = () => {
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <OutlineBtn
-            icon={<Plus size={15} />}
-            label="New Vocabulary"
-            onClick={() => navigate("/vocabularies/new")}
-          />
-          <GoldBtn
-            icon={<Plus size={15} />}
-            label="New Property"
-            onClick={() => navigate("/properties/new")}
-          />
+          <OutlineBtn onClick={() => navigate("/vocabularies/new")}>
+            <Plus size={15} /> New Vocabulary
+          </OutlineBtn>
+          <GoldBtn onClick={() => navigate("/properties/new")}>
+            <Plus size={15} /> New Property
+          </GoldBtn>
         </div>
       </div>
 
@@ -285,7 +265,7 @@ export const ManageMetadataPage = () => {
               <Book size={16} color={C.gold} />
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "0.9rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -330,7 +310,7 @@ export const ManageMetadataPage = () => {
                   color: vocabFilterStatus === "deleted" ? C.danger : C.inkMid,
                   fontSize: "0.8rem",
                   outline: "none",
-                  fontFamily: sans,
+                  fontFamily: fonts.sans,
                   cursor: "pointer",
                 }}
               >
@@ -475,7 +455,6 @@ export const ManageMetadataPage = () => {
                 <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
                   <IconBtn
                     icon={<Edit size={14} />}
-                    color={C.gold}
                     onClick={() => handleNotImplemented("Edit Vocabulary")}
                     disabled={isSelectedVocabDeleted}
                   />
@@ -503,7 +482,6 @@ export const ManageMetadataPage = () => {
                   ) : (
                     <IconBtn
                       icon={<Trash2 size={14} />}
-                      color={C.danger}
                       onClick={() => handleDeleteVocab(selectedVocab.id)}
                       danger
                       disabled={isProcessingVocab === selectedVocab.id}
@@ -539,7 +517,7 @@ export const ManageMetadataPage = () => {
                 <Tags size={16} color={C.gold} />
                 <h2
                   style={{
-                    fontFamily: serif,
+                    fontFamily: fonts.serif,
                     fontSize: "0.9rem",
                     fontWeight: 700,
                     color: C.ink,
@@ -575,7 +553,7 @@ export const ManageMetadataPage = () => {
                     color: propFilterStatus === "deleted" ? C.danger : C.inkMid,
                     fontSize: "0.75rem",
                     outline: "none",
-                    fontFamily: sans,
+                    fontFamily: fonts.sans,
                     cursor: "pointer",
                   }}
                 >
@@ -632,7 +610,7 @@ export const ManageMetadataPage = () => {
                 </div>
                 <p
                   style={{
-                    fontFamily: serif,
+                    fontFamily: fonts.serif,
                     fontSize: "1.1rem",
                     color: C.inkMid,
                     margin: "0 0 6px",
@@ -640,11 +618,9 @@ export const ManageMetadataPage = () => {
                 >
                   No properties found
                 </p>
-                <GoldBtn
-                  icon={<Plus size={14} />}
-                  label="Add Property"
-                  onClick={() => navigate("/properties/new")}
-                />
+                <GoldBtn onClick={() => navigate("/properties/new")}>
+                  <Plus size={14} /> Add Property
+                </GoldBtn>
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>
@@ -721,7 +697,7 @@ export const ManageMetadataPage = () => {
                         <td style={{ padding: "13px 16px" }}>
                           <span
                             style={{
-                              fontFamily: serif,
+                              fontFamily: fonts.serif,
                               fontWeight: 700,
                               fontSize: "0.9rem",
                               color: prop.isDeleted ? C.inkSoft : C.ink,
@@ -777,7 +753,6 @@ export const ManageMetadataPage = () => {
                           <div style={{ display: "flex", gap: 6 }}>
                             <IconBtn
                               icon={<Edit size={14} />}
-                              color={C.gold}
                               onClick={() =>
                                 handleNotImplemented("Edit Property")
                               }
@@ -807,7 +782,6 @@ export const ManageMetadataPage = () => {
                             ) : (
                               <IconBtn
                                 icon={<Trash2 size={14} />}
-                                color={C.danger}
                                 onClick={() => handleDeleteProp(prop.id)}
                                 danger
                                 disabled={isProcessingProp === prop.id}
@@ -828,80 +802,7 @@ export const ManageMetadataPage = () => {
   );
 };
 
-// ── Reusable buttons ──────────────────────────────────────────────────────────
-const GoldBtn = ({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 7,
-      background: C.gold,
-      color: "#fff",
-      border: "none",
-      borderRadius: 10,
-      padding: "9px 18px",
-      fontFamily: sans,
-      fontSize: "0.85rem",
-      fontWeight: 700,
-      cursor: "pointer",
-      transition: "background 0.15s",
-      boxShadow: "0 2px 10px rgba(200,169,110,0.3)",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.background = C.goldDark)}
-    onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
-  >
-    {icon} {label}
-  </button>
-);
-
-const OutlineBtn = ({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 7,
-      background: C.surface,
-      color: C.goldDark,
-      border: `1.5px solid ${C.goldBorder}`,
-      borderRadius: 10,
-      padding: "9px 18px",
-      fontFamily: sans,
-      fontSize: "0.85rem",
-      fontWeight: 600,
-      cursor: "pointer",
-      transition: "all 0.15s",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.background = C.goldLight;
-      e.currentTarget.style.borderColor = C.gold;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.background = C.surface;
-      e.currentTarget.style.borderColor = C.goldBorder;
-    }}
-  >
-    {icon} {label}
-  </button>
-);
-
+// ── Local specialized buttons ──────────────────────────────────────────────────
 const IconBtn = ({
   icon,
   onClick,
@@ -909,7 +810,6 @@ const IconBtn = ({
   disabled,
 }: {
   icon: React.ReactNode;
-  color: string;
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;
