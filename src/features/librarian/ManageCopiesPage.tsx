@@ -11,6 +11,9 @@ import {
   Info,
   Archive,
   Loader2,
+  Edit,
+  X,
+  Check,
 } from "lucide-react";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
@@ -19,7 +22,7 @@ const C = {
   surface: "#FFFFFF",
   gold: "#c8a96e",
   goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)", // تمت الإضافة هنا لحل الخطأ
+  goldMid: "rgba(200,169,110,0.15)",
   goldBorder: "rgba(200,169,110,0.28)",
   goldDark: "#b8965a",
   ink: "#1a1208",
@@ -52,47 +55,49 @@ export const ManageCopiesPage = () => {
   const [newNotes, setNewNotes] = useState("");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. تعريف الدالة هنا للأعلى واستخدام useCallback لحل أخطاء الـ dependencies
-  // 1. الدالة الأساسية لجلب النسخ
+  // ── Inline Edit State ──
+  const [editingCopyId, setEditingCopyId] = useState<number | null>(null);
+  const [editBarcode, setEditBarcode] = useState("");
+  const [editStatus, setEditStatus] = useState<number>(0);
+  const [editNotes, setEditNotes] = useState("");
+
   const handleSelectItem = useCallback(async (itemId: number) => {
     setSelectedItemId(itemId);
+    setEditingCopyId(null); // إلغاء أي تعديل مفتوح عند تغيير الكتاب
     setLoadingCopies(true);
     try {
       const res = await api.get<ItemCopyResponse[]>(
         `/api/item-copies?itemId=${itemId}`
       );
-
-      // 👇 الحماية القصوى: التأكد من أن الرد هو مصفوفة فعلاً، وإلا نجعلها مصفوفة فارغة
-      const validCopies = Array.isArray(res.data) ? res.data : [];
-      setCopies(validCopies);
-
+      setCopies(Array.isArray(res.data) ? res.data : []);
       setTimeout(() => barcodeInputRef.current?.focus(), 100);
     } catch (error) {
       console.error("Error fetching copies:", error);
-      setCopies([]); // في حال حدوث خطأ 404 أو غيره، نعيدها مصفوفة فارغة
+      setCopies([]);
     } finally {
       setLoadingCopies(false);
     }
   }, []);
-  // 2. الـ useEffect بعد تعريف الدالة
+
   useEffect(() => {
     api
       .get<ItemResponse[]>("/api/items")
       .then((res) => {
-        setItems(res.data);
-        if (res.data.length > 0) {
-          handleSelectItem(res.data[0].id);
+        const fetchedItems = res.data || [];
+        setItems(fetchedItems);
+        if (fetchedItems.length > 0) {
+          handleSelectItem(fetchedItems[0].id);
         }
       })
       .catch((err) => console.error("Error fetching items:", err))
       .finally(() => setLoadingItems(false));
-  }, [handleSelectItem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddCopy = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItemId || !newBarcode.trim()) return;
 
-    // التأكد من أنها مصفوفة قبل البحث داخلها
     if (
       Array.isArray(copies) &&
       copies.some(
@@ -112,12 +117,9 @@ export const ManageCopiesPage = () => {
       };
 
       await api.post("/api/item-copies", payload);
-
       const copiesRes = await api.get<ItemCopyResponse[]>(
         `/api/item-copies?itemId=${selectedItemId}`
       );
-
-      // 👇 الحماية مرة أخرى عند تحديث القائمة بعد الإضافة
       setCopies(Array.isArray(copiesRes.data) ? copiesRes.data : []);
 
       setNewBarcode("");
@@ -157,11 +159,50 @@ export const ManageCopiesPage = () => {
     }
   };
 
+  // ── Edit Handlers ──
+  const startEditing = (copy: ItemCopyResponse) => {
+    setEditingCopyId(copy.id);
+    setEditBarcode(copy.barcode);
+    setEditStatus(copy.status);
+    setEditNotes(copy.notes || "");
+  };
+
+  const cancelEditing = () => {
+    setEditingCopyId(null);
+  };
+
+  const saveEdit = async (copyId: number) => {
+    if (!editBarcode.trim()) return;
+    setIsProcessing(true);
+    try {
+      const payload = {
+        id: copyId,
+        barcode: editBarcode.trim(),
+        status: editStatus,
+        notes: editNotes.trim() || null,
+      };
+
+      // 👇 الاتصال بالـ PUT Endpoint لتعديل النسخة
+      await api.put(`/api/item-copies/${copyId}`, payload);
+
+      // تحديث الحالة محلياً للسرعة
+      setCopies((prev) =>
+        prev.map((c) => (c.id === copyId ? { ...c, ...payload } : c))
+      );
+      setEditingCopyId(null);
+    } catch (error: unknown) {
+      console.error("Error updating copy:", error);
+      alert("Failed to update copy. Check barcode uniqueness.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getItemTitle = (item: ItemResponse) => {
-    const titleObj = item.metadataValues.find(
+    const titleObj = item.metadataValues?.find(
       (v) =>
-        v.propertyLabel.toLowerCase().includes("title") ||
-        v.propertyLabel.includes("عنوان")
+        v?.propertyLabel?.toLowerCase().includes("title") ||
+        v?.propertyLabel?.includes("عنوان")
     );
     return titleObj?.valueText || `Untitled #${item.id}`;
   };
@@ -229,8 +270,8 @@ export const ManageCopiesPage = () => {
             Item Copies Management
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            Add physical barcodes to catalog items to make them available for
-            circulation.
+            Add and manage physical barcodes for catalog items. Update statuses
+            (Available, Maintenance, etc).
           </p>
         </div>
       </div>
@@ -278,7 +319,6 @@ export const ManageCopiesPage = () => {
               Catalog Items
             </h2>
           </div>
-
           <div
             style={{
               padding: "12px",
@@ -315,7 +355,6 @@ export const ManageCopiesPage = () => {
               />
             </div>
           </div>
-
           <div
             style={{
               maxHeight: "calc(100vh - 280px)",
@@ -617,7 +656,7 @@ export const ManageCopiesPage = () => {
                     borderRadius: 999,
                   }}
                 >
-                  {copies.length} Copies Total
+                  {(Array.isArray(copies) ? copies : []).length} Copies Total
                 </span>
               </div>
 
@@ -627,7 +666,7 @@ export const ManageCopiesPage = () => {
                 >
                   Loading copies...
                 </div>
-              ) : copies.length === 0 ? (
+              ) : !Array.isArray(copies) || copies.length === 0 ? (
                 <div style={{ padding: "60px 24px", textAlign: "center" }}>
                   <Barcode
                     size={32}
@@ -687,41 +726,88 @@ export const ManageCopiesPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {(Array.isArray(copies) ? copies : []).map(
-                        (copy, idx) => {
-                          const badge = getStatusBadge(copy.status);
-                          return (
-                            <tr
-                              key={copy.id}
+                      {copies.map((copy, idx) => {
+                        const isEditing = editingCopyId === copy.id;
+                        const badge = getStatusBadge(copy.status);
+
+                        return (
+                          <tr
+                            key={copy.id}
+                            style={{
+                              borderBottom:
+                                idx < copies.length - 1
+                                  ? `1px solid ${C.goldBorder}`
+                                  : "none",
+                              background: isEditing
+                                ? C.goldLight
+                                : "transparent",
+                            }}
+                          >
+                            {/* ID */}
+                            <td
                               style={{
-                                borderBottom:
-                                  idx < copies.length - 1
-                                    ? `1px solid ${C.goldBorder}`
-                                    : "none",
+                                padding: "14px 20px",
+                                fontFamily: "monospace",
+                                fontSize: "0.8rem",
+                                color: C.inkSoft,
                               }}
                             >
-                              <td
-                                style={{
-                                  padding: "14px 20px",
-                                  fontFamily: "monospace",
-                                  fontSize: "0.8rem",
-                                  color: C.inkSoft,
-                                }}
-                              >
-                                #{copy.id}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "14px 20px",
-                                  fontFamily: "monospace",
-                                  fontSize: "0.95rem",
-                                  fontWeight: 700,
-                                  color: C.ink,
-                                }}
-                              >
-                                {copy.barcode}
-                              </td>
-                              <td style={{ padding: "14px 20px" }}>
+                              #{copy.id}
+                            </td>
+
+                            {/* Barcode */}
+                            <td
+                              style={{
+                                padding: "14px 20px",
+                                fontFamily: "monospace",
+                                fontSize: "0.95rem",
+                                fontWeight: 700,
+                                color: C.ink,
+                              }}
+                            >
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editBarcode}
+                                  onChange={(e) =>
+                                    setEditBarcode(e.target.value)
+                                  }
+                                  style={{
+                                    width: "100%",
+                                    padding: "4px 8px",
+                                    borderRadius: 6,
+                                    border: `1px solid ${C.goldBorder}`,
+                                    fontFamily: "monospace",
+                                  }}
+                                />
+                              ) : (
+                                copy.barcode
+                              )}
+                            </td>
+
+                            {/* Status */}
+                            <td style={{ padding: "14px 20px" }}>
+                              {isEditing ? (
+                                <select
+                                  value={editStatus}
+                                  onChange={(e) =>
+                                    setEditStatus(Number(e.target.value))
+                                  }
+                                  style={{
+                                    width: "100%",
+                                    padding: "4px 8px",
+                                    borderRadius: 6,
+                                    border: `1px solid ${C.goldBorder}`,
+                                    fontSize: "0.8rem",
+                                    fontFamily: sans,
+                                  }}
+                                >
+                                  <option value={0}>Available</option>
+                                  <option value={1}>Borrowed</option>
+                                  <option value={2}>Reference Only</option>
+                                  <option value={3}>Maintenance</option>
+                                </select>
+                              ) : (
                                 <span
                                   style={{
                                     background: badge.bg,
@@ -737,10 +823,27 @@ export const ManageCopiesPage = () => {
                                 >
                                   {badge.label}
                                 </span>
-                              </td>
-                              <td
-                                style={{ padding: "14px 20px", maxWidth: 200 }}
-                              >
+                              )}
+                            </td>
+
+                            {/* Notes */}
+                            <td style={{ padding: "14px 20px", maxWidth: 200 }}>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editNotes}
+                                  onChange={(e) => setEditNotes(e.target.value)}
+                                  placeholder="Notes..."
+                                  style={{
+                                    width: "100%",
+                                    padding: "4px 8px",
+                                    borderRadius: 6,
+                                    border: `1px solid ${C.goldBorder}`,
+                                    fontSize: "0.8rem",
+                                    fontFamily: sans,
+                                  }}
+                                />
+                              ) : (
                                 <p
                                   style={{
                                     margin: 0,
@@ -754,34 +857,94 @@ export const ManageCopiesPage = () => {
                                 >
                                   {copy.notes || "—"}
                                 </p>
-                              </td>
-                              <td style={{ padding: "14px 20px" }}>
-                                <button
-                                  onClick={() => handleDeleteCopy(copy.id)}
-                                  disabled={isProcessing}
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: 8,
-                                    background: C.dangerBg,
-                                    border: "none",
-                                    color: C.danger,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: isProcessing
-                                      ? "not-allowed"
-                                      : "pointer",
-                                    transition: "opacity 0.15s",
-                                  }}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        }
-                      )}
+                              )}
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: "14px 20px" }}>
+                              {isEditing ? (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button
+                                    onClick={() => saveEdit(copy.id)}
+                                    disabled={isProcessing}
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      background: C.successBg,
+                                      border: "none",
+                                      color: C.success,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button
+                                    onClick={cancelEditing}
+                                    disabled={isProcessing}
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      background: C.dangerBg,
+                                      border: "none",
+                                      color: C.danger,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button
+                                    onClick={() => startEditing(copy)}
+                                    disabled={isProcessing}
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      background: C.goldLight,
+                                      border: "none",
+                                      color: C.goldDark,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <Edit size={13} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCopy(copy.id)}
+                                    disabled={isProcessing}
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      background: C.dangerBg,
+                                      border: "none",
+                                      color: C.danger,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

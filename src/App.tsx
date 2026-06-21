@@ -100,6 +100,7 @@ function App() {
             />
             <Route path="librarian/copies" element={<ManageCopiesPage />} />
             <Route path="librarian/loans" element={<ActiveLoansPage />} />
+            <Route path="librarian/items" element={<ManageItemsPage />} />
           </Route>
         </Route>
       </Routes>
