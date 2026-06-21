@@ -1,7 +1,11 @@
+// src/features/admin/AdminDashboardPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { api } from "../../services/api";
+import { C, fonts } from "../../utils/theme";
+import { StatCard } from "../../components/ui/StatCard";
+import { QuickAction } from "../../components/ui/QuickAction";
 import type {
   ItemResponse,
   ResourceTemplateResponse,
@@ -17,23 +21,7 @@ import {
   UserPlus,
   Activity,
   Sparkles,
-  ArrowRight,
 } from "lucide-react";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 interface SystemStats {
   items: number;
@@ -43,155 +31,6 @@ interface SystemStats {
   templatesDist: { label: string; count: number; percentage: number }[];
 }
 
-// ── StatCard — extracted to avoid "component created during render" error ────
-const StatCard = ({
-  title,
-  value,
-  icon,
-  link,
-  loading,
-}: {
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  link: string;
-  loading: boolean;
-}) => {
-  const navigate = useNavigate();
-  return (
-    <div
-      onClick={() => navigate(link)}
-      style={{
-        background: C.surface,
-        border: `1.5px solid ${C.goldBorder}`,
-        borderRadius: 16,
-        padding: "20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        cursor: "pointer",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 10px 24px rgba(200,169,110,0.15)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.03)";
-      }}
-    >
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 14,
-          background: C.goldLight,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: C.goldDark,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p
-          style={{
-            margin: "0 0 4px",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            color: C.inkSoft,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {title}
-        </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "1.6rem",
-            fontWeight: 800,
-            color: C.ink,
-            fontFamily: serif,
-            lineHeight: 1,
-          }}
-        >
-          {loading ? "·  ·  ·" : value}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// ── QuickAction button ────────────────────────────────────────────────────────
-const QuickAction = ({
-  icon,
-  title,
-  subtitle,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    style={{
-      width: "100%",
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "12px 16px",
-      background: "transparent",
-      border: "none",
-      borderRadius: 10,
-      cursor: "pointer",
-      transition: "background 0.15s",
-      textAlign: "left",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-  >
-    <div
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 8,
-        flexShrink: 0,
-        background: C.goldMid,
-        color: C.goldDark,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {icon}
-    </div>
-    <div style={{ flexGrow: 1 }}>
-      <p
-        style={{
-          margin: "0 0 2px",
-          fontSize: "0.9rem",
-          fontWeight: 700,
-          color: C.ink,
-        }}
-      >
-        {title}
-      </p>
-      <p style={{ margin: 0, fontSize: "0.75rem", color: C.inkSoft }}>
-        {subtitle}
-      </p>
-    </div>
-    <ArrowRight size={15} color={C.gold} style={{ flexShrink: 0 }} />
-  </button>
-);
-
-// ─────────────────────────────────────────────────────────────────────────────
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -208,16 +47,14 @@ export const AdminDashboardPage = () => {
     Promise.all([
       api.get("/api/items").then((r) => r.data),
       api.get("/api/users").then((r) => r.data),
-      // FIX: was /api/item-sets → correct endpoint is /api/itemsets
       api.get("/api/item-sets").then((r) => r.data),
       api.get("/api/media").then((r) => r.data),
-      // FIX: was /api/resource-templates → correct endpoint is /api/templates
       api.get("/api/resource-templates").then((r) => r.data),
     ])
       .then(([itemsData, usersData, setsData, mediaData, templatesData]) => {
         const items = itemsData as ItemResponse[];
         const templates = templatesData as ResourceTemplateResponse[];
-        console.log("hi");
+
         const dist = templates
           .map((tpl) => {
             const count = items.filter((i) => i.templateId === tpl.id).length;
@@ -244,7 +81,7 @@ export const AdminDashboardPage = () => {
   const BAR_COLORS = [C.goldDark, C.gold, "#d8c090", "rgba(200,169,110,0.4)"];
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Welcome Banner ── */}
       <div
         style={{
@@ -286,7 +123,7 @@ export const AdminDashboardPage = () => {
 
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "clamp(1.8rem, 3vw, 2.4rem)",
               fontWeight: 800,
               color: "#fff",
@@ -397,7 +234,7 @@ export const AdminDashboardPage = () => {
             <Activity size={17} color={C.goldDark} />
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "0.95rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -444,7 +281,7 @@ export const AdminDashboardPage = () => {
                           fontSize: "0.88rem",
                           fontWeight: 700,
                           color: C.ink,
-                          fontFamily: serif,
+                          fontFamily: fonts.serif,
                         }}
                       >
                         {dist.label}
@@ -534,7 +371,7 @@ export const AdminDashboardPage = () => {
           >
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "0.95rem",
                 fontWeight: 700,
                 color: C.ink,
