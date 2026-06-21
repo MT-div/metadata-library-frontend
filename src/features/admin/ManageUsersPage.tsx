@@ -1,5 +1,9 @@
+// src/features/admin/ManageUsersPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import type { UserResponse } from "../../types/metadata";
 import {
@@ -17,25 +21,6 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 // الأدوار المتاحة في النظام
 const AVAILABLE_ROLES = ["Admin", "Librarian", "User", "Guest"];
@@ -104,7 +89,7 @@ export const ManageUsersPage = () => {
 
     setIsProcessing(id);
     try {
-      // إرسال { id } في ה- Body كما تعودنا في كل عمليات ה- Undelete
+      // إرسال { id } في الـ Body كما تعودنا في كل عمليات الـ Undelete
       await api.put(`/api/users/Undelet/${id}`, { id });
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, isDeleted: false } : u))
@@ -186,7 +171,7 @@ export const ManageUsersPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -215,7 +200,7 @@ export const ManageUsersPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -229,29 +214,13 @@ export const ManageUsersPage = () => {
             Manage staff, researchers, system roles, and account statuses.
           </p>
         </div>
-        <button
+
+        <GoldBtn
           onClick={() => navigate("/admin/users/new")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: C.gold,
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 20px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            transition: "background 0.15s",
-            boxShadow: "0 2px 10px rgba(200,169,110,0.3)",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = C.goldDark)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
+          style={{ padding: "10px 20px", fontSize: "0.85rem" }}
         >
           <UserPlus size={16} /> Add New User
-        </button>
+        </GoldBtn>
       </div>
 
       {/* ── Stats row ── */}
@@ -317,7 +286,7 @@ export const ManageUsersPage = () => {
                   fontSize: "1.3rem",
                   fontWeight: 800,
                   color: C.ink,
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                 }}
               >
                 {stat.value}
@@ -357,7 +326,7 @@ export const ManageUsersPage = () => {
               border: "none",
               outline: "none",
               background: "transparent",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.88rem",
               color: C.ink,
             }}
@@ -391,7 +360,7 @@ export const ManageUsersPage = () => {
               border: `1.5px solid ${C.goldBorder}`,
               borderRadius: 12,
               padding: "10px 36px 10px 14px",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               color: C.inkMid,
               outline: "none",
@@ -432,7 +401,7 @@ export const ManageUsersPage = () => {
               border: `1.5px solid ${C.goldBorder}`,
               borderRadius: 12,
               padding: "10px 36px 10px 14px",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               color: statusFilter === "deleted" ? C.danger : C.inkMid,
               outline: "none",
@@ -490,7 +459,7 @@ export const ManageUsersPage = () => {
             />
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkMid,
                 margin: "0 0 6px",
@@ -632,7 +601,7 @@ export const ManageUsersPage = () => {
                         </div>
                         <span
                           style={{
-                            fontFamily: serif,
+                            fontFamily: fonts.serif,
                             fontWeight: 700,
                             fontSize: "0.95rem",
                             color: isDeleted ? C.inkSoft : C.ink,
@@ -875,7 +844,7 @@ export const ManageUsersPage = () => {
               <h3
                 style={{
                   margin: 0,
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontWeight: 700,
                   color: C.ink,
                 }}
@@ -959,38 +928,20 @@ export const ManageUsersPage = () => {
                 gap: 10,
               }}
             >
-              <button
+              <OutlineBtn
                 onClick={() => setIsRoleModalOpen(false)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  background: "transparent",
-                  border: `1.5px solid ${C.goldBorder}`,
-                  color: C.inkMid,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                style={{ padding: "8px 16px" }}
               >
                 Cancel
-              </button>
-              <button
+              </OutlineBtn>
+
+              <GoldBtn
                 onClick={submitRoleChange}
                 disabled={isProcessing === editingUser.id}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  background: C.gold,
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+                style={{ padding: "8px 16px", fontSize: "0.9rem" }}
               >
                 <Save size={16} /> Save Roles
-              </button>
+              </GoldBtn>
             </div>
           </div>
         </div>
