@@ -1,5 +1,10 @@
+// src/features/media/CreateMediaPage.tsx
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
 import type { CreateValueRequest } from "../../types/metadata";
 import {
   UploadCloud,
@@ -10,24 +15,6 @@ import {
   ArrowLeft,
   X,
 } from "lucide-react";
-import { api } from "../../services/api";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 interface PropertyOption {
   id: number;
@@ -96,7 +83,6 @@ export const CreateMediaPage = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. تجهيز مصفوفة القيم تماماً كما يتوقعها C#
       const formattedValues = mediaValues.map((v) => ({
         propertyId: v.propertyId,
         valueText: v.valueText,
@@ -104,19 +90,14 @@ export const CreateMediaPage = () => {
         language: "en",
       }));
 
-      // 2. إنشاء الـ FormData لتطابق UploadMediaRequestDto في الباك اند
       const fd = new FormData();
-
-      // انتبه: الأسماء هنا يجب أن تطابق خصائص الـ C# DTO تماماً
       fd.append("File", selectedFile);
       fd.append("ItemId", itemId.toString());
       fd.append("ValuesJson", JSON.stringify(formattedValues));
 
-      // 3. إرسال الطلب المدمج لمرة واحدة فقط!
-      // (افترضت أن هذا الـ Endpoint موجود داخل MediaController)
       const res = await api.post("/api/media/upload-with-metadata", fd, {
         headers: {
-          "Content-Type": undefined, // هذا السطر يجبر Axios على عدم إرسال Header خاطئ
+          "Content-Type": undefined,
         },
       });
       if (res.status === 200 || res.status === 201) {
@@ -151,7 +132,7 @@ export const CreateMediaPage = () => {
     border: `1.5px solid ${focusedField === id ? C.gold : C.goldBorder}`,
     borderRadius: 10,
     padding: "10px 14px",
-    fontFamily: sans,
+    fontFamily: fonts.sans,
     fontSize: "0.88rem",
     color: C.ink,
     background: C.surface,
@@ -160,7 +141,7 @@ export const CreateMediaPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -189,7 +170,7 @@ export const CreateMediaPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -203,34 +184,10 @@ export const CreateMediaPage = () => {
             Upload a file and attach descriptive metadata to it.
           </p>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: "transparent",
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 999,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: C.inkMid,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+
+        <OutlineBtn onClick={() => navigate(-1)} rounded>
           <ArrowLeft size={15} /> Back
-        </button>
+        </OutlineBtn>
       </div>
 
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -319,7 +276,6 @@ export const CreateMediaPage = () => {
               />
 
               {selectedFile ? (
-                /* File selected state */
                 <div
                   style={{
                     display: "flex",
@@ -393,7 +349,6 @@ export const CreateMediaPage = () => {
                   </button>
                 </div>
               ) : (
-                /* Empty state */
                 <>
                   <div
                     style={{
@@ -467,7 +422,7 @@ export const CreateMediaPage = () => {
                     border: `1.5px solid ${C.goldBorder}`,
                     borderRadius: 10,
                     padding: "9px 32px 9px 12px",
-                    fontFamily: sans,
+                    fontFamily: fonts.sans,
                     fontSize: "0.85rem",
                     color: C.ink,
                     outline: "none",
@@ -493,34 +448,18 @@ export const CreateMediaPage = () => {
                   ▾
                 </span>
               </div>
-              <button
+
+              <GoldBtn
                 type="button"
                 onClick={handleAddValue}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: C.gold,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
                   padding: "10px 16px",
-                  fontFamily: sans,
                   fontSize: "0.85rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
                   whiteSpace: "nowrap",
-                  transition: "background 0.15s",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = C.goldDark)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = C.gold)
-                }
               >
                 <Plus size={14} /> Add Field
-              </button>
+              </GoldBtn>
             </div>
 
             {/* Value rows */}
@@ -612,7 +551,7 @@ export const CreateMediaPage = () => {
             )}
           </SectionCard>
 
-          {/* ── Submit ── */}
+          {/* Submit buttons */}
           <div
             style={{
               display: "flex",
@@ -621,63 +560,15 @@ export const CreateMediaPage = () => {
               paddingTop: 8,
             }}
           >
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              style={{
-                background: "transparent",
-                border: `1.5px solid ${C.goldBorder}`,
-                borderRadius: 10,
-                padding: "10px 20px",
-                fontFamily: sans,
-                fontSize: "0.88rem",
-                fontWeight: 600,
-                color: C.inkMid,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
+            <OutlineBtn type="button" onClick={() => navigate(-1)}>
               Cancel
-            </button>
+            </OutlineBtn>
 
-            <button
+            <GoldBtn
               type="submit"
               disabled={isSubmitting}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: success
-                  ? "#edf7ee"
-                  : isSubmitting
-                  ? C.goldBorder
-                  : C.gold,
-                color: success ? "#2d6e3a" : "#fff",
-                border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
-                borderRadius: 10,
-                padding: "10px 28px",
-                fontFamily: sans,
-                fontSize: "0.9rem",
-                fontWeight: 700,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                boxShadow:
-                  success || isSubmitting
-                    ? "none"
-                    : "0 2px 12px rgba(200,169,110,0.35)",
-              }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting && !success)
-                  e.currentTarget.style.background = C.goldDark;
-              }}
-              onMouseLeave={(e) => {
-                if (!isSubmitting && !success)
-                  e.currentTarget.style.background = C.gold;
-              }}
+              success={success}
+              style={{ padding: "10px 28px", fontSize: "0.9rem" }}
             >
               <Save size={16} />
               {isSubmitting
@@ -685,7 +576,7 @@ export const CreateMediaPage = () => {
                 : success
                 ? "✓ Upload Complete!"
                 : "Upload & Save"}
-            </button>
+            </GoldBtn>
           </div>
         </form>
       </div>
@@ -694,18 +585,6 @@ export const CreateMediaPage = () => {
 };
 
 // ── Reusable Section Card ────────────────────────────────────────────────────
-const C2 = {
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkSoft: "#9a8060",
-};
-const serif2 = "'Georgia','Times New Roman',serif";
-const sans2 = "'Poppins',system-ui,sans-serif";
-
 const SectionCard = ({
   step,
   title,
@@ -719,8 +598,8 @@ const SectionCard = ({
 }) => (
   <div
     style={{
-      background: C2.surface,
-      border: `1.5px solid ${C2.goldBorder}`,
+      background: C.surface,
+      border: `1.5px solid ${C.goldBorder}`,
       borderRadius: 16,
       overflow: "hidden",
       boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
@@ -728,8 +607,8 @@ const SectionCard = ({
   >
     <div
       style={{
-        background: C2.goldLight,
-        borderBottom: `1.5px solid ${C2.goldBorder}`,
+        background: C.goldLight,
+        borderBottom: `1.5px solid ${C.goldBorder}`,
         padding: "14px 22px",
         display: "flex",
         alignItems: "center",
@@ -741,12 +620,12 @@ const SectionCard = ({
           width: 30,
           height: 30,
           borderRadius: 8,
-          background: C2.gold,
+          background: C.gold,
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: serif2,
+          fontFamily: fonts.serif,
           fontWeight: 800,
           fontSize: "0.9rem",
           color: "#fff",
@@ -757,16 +636,16 @@ const SectionCard = ({
       <div>
         <h2
           style={{
-            fontFamily: serif2,
+            fontFamily: fonts.serif,
             fontSize: "0.92rem",
             fontWeight: 700,
-            color: C2.ink,
+            color: C.ink,
             margin: 0,
           }}
         >
           {title}
         </h2>
-        <p style={{ margin: 0, fontSize: "0.72rem", color: C2.inkSoft }}>
+        <p style={{ margin: 0, fontSize: "0.72rem", color: C.inkSoft }}>
           {subtitle}
         </p>
       </div>
@@ -783,5 +662,5 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.05em",
   textTransform: "uppercase",
   marginBottom: 8,
-  fontFamily: sans2,
+  fontFamily: fonts.sans,
 };
