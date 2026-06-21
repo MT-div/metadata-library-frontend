@@ -1,5 +1,8 @@
+// src/features/auth/RegisterPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Loader2 } from "lucide-react";
 import type { RegisterRequest, AuthResponse } from "../../types/auth";
@@ -13,7 +16,7 @@ import libraryHero from "../../assets/images/libraryHero6.png";
 // ─── Shared SVG helpers (identical to LoginPage) ──────────────────────────────
 const Sparkle = ({
   size = 14,
-  color = "#c8a96e",
+  color = C.gold,
 }: {
   size?: number;
   color?: string;
@@ -44,7 +47,7 @@ const UserIcon = () => (
     height={18}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#a08050"
+    stroke={C.inkSoft}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -60,7 +63,7 @@ const MailIcon = () => (
     height={18}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#a08050"
+    stroke={C.inkSoft}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -76,7 +79,7 @@ const LockIcon = () => (
     height={18}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#a08050"
+    stroke={C.inkSoft}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -122,22 +125,22 @@ const EyeIcon = ({ open }: { open: boolean }) =>
 const inputBase: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
-  background: "#ffffff",
-  border: "1.5px solid rgba(200,169,110,0.35)",
+  background: C.surface,
+  border: `1.5px solid ${C.goldBorder}`,
   borderRadius: 12,
   fontSize: "0.88rem",
-  fontFamily: "'Poppins', sans-serif",
-  color: "#1a1208",
+  fontFamily: fonts.sans,
+  color: C.ink,
   outline: "none",
 };
 
 const focusHandlers = {
   onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.borderColor = "#c8a96e";
+    e.currentTarget.style.borderColor = C.gold;
     e.currentTarget.style.boxShadow = "0 0 0 3px rgba(200,169,110,0.18)";
   },
   onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.borderColor = "rgba(200,169,110,0.35)";
+    e.currentTarget.style.borderColor = C.goldBorder;
     e.currentTarget.style.boxShadow = "none";
   },
 };
@@ -232,7 +235,7 @@ const PageBackground = () => (
         width: 160,
         height: 160,
         borderRadius: "50%",
-        border: "3px solid #c8a96e",
+        border: `3px solid ${C.gold}`,
         opacity: 0.4,
         pointerEvents: "none",
         zIndex: 1,
@@ -291,8 +294,8 @@ export const RegisterPage = () => {
   return (
     <div
       style={{
-        fontFamily: "'Playfair Display', Georgia, serif",
-        background: "#F7F3ED",
+        fontFamily: fonts.serif,
+        background: C.bg,
         width: "100%",
         minHeight: "calc(100vh - 72px)",
         overflowX: "hidden",
@@ -307,7 +310,7 @@ export const RegisterPage = () => {
         style={{
           maxWidth: 1280,
           margin: "0 auto",
-          padding: "70px 48px 40px", // ← matches LoginPage exactly
+          padding: "70px 48px 40px",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 64,
@@ -317,25 +320,23 @@ export const RegisterPage = () => {
         }}
       >
         <div>
-          {/* ── Form Card — same style as LoginPage ── */}
           <div
             style={{
               background: "#faf6f0",
-              border: "1.5px solid rgba(200,169,110,0.2)",
+              border: `1.5px solid ${C.goldBorder}`,
               boxShadow: "0 8px 32px rgba(0,0,0,0.05)",
               borderRadius: 20,
               padding: "32px 40px",
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: fonts.sans,
             }}
           >
-            {/* Title */}
             <h2
               style={{
                 textAlign: "center",
-                fontFamily: "'Playfair Display', Georgia, serif",
+                fontFamily: fonts.serif,
                 fontSize: "2rem",
                 fontWeight: 900,
-                color: "#1a1208",
+                color: C.ink,
                 marginBottom: 24,
                 marginTop: 0,
               }}
@@ -344,13 +345,13 @@ export const RegisterPage = () => {
             </h2>
 
             <form onSubmit={handleSubmit}>
-              {/* Error banner — same as LoginPage */}
+              {/* Error banner */}
               {error && (
                 <div
                   style={{
                     background: "#fff5f5",
                     border: "1.5px solid rgba(200,80,80,0.3)",
-                    color: "#a03030",
+                    color: C.danger,
                     borderRadius: 12,
                     padding: "10px 14px",
                     fontSize: "0.8rem",
@@ -371,7 +372,7 @@ export const RegisterPage = () => {
                       display: "block",
                       fontSize: "0.82rem",
                       fontWeight: 600,
-                      color: "#3d2b0e",
+                      color: C.inkMid,
                       marginBottom: 7,
                     }}
                   >
@@ -410,7 +411,7 @@ export const RegisterPage = () => {
                       display: "block",
                       fontSize: "0.82rem",
                       fontWeight: 600,
-                      color: "#3d2b0e",
+                      color: C.inkMid,
                       marginBottom: 7,
                     }}
                   >
@@ -423,9 +424,9 @@ export const RegisterPage = () => {
                         left: 14,
                         top: "50%",
                         transform: "translateY(-50%)",
-                        color: "#a08050",
+                        color: C.inkSoft,
                         fontWeight: "bold",
-                        fontFamily: "sans-serif",
+                        fontFamily: fonts.sans,
                         fontSize: "1rem",
                       }}
                     >
@@ -456,7 +457,7 @@ export const RegisterPage = () => {
                   display: "block",
                   fontSize: "0.82rem",
                   fontWeight: 600,
-                  color: "#3d2b0e",
+                  color: C.inkMid,
                   marginBottom: 7,
                 }}
               >
@@ -492,13 +493,13 @@ export const RegisterPage = () => {
                   display: "block",
                   fontSize: "0.82rem",
                   fontWeight: 600,
-                  color: "#3d2b0e",
+                  color: C.inkMid,
                   marginBottom: 7,
                 }}
               >
                 Password
               </label>
-              <div style={{ position: "relative", marginBottom: 24 }}>
+              <div style={{ position: "relative", marginBottom: 16 }}>
                 <span
                   style={{
                     position: "absolute",
@@ -513,7 +514,7 @@ export const RegisterPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   dir="ltr"
                   value={formData.password}
                   onChange={(e) =>
@@ -542,35 +543,19 @@ export const RegisterPage = () => {
                 </button>
               </div>
 
-              {/* Submit — identical to LoginPage "Sign in" button */}
-              <button
+              <GoldBtn
                 type="submit"
                 disabled={isLoading}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
                   width: "100%",
-                  background: "#c8a96e",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 999,
+                  boxSizing: "border-box",
+                  borderRadius: 12,
                   padding: "15px 32px",
                   fontSize: "0.95rem",
                   fontWeight: 700,
-                  fontFamily: "sans-serif",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  transition: "background 0.2s",
                   boxShadow: "0 4px 20px rgba(200,169,110,0.4)",
-                  opacity: isLoading ? 0.7 : 1,
                   marginBottom: 20,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading) e.currentTarget.style.background = "#b8965a";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#c8a96e";
+                  marginTop: 10,
                 }}
               >
                 {isLoading ? (
@@ -580,11 +565,10 @@ export const RegisterPage = () => {
                   />
                 ) : (
                   <>
-                    {" "}
-                    Join HIASTica <ArrowRight size={16} />{" "}
+                    Join HIASTica <ArrowRight size={16} />
                   </>
                 )}
-              </button>
+              </GoldBtn>
             </form>
 
             {/* Sign in link */}
@@ -592,16 +576,16 @@ export const RegisterPage = () => {
               style={{
                 textAlign: "center",
                 fontSize: "0.82rem",
-                color: "#5c4a30",
-                fontFamily: "sans-serif",
+                color: C.inkMid,
+                fontFamily: fonts.sans,
               }}
             >
               Already have an account?{" "}
               <span
                 onClick={() => navigate("/login")}
-                style={{ color: "#c8a96e", fontWeight: 600, cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#a07840")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#c8a96e")}
+                style={{ color: C.gold, fontWeight: 600, cursor: "pointer" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = C.goldDark)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = C.gold)}
               >
                 Sign in
               </span>
@@ -624,7 +608,7 @@ export const RegisterPage = () => {
           style={{
             textAlign: "center",
             marginTop: 32,
-            color: "#c8a96e",
+            color: C.gold,
             fontStyle: "italic",
             fontSize: "1rem",
             letterSpacing: "0.02em",
@@ -632,7 +616,7 @@ export const RegisterPage = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: 12,
-            fontFamily: "'Georgia', serif",
+            fontFamily: fonts.serif,
           }}
         >
           <Sparkle size={13} />
@@ -641,7 +625,7 @@ export const RegisterPage = () => {
         </p>
       </section>
 
-      {/* spin keyframe — same as LoginPage */}
+      {/* spin keyframe */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
