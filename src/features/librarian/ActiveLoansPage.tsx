@@ -1,5 +1,8 @@
+// src/features/librarian/ActiveLoansPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
 import {
@@ -14,25 +17,6 @@ import {
   Info,
 } from "lucide-react";
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
 interface CirculationRecordResponse {
   recordId: number;
   copyBarcode: string | null;
@@ -43,7 +27,7 @@ interface CirculationRecordResponse {
   isOverdue: boolean;
 }
 
-// ── Extracted Component to avoid "static-components" ESLint error ──
+// ── Extracted Component ──
 const StatCard = ({
   title,
   value,
@@ -99,7 +83,7 @@ const StatCard = ({
           fontSize: "1.4rem",
           fontWeight: 800,
           color: C.ink,
-          fontFamily: serif,
+          fontFamily: fonts.serif,
         }}
       >
         {loading ? "..." : value}
@@ -113,12 +97,9 @@ export const ActiveLoansPage = () => {
   const [records, setRecords] = useState<CirculationRecordResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
-  // Tab state: "active" | "overdue"
   const [currentTab, setCurrentTab] = useState<"active" | "overdue">("active");
 
   useEffect(() => {
-    // تبديل الـ Endpoint بناءً على التبويب المحدد
     const endpoint =
       currentTab === "overdue"
         ? "/api/Circulation/overdue"
@@ -136,7 +117,7 @@ export const ActiveLoansPage = () => {
         console.error("Error fetching circulation records:", error);
         if (!cancelled) {
           if (error instanceof AxiosError && error.response?.status === 404) {
-            setRecords([]); // تعامل آمن مع الـ 404
+            setRecords([]);
           } else {
             alert("Failed to load records from server.");
           }
@@ -154,7 +135,6 @@ export const ActiveLoansPage = () => {
     };
   }, [currentTab]);
 
-  // Helper function to format ISO dates cleanly
   const formatDate = (isoString: string) => {
     if (!isoString) return "—";
     const date = new Date(isoString);
@@ -176,7 +156,7 @@ export const ActiveLoansPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -205,7 +185,7 @@ export const ActiveLoansPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -221,35 +201,9 @@ export const ActiveLoansPage = () => {
           </p>
         </div>
 
-        {/* Quick jump to circulation desk */}
-        <button
-          onClick={() => navigate("/librarian/circulation")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: C.surface,
-            color: C.goldDark,
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 10,
-            padding: "10px 20px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = C.surface;
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+        <OutlineBtn onClick={() => navigate("/librarian/circulation")}>
           <ArrowRightLeft size={15} /> Go to Circulation Desk
-        </button>
+        </OutlineBtn>
       </div>
 
       {/* ── Tabs & Stats ── */}
@@ -277,7 +231,7 @@ export const ActiveLoansPage = () => {
               color: currentTab === "active" ? C.goldDark : C.inkSoft,
               fontWeight: 700,
               fontSize: "0.95rem",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -299,7 +253,7 @@ export const ActiveLoansPage = () => {
               color: currentTab === "overdue" ? C.danger : C.inkSoft,
               fontWeight: 700,
               fontSize: "0.95rem",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -357,7 +311,7 @@ export const ActiveLoansPage = () => {
             border: "none",
             outline: "none",
             background: "transparent",
-            fontFamily: sans,
+            fontFamily: fonts.sans,
             fontSize: "0.9rem",
             color: C.ink,
           }}
@@ -394,7 +348,7 @@ export const ActiveLoansPage = () => {
             />
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkMid,
                 margin: "0 0 6px",
@@ -452,7 +406,6 @@ export const ActiveLoansPage = () => {
               </thead>
               <tbody>
                 {filteredRecords.map((record, idx) => {
-                  // نعتمد على isOverdue القادمة من السيرفر أو نحسبها محلياً إذا لم تكن موجودة
                   const isLate = record.isOverdue || currentTab === "overdue";
 
                   return (
@@ -495,7 +448,7 @@ export const ActiveLoansPage = () => {
                         >
                           <span
                             style={{
-                              fontFamily: serif,
+                              fontFamily: fonts.serif,
                               fontWeight: 700,
                               fontSize: "0.95rem",
                               color: C.ink,
@@ -603,6 +556,7 @@ export const ActiveLoansPage = () => {
                             alignItems: "center",
                             gap: 6,
                             transition: "background 0.15s",
+                            fontFamily: fonts.sans,
                           }}
                         >
                           <ArrowRightLeft size={14} /> Process Return
