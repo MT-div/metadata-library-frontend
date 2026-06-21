@@ -19,6 +19,12 @@ export const C = {
   blueBg: "#e8f0f5",
   orange: "#b8860b",
   orangeBg: "#fcf6e8",
+  sidebarBg: "#1e1508",
+  sidebarBorder: "rgba(200,169,110,0.15)",
+  sidebarHover: "rgba(200,169,110,0.10)",
+  sidebarActive: "rgba(200,169,110,0.18)",
+  sidebarText: "rgba(255,245,225,0.65)",
+  sidebarTextHi: "rgba(255,245,225,0.95)",
 };
 
 export const fonts = {

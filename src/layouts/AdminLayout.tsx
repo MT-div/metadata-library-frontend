@@ -1,46 +1,23 @@
+// src/layouts/AdminLayout.tsx
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { C, fonts } from "../utils/theme";
+import { useAuthStore } from "../store/useAuthStore";
 import {
   LayoutDashboard,
   LayoutTemplate,
   Library,
   FilePlus,
-  // UploadCloud,
   Menu,
   X,
   LogOut,
   Globe,
   ChevronRight,
   HardDrive,
-  Users,
   Sliders,
   Database,
+  Users,
 } from "lucide-react";
-import { useAuthStore } from "../store/useAuthStore";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  // Sidebar dark warm tones
-  sidebarBg: "#1e1508",
-  sidebarBorder: "rgba(200,169,110,0.15)",
-  sidebarHover: "rgba(200,169,110,0.10)",
-  sidebarActive: "rgba(200,169,110,0.18)",
-  sidebarText: "rgba(255,245,225,0.65)",
-  sidebarTextHi: "rgba(255,245,225,0.95)",
-  // Gold accent
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  // Main area
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 // ── Nav link groups ───────────────────────────────────────────────────────────
 const NAV_GROUPS = [
@@ -68,7 +45,7 @@ const NAV_GROUPS = [
         icon: <Library size={17} />,
       },
       {
-        title: "items",
+        title: "Items",
         path: "/admin/items",
         icon: <FilePlus size={17} />,
       },
@@ -89,30 +66,17 @@ const NAV_GROUPS = [
       },
     ],
   },
-  // {
-  //   label: "Content",
-  //   links: [
-  //     { title: "Add Item", path: "/items/new", icon: <FilePlus size={17} /> },
-  //     {
-  //       title: "Upload Media",
-  //       path: "/media/new",
-  //       icon: <UploadCloud size={17} />,
-  //     },
-  //   ],
-  // },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-
-  // 👈 الإضافة هنا
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    logout(); // نمسح البيانات من المحفظة
-    navigate("/login"); // نوجهه لصفحة الدخول
+    logout();
+    navigate("/login");
   };
 
   return (
@@ -121,7 +85,7 @@ export const AdminLayout = () => {
         display: "flex",
         height: "100vh",
         background: C.bg,
-        fontFamily: sans,
+        fontFamily: fonts.sans,
         overflow: "hidden",
       }}
     >
@@ -148,7 +112,6 @@ export const AdminLayout = () => {
           flexShrink: 0,
           zIndex: 30,
           borderRight: `1px solid ${C.sidebarBorder}`,
-          // Mobile: slide in/out
           position: "fixed" as const,
           top: 0,
           bottom: 0,
@@ -191,7 +154,7 @@ export const AdminLayout = () => {
                   fontSize: "0.88rem",
                   fontWeight: 700,
                   color: C.sidebarTextHi,
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                 }}
               >
                 HIASTica
@@ -254,7 +217,7 @@ export const AdminLayout = () => {
                       padding: "10px 12px",
                       borderRadius: 10,
                       textDecoration: "none",
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       fontSize: "0.85rem",
                       fontWeight: 500,
                       background: isActive ? C.sidebarActive : "transparent",
@@ -311,7 +274,7 @@ export const AdminLayout = () => {
               background: "transparent",
               border: "none",
               color: C.sidebarText,
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               fontWeight: 500,
               cursor: "pointer",
@@ -339,7 +302,7 @@ export const AdminLayout = () => {
               background: "transparent",
               border: "none",
               color: "rgba(220,80,60,0.75)",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               fontWeight: 500,
               cursor: "pointer",
@@ -369,7 +332,6 @@ export const AdminLayout = () => {
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
-          // On desktop push content past the fixed sidebar
           marginLeft: 240,
         }}
         className="admin-main"
@@ -406,7 +368,7 @@ export const AdminLayout = () => {
             <div>
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "1.1rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -450,7 +412,7 @@ export const AdminLayout = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontWeight: 700,
                 fontSize: "1rem",
                 color: C.goldDark,
