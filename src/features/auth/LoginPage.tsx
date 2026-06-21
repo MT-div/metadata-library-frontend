@@ -1,5 +1,9 @@
+// src/features/auth/LoginPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { Loader2 } from "lucide-react";
 import type { LoginRequest, AuthResponse } from "../../types/auth";
 import { api } from "../../services/api";
@@ -15,7 +19,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
   size = 14,
-  color = "#c8a96e",
+  color = C.gold,
 }: {
   size?: number;
   color?: string;
@@ -47,7 +51,7 @@ const MailIcon = () => (
     height={18}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#a08050"
+    stroke={C.inkSoft}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -63,7 +67,7 @@ const LockIcon = () => (
     height={18}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#a08050"
+    stroke={C.inkSoft}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -128,23 +132,17 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // 🚀 الاتصال الحقيقي بالباك اند! (تطابق مسار الـ Swagger)
       const response = await api.post<AuthResponse>(
         "/api/Auth/login",
         formData
       );
 
-      // البيانات تعود جاهزة داخل response.data في مكتبة Axios
       const data = response.data;
-
-      // حفظ البيانات في الـ Store
       login(data);
 
-      // الدخول للوحة التحكم
       if (canAccessAdmin) navigate("/admin/metadata");
       else navigate("/browse");
     } catch (err: unknown) {
-      // معالجة رسائل الخطأ القادمة من الباك اند (مثل: Invalid email or password)
       if (err instanceof AxiosError && err.response) {
         setError(
           err.response.data || "البريد الإلكتروني أو كلمة المرور غير صحيحة."
@@ -157,13 +155,13 @@ export const LoginPage = () => {
       setIsLoading(false);
     }
   };
+
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse | null
   ) => {
     setIsLoading(true);
     setError("");
     try {
-      // نرسل الـ idToken للباك اند
       if (!credentialResponse || !credentialResponse.credential) {
         throw new Error("Missing credential from Google response");
       }
@@ -182,12 +180,12 @@ export const LoginPage = () => {
       setIsLoading(false);
     }
   };
-  // ─── نفس الـ wrapper بالضبط من WelcomePage ───────────────────────────────
+
   return (
     <div
       style={{
-        fontFamily: "'Playfair Display', Georgia, serif",
-        background: "#F7F3ED",
+        fontFamily: fonts.serif,
+        background: C.bg,
         width: "100%",
         minHeight: "calc(100vh - 72px)",
         overflowX: "hidden",
@@ -195,7 +193,6 @@ export const LoginPage = () => {
         overflowY: "hidden",
       }}
     >
-      {/* نفس الـ vase بالضبط */}
       <img
         src={vasePng}
         alt=""
@@ -225,7 +222,6 @@ export const LoginPage = () => {
         }}
       />
 
-      {/* نفس الصورة بالضبط */}
       <div style={{ position: "absolute", height: "85%", right: 0, top: 0 }}>
         <div
           style={{
@@ -249,7 +245,6 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {/* نفس الـ blobs بالضبط */}
       <div
         aria-hidden
         style={{
@@ -279,7 +274,6 @@ export const LoginPage = () => {
         }}
       />
 
-      {/* نفس الـ gold arc بالضبط */}
       <div
         aria-hidden
         style={{
@@ -289,19 +283,18 @@ export const LoginPage = () => {
           width: 160,
           height: 160,
           borderRadius: "50%",
-          border: "3px solid #c8a96e",
+          border: `3px solid ${C.gold}`,
           opacity: 0.4,
           pointerEvents: "none",
           zIndex: 1,
         }}
       />
 
-      {/* ═══════════ نفس الـ HERO section بالضبط من WelcomePage ═══════════ */}
       <section
         style={{
           maxWidth: 1280,
           margin: "0 auto",
-          padding: "70px 48px 40px", // ← رفعنا العنوان بتقليل padding-top من 80 إلى 60
+          padding: "70px 48px 40px",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 64,
@@ -310,100 +303,24 @@ export const LoginPage = () => {
           zIndex: 2,
         }}
       >
-        {/* ── LEFT: نفس البنية بالضبط — فقط المحتوى تغيّر ── */}
         <div>
-          {/* Badge */}
-          {/* <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#ffffff",
-              border: "1px solid #dbc9a4",
-              borderRadius: 999,
-              padding: "7px 16px",
-              marginBottom: 16,
-            }}
-          >
-            <Sparkle size={12} />
-            <span
-              style={{
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                color: "#8a6a3a",
-                fontFamily: "sans-serif",
-              }}
-            >
-              Welcome Back
-            </span>
-          </div> */}
-
-          {/* Headline */}
-          {/* <h1
-            style={{
-              margin: "0 0 20px",
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            <span
-              style={{
-                display: "block",
-                fontSize: "clamp(2.6rem, 4.5vw, 4rem)",
-                fontWeight: 800,
-                color: "#1a1208",
-              }}
-            >
-              Sign in to
-            </span>
-            <span
-              style={{
-                display: "block",
-                fontSize: "clamp(2.6rem, 4.5vw, 4rem)",
-                fontWeight: 800,
-                color: "#c8a96e",
-                fontStyle: "italic",
-              }}
-            >
-              HIASTica
-            </span>
-          </h1> */}
-
-          {/* Body */}
-          {/* <p
-            style={{
-              fontFamily: "'Poppins', sans-serif",
-              fontSize: "1rem",
-              color: "#5c4a30",
-              lineHeight: 1.8,
-              marginBottom: 40,
-              maxWidth: 400,
-            }}
-          >
-            Continue your reading journey,
-            <br />
-            discover more, and keep growing.
-          </p> */}
-
-          {/* ── Form Card — نفس بنية CTA Buttons div ── */}
           <div
             style={{
               background: "#faf6f0",
-              border: "1.5px solid rgba(200,169,110,0.2)",
+              border: `1.5px solid ${C.goldBorder}`,
               boxShadow: "0 8px 32px rgba(0,0,0,0.05)",
               borderRadius: 20,
               padding: "32px 40px",
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: fonts.sans,
             }}
           >
-            {/* Title */}
             <h2
               style={{
                 textAlign: "center",
-                fontFamily: "'Playfair Display', Georgia, serif",
+                fontFamily: fonts.serif,
                 fontSize: "2rem",
                 fontWeight: 900,
-                color: "#1a1208",
+                color: C.ink,
                 marginBottom: 24,
                 marginTop: 0,
               }}
@@ -416,7 +333,7 @@ export const LoginPage = () => {
                   style={{
                     background: "#fff5f5",
                     border: "1.5px solid rgba(200,80,80,0.3)",
-                    color: "#a03030",
+                    color: C.danger,
                     borderRadius: 12,
                     padding: "10px 14px",
                     fontSize: "0.8rem",
@@ -434,7 +351,7 @@ export const LoginPage = () => {
                   display: "block",
                   fontSize: "0.82rem",
                   fontWeight: 600,
-                  color: "#3d2b0e",
+                  color: C.inkMid,
                   marginBottom: 7,
                 }}
               >
@@ -465,23 +382,22 @@ export const LoginPage = () => {
                   style={{
                     width: "100%",
                     boxSizing: "border-box",
-                    background: "#ffffff",
-                    border: "1.5px solid rgba(200,169,110,0.35)",
+                    background: C.surface,
+                    border: `1.5px solid ${C.goldBorder}`,
                     borderRadius: 12,
                     padding: "12px 14px 12px 42px",
                     fontSize: "0.88rem",
-                    fontFamily: "'Poppins', sans-serif",
-                    color: "#1a1208",
+                    fontFamily: fonts.sans,
+                    color: C.ink,
                     outline: "none",
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#c8a96e";
+                    e.currentTarget.style.borderColor = C.gold;
                     e.currentTarget.style.boxShadow =
                       "0 0 0 3px rgba(200,169,110,0.18)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor =
-                      "rgba(200,169,110,0.35)";
+                    e.currentTarget.style.borderColor = C.goldBorder;
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 />
@@ -493,7 +409,7 @@ export const LoginPage = () => {
                   display: "block",
                   fontSize: "0.82rem",
                   fontWeight: 600,
-                  color: "#3d2b0e",
+                  color: C.inkMid,
                   marginBottom: 7,
                 }}
               >
@@ -524,23 +440,22 @@ export const LoginPage = () => {
                   style={{
                     width: "100%",
                     boxSizing: "border-box",
-                    background: "#ffffff",
-                    border: "1.5px solid rgba(200,169,110,0.35)",
+                    background: C.surface,
+                    border: `1.5px solid ${C.goldBorder}`,
                     borderRadius: 12,
                     padding: "12px 42px",
                     fontSize: "0.88rem",
-                    fontFamily: "'Poppins', sans-serif",
-                    color: "#1a1208",
+                    fontFamily: fonts.sans,
+                    color: C.ink,
                     outline: "none",
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#c8a96e";
+                    e.currentTarget.style.borderColor = C.gold;
                     e.currentTarget.style.boxShadow =
                       "0 0 0 3px rgba(200,169,110,0.18)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor =
-                      "rgba(200,169,110,0.35)";
+                    e.currentTarget.style.borderColor = C.goldBorder;
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 />
@@ -555,7 +470,7 @@ export const LoginPage = () => {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#a08050",
+                    color: C.goldDark,
                     padding: 0,
                     display: "flex",
                   }}
@@ -579,7 +494,7 @@ export const LoginPage = () => {
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    color: "#5c4a30",
+                    color: C.inkMid,
                     cursor: "pointer",
                   }}
                 >
@@ -587,56 +502,36 @@ export const LoginPage = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    style={{ accentColor: "#c8a96e", width: 14, height: 14 }}
+                    style={{ accentColor: C.gold, width: 14, height: 14 }}
                   />
                   Remember me
                 </label>
                 <span
                   style={{
-                    color: "#c8a96e",
+                    color: C.gold,
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "#a07840")
+                    (e.currentTarget.style.color = C.goldDark)
                   }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "#c8a96e")
-                  }
+                  onMouseLeave={(e) => (e.currentTarget.style.color = C.gold)}
                 >
                   Forgot password?
                 </span>
               </div>
 
-              {/* Sign In — نفس زر "Enter HIASTica" بالضبط */}
-              <button
+              {/* Sign In Button */}
+              <GoldBtn
                 type="submit"
                 disabled={isLoading}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
                   width: "100%",
-                  background: "#c8a96e",
-                  color: "#fff",
-                  border: "none",
                   borderRadius: 999,
                   padding: "15px 32px",
                   fontSize: "0.95rem",
-                  fontWeight: 700,
-                  fontFamily: "sans-serif",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  transition: "background 0.2s",
                   boxShadow: "0 4px 20px rgba(200,169,110,0.4)",
-                  opacity: isLoading ? 0.7 : 1,
                   marginBottom: 20,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading) e.currentTarget.style.background = "#b8965a";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#c8a96e";
                 }}
               >
                 {isLoading ? (
@@ -649,7 +544,7 @@ export const LoginPage = () => {
                     Sign in <ArrowRight size={16} />
                   </>
                 )}
-              </button>
+              </GoldBtn>
             </form>
 
             {/* Divider */}
@@ -659,16 +554,16 @@ export const LoginPage = () => {
                 alignItems: "center",
                 gap: 12,
                 marginBottom: 18,
-                color: "#a08050",
+                color: C.inkSoft,
                 fontSize: "0.78rem",
-                fontFamily: "sans-serif",
+                fontFamily: fonts.sans,
               }}
             >
               <div
                 style={{
                   flex: 1,
                   height: 1,
-                  background: "rgba(200,169,110,0.3)",
+                  background: C.goldBorder,
                 }}
               />
               or continue with
@@ -676,12 +571,11 @@ export const LoginPage = () => {
                 style={{
                   flex: 1,
                   height: 1,
-                  background: "rgba(200,169,110,0.3)",
+                  background: C.goldBorder,
                 }}
               />
             </div>
 
-            {/* Social — نفس زر "Explore Features" بالضبط */}
             {/* Social */}
             <div
               style={{
@@ -693,7 +587,6 @@ export const LoginPage = () => {
                 justifyContent: "center",
               }}
             >
-              {/* الزر الرسمي لجوجل */}
               <div
                 style={{
                   flex: 1,
@@ -714,34 +607,18 @@ export const LoginPage = () => {
                 />
               </div>
 
-              {/* زر مايكروسوفت كما هو */}
-              <button
+              <OutlineBtn
                 type="button"
                 onClick={() => alert("Microsoft Auth coming soon")}
+                rounded
                 style={{
                   flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  background: "transparent",
-                  color: "#3d2b0e",
-                  border: "2px solid #c8a96e",
-                  borderRadius: 999,
+                  color: C.ink,
+                  border: `2px solid ${C.gold}`,
                   padding: "8px 28px",
                   fontSize: "0.95rem",
-                  fontWeight: 600,
-                  fontFamily: "sans-serif",
-                  cursor: "pointer",
-                  transition: "background 0.2s",
                   minWidth: 200,
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f0e8d8")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
                   <rect x="1" y="1" width="10" height="10" fill="#F25022" />
@@ -750,7 +627,7 @@ export const LoginPage = () => {
                   <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
                 </svg>
                 Microsoft
-              </button>
+              </OutlineBtn>
             </div>
 
             {/* Create account */}
@@ -758,15 +635,15 @@ export const LoginPage = () => {
               style={{
                 textAlign: "center",
                 fontSize: "0.82rem",
-                color: "#5c4a30",
-                fontFamily: "sans-serif",
+                color: C.inkMid,
+                fontFamily: fonts.sans,
               }}
             >
               Don't have an account?{" "}
               <span
-                style={{ color: "#c8a96e", fontWeight: 600, cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#a07840")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#c8a96e")}
+                style={{ color: C.gold, fontWeight: 600, cursor: "pointer" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = C.goldDark)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = C.gold)}
                 onClick={() => navigate("/register")}
               >
                 Create one
@@ -776,7 +653,7 @@ export const LoginPage = () => {
         </div>
       </section>
 
-      {/* ═══════════ QUOTE STRIP — نفس الـ FEATURE STRIP section بدون البطاقات ═══════════ */}
+      {/* ── Quote Strip ── */}
       <section
         style={{
           maxWidth: 1280,
@@ -790,7 +667,7 @@ export const LoginPage = () => {
           style={{
             textAlign: "center",
             marginTop: 32,
-            color: "#c8a96e",
+            color: C.gold,
             fontStyle: "italic",
             fontSize: "1rem",
             letterSpacing: "0.02em",
@@ -798,7 +675,7 @@ export const LoginPage = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: 12,
-            fontFamily: "'Georgia', serif",
+            fontFamily: fonts.serif,
           }}
         >
           <Sparkle size={13} />
