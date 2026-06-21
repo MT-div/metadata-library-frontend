@@ -9,6 +9,7 @@ interface StatCardProps {
   icon: React.ReactNode;
   link: string;
   loading: boolean;
+  alert?: boolean; // خاصية اختيارية لدعم التنبيهات اللونية (مثل الإعارات المتأخرة)
 }
 
 export const StatCard = ({
@@ -17,6 +18,7 @@ export const StatCard = ({
   icon,
   link,
   loading,
+  alert = false,
 }: StatCardProps) => {
   const navigate = useNavigate();
   return (
@@ -24,7 +26,7 @@ export const StatCard = ({
       onClick={() => navigate(link)}
       style={{
         background: C.surface,
-        border: `1.5px solid ${C.goldBorder}`,
+        border: `1.5px solid ${alert ? "rgba(192,57,43,0.3)" : C.goldBorder}`,
         borderRadius: 16,
         padding: "20px",
         display: "flex",
@@ -36,7 +38,9 @@ export const StatCard = ({
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 10px 24px rgba(200,169,110,0.15)";
+        e.currentTarget.style.boxShadow = alert
+          ? "0 10px 24px rgba(192,57,43,0.15)"
+          : "0 10px 24px rgba(200,169,110,0.15)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)";
@@ -48,11 +52,11 @@ export const StatCard = ({
           width: 56,
           height: 56,
           borderRadius: 14,
-          background: C.goldLight,
+          background: alert ? C.dangerBg : C.goldLight,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: C.goldDark,
+          color: alert ? C.danger : C.goldDark,
           flexShrink: 0,
         }}
       >
@@ -64,7 +68,7 @@ export const StatCard = ({
             margin: "0 0 4px",
             fontSize: "0.75rem",
             fontWeight: 700,
-            color: C.inkSoft,
+            color: alert ? C.danger : C.inkSoft,
             textTransform: "uppercase",
             letterSpacing: "0.05em",
           }}

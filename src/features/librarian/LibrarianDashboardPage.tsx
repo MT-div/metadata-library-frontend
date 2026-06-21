@@ -1,5 +1,8 @@
+// src/features/librarian/LibrarianDashboardPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { StatCard } from "../../components/ui/StatCard";
 import { api } from "../../services/api";
 import {
   BookOpen,
@@ -12,115 +15,12 @@ import {
   Archive,
 } from "lucide-react";
 
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
 interface LibrarianStats {
   totalItems: number;
   totalPatrons: number;
   activeLoans: number;
   overdueLoans: number;
 }
-
-// 👇 1. تم نقل المكون هنا للخارج لحل خطأ TypeScript و ESLint
-const StatCard = ({
-  title,
-  value,
-  icon,
-  link,
-  alert,
-  loading,
-}: {
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  link: string;
-  alert?: boolean;
-  loading: boolean;
-}) => {
-  const navigate = useNavigate();
-  return (
-    <div
-      onClick={() => navigate(link)}
-      style={{
-        background: C.surface,
-        border: `1.5px solid ${alert ? "rgba(192,57,43,0.3)" : C.goldBorder}`,
-        borderRadius: 16,
-        padding: "20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        cursor: "pointer",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = alert
-          ? "0 10px 24px rgba(192,57,43,0.15)"
-          : "0 10px 24px rgba(200,169,110,0.15)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.03)";
-      }}
-    >
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 14,
-          background: alert ? C.dangerBg : C.goldLight,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: alert ? C.danger : C.goldDark,
-        }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p
-          style={{
-            margin: "0 0 4px",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            color: alert ? C.danger : C.inkSoft,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {title}
-        </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "1.6rem",
-            fontWeight: 800,
-            color: C.ink,
-            fontFamily: serif,
-            lineHeight: 1,
-          }}
-        >
-          {loading ? "..." : value}
-        </p>
-      </div>
-    </div>
-  );
-};
 
 export const LibrarianDashboardPage = () => {
   const navigate = useNavigate();
@@ -163,7 +63,8 @@ export const LibrarianDashboardPage = () => {
   }, []);
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
+      {/* Welcome Banner */}
       <div
         style={{
           background: `linear-gradient(135deg, ${C.ink} 0%, ${C.inkMid} 100%)`,
@@ -202,7 +103,7 @@ export const LibrarianDashboardPage = () => {
           </div>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "clamp(1.8rem, 3vw, 2.4rem)",
               fontWeight: 800,
               color: "#fff",
@@ -239,7 +140,7 @@ export const LibrarianDashboardPage = () => {
         />
       </div>
 
-      {/* 👇 2. تمرير خاصية loading للمكون الجديد */}
+      {/* KPI Cards Grid */}
       <div
         style={{
           display: "grid",
@@ -304,7 +205,7 @@ export const LibrarianDashboardPage = () => {
           >
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -335,6 +236,7 @@ export const LibrarianDashboardPage = () => {
                 gap: 12,
                 cursor: "pointer",
                 transition: "all 0.2s",
+                fontFamily: fonts.sans,
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.borderColor = C.goldDark)
@@ -362,6 +264,7 @@ export const LibrarianDashboardPage = () => {
                 gap: 12,
                 cursor: "pointer",
                 transition: "all 0.2s",
+                fontFamily: fonts.sans,
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.borderColor = C.goldDark)

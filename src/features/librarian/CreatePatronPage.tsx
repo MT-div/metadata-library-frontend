@@ -1,31 +1,19 @@
+// src/features/librarian/CreatePatronPage.tsx
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
 import type { CreatePatronCommand } from "../../types/metadata";
 import { UserPlus, Save, ArrowLeft, Loader2, Info } from "lucide-react";
 
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  goldMid: "rgba(200,169,110,0.15)",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
 export const CreatePatronPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 👈 هنا نستلم مسار العودة إن وُجد (الذكاء الاصطناعي في الـ UX)
+  // نستلم مسار العودة إن وُجد (الذكاء الاصطناعي في الـ UX)
   const returnTo = location.state?.returnTo || "/librarian/patrons";
 
   const [formData, setFormData] = useState<CreatePatronCommand>({
@@ -66,7 +54,7 @@ export const CreatePatronPage = () => {
     border: `1.5px solid ${C.goldBorder}`,
     borderRadius: 10,
     padding: "12px 14px",
-    fontFamily: sans,
+    fontFamily: fonts.sans,
     fontSize: "0.9rem",
     color: C.ink,
     background: C.surface,
@@ -75,7 +63,8 @@ export const CreatePatronPage = () => {
   };
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
+      {/* ── Page header ── */}
       <div
         style={{
           display: "flex",
@@ -103,7 +92,7 @@ export const CreatePatronPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -114,34 +103,10 @@ export const CreatePatronPage = () => {
             Register New Patron
           </h1>
         </div>
-        <button
-          onClick={() => navigate(returnTo)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: "transparent",
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 999,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: C.inkMid,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+
+        <OutlineBtn onClick={() => navigate(returnTo)} rounded>
           <ArrowLeft size={15} /> Back
-        </button>
+        </OutlineBtn>
       </div>
 
       <div
@@ -155,6 +120,7 @@ export const CreatePatronPage = () => {
           boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
         }}
       >
+        {/* Card header */}
         <div
           style={{
             background: C.goldLight,
@@ -182,7 +148,7 @@ export const CreatePatronPage = () => {
           <div>
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.05rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -352,35 +318,25 @@ export const CreatePatronPage = () => {
               gap: 10,
             }}
           >
-            <button
+            <GoldBtn
               type="submit"
               disabled={isSubmitting}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: isSubmitting ? C.goldBorder : C.gold,
-                color: "#fff",
-                border: "none",
-                borderRadius: 10,
-                padding: "12px 24px",
-                fontFamily: sans,
-                fontSize: "0.9rem",
-                fontWeight: 700,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-              }}
+              style={{ padding: "12px 24px", fontSize: "0.9rem" }}
             >
               {isSubmitting ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2
+                  size={16}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
               ) : (
                 <Save size={16} />
               )}{" "}
               Register Patron
-            </button>
+            </GoldBtn>
           </div>
         </form>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
