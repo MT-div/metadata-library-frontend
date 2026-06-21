@@ -1,28 +1,15 @@
+// src/features/properties/CreatePropertyPage.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
+import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
 import type {
   CreatePropertyCommand,
   VocabularyResponse,
 } from "../../types/metadata";
-import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
-import { api } from "../../services/api";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-};
-
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 // واجهة خصائص المكون FormLabel
 interface FormLabelProps {
@@ -31,7 +18,6 @@ interface FormLabelProps {
   htmlFor?: string;
 }
 
-// تم نقل المكون خارج مكون الصفحة لتجنب إعادة الإنشاء مع كل رندر
 const FormLabel = ({ children, required, htmlFor }: FormLabelProps) => (
   <label
     htmlFor={htmlFor}
@@ -43,7 +29,7 @@ const FormLabel = ({ children, required, htmlFor }: FormLabelProps) => (
       letterSpacing: "0.05em",
       textTransform: "uppercase",
       marginBottom: 8,
-      fontFamily: sans,
+      fontFamily: fonts.sans,
     }}
   >
     {children}
@@ -80,7 +66,6 @@ export const CreatePropertyPage = () => {
     (v) => v.id === formData.vocabularyId
   );
 
-  // Auto-build termUri when vocab + localName are both filled
   const autoUri =
     selectedVocab && formData.localName
       ? `${selectedVocab.namespaceUri}${formData.localName}`
@@ -100,7 +85,6 @@ export const CreatePropertyPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // 👇 إرسال البيانات باستخدام Axios
       const res = await api.post("/api/properties", formData);
 
       if (res.status === 200 || res.status === 201) {
@@ -122,13 +106,14 @@ export const CreatePropertyPage = () => {
       setIsSubmitting(false);
     }
   };
+
   const inputStyle = (id: string): React.CSSProperties => ({
     width: "100%",
     boxSizing: "border-box",
     border: `1.5px solid ${focused === id ? C.gold : C.goldBorder}`,
     borderRadius: 10,
     padding: "10px 14px",
-    fontFamily: sans,
+    fontFamily: fonts.sans,
     fontSize: "0.88rem",
     color: C.ink,
     background: C.surface,
@@ -137,7 +122,7 @@ export const CreatePropertyPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -166,7 +151,7 @@ export const CreatePropertyPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -180,34 +165,10 @@ export const CreatePropertyPage = () => {
             Add a new metadata property and link it to a vocabulary.
           </p>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: "transparent",
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 999,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: C.inkMid,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+
+        <OutlineBtn onClick={() => navigate(-1)} rounded>
           <ArrowLeft size={15} /> Back
-        </button>
+        </OutlineBtn>
       </div>
 
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
@@ -248,7 +209,7 @@ export const CreatePropertyPage = () => {
             <div>
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "1.05rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -286,7 +247,7 @@ export const CreatePropertyPage = () => {
                       border: `1.5px solid ${C.goldBorder}`,
                       borderRadius: 10,
                       padding: "10px 36px 10px 14px",
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       fontSize: "0.88rem",
                       color: C.ink,
                       outline: "none",
@@ -316,7 +277,6 @@ export const CreatePropertyPage = () => {
                   </span>
                 </div>
 
-                {/* Selected vocab namespace preview */}
                 {selectedVocab && (
                   <div
                     style={{
@@ -392,7 +352,6 @@ export const CreatePropertyPage = () => {
                   }}
                   dir="ltr"
                 />
-                {/* Preview computed name */}
                 {selectedVocab && formData.localName && (
                   <div
                     style={{
@@ -435,7 +394,6 @@ export const CreatePropertyPage = () => {
                   }}
                   dir="ltr"
                 />
-                {/* Auto-built hint */}
                 {autoUri && autoUri !== formData.termUri && (
                   <button
                     type="button"
@@ -452,7 +410,7 @@ export const CreatePropertyPage = () => {
                       cursor: "pointer",
                       fontSize: "0.72rem",
                       color: C.gold,
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       padding: 0,
                     }}
                   >
@@ -508,63 +466,15 @@ export const CreatePropertyPage = () => {
                 gap: 10,
               }}
             >
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                style={{
-                  background: "transparent",
-                  border: `1.5px solid ${C.goldBorder}`,
-                  borderRadius: 10,
-                  padding: "10px 20px",
-                  fontFamily: sans,
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  color: C.inkMid,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
-              >
+              <OutlineBtn type="button" onClick={() => navigate(-1)}>
                 Cancel
-              </button>
+              </OutlineBtn>
 
-              <button
+              <GoldBtn
                 type="submit"
                 disabled={isSubmitting}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: success
-                    ? "#edf7ee"
-                    : isSubmitting
-                    ? C.goldBorder
-                    : C.gold,
-                  color: success ? "#2d6e3a" : "#fff",
-                  border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
-                  borderRadius: 10,
-                  padding: "10px 24px",
-                  fontFamily: sans,
-                  fontSize: "0.88rem",
-                  fontWeight: 700,
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  transition: "all 0.2s",
-                  boxShadow:
-                    success || isSubmitting
-                      ? "none"
-                      : "0 2px 12px rgba(200,169,110,0.35)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting && !success)
-                    e.currentTarget.style.background = C.goldDark;
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting && !success)
-                    e.currentTarget.style.background = C.gold;
-                }}
+                success={success}
+                style={{ padding: "10px 24px", fontSize: "0.88rem" }}
               >
                 <Save size={15} />
                 {isSubmitting
@@ -572,7 +482,7 @@ export const CreatePropertyPage = () => {
                   : success
                   ? "✓ Property Saved!"
                   : "Save Property"}
-              </button>
+              </GoldBtn>
             </div>
           </form>
         </div>
