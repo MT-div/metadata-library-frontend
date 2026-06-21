@@ -1,7 +1,4 @@
-// src/features/librarian/CirculationHistoryPage.tsx
 import { useState, useEffect } from "react";
-import { C, fonts } from "../../utils/theme";
-import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { api } from "../../services/api";
 import { AxiosError } from "axios";
 import {
@@ -18,6 +15,26 @@ import {
   ChevronDown,
   RotateCcw,
 } from "lucide-react";
+import { formatDateWithTime } from "../../utils/helpers";
+
+const C = {
+  bg: "#F7F3ED",
+  surface: "#FFFFFF",
+  gold: "#c8a96e",
+  goldLight: "#f0e8d8",
+  goldMid: "rgba(200,169,110,0.15)",
+  goldBorder: "rgba(200,169,110,0.28)",
+  goldDark: "#b8965a",
+  ink: "#1a1208",
+  inkMid: "#5c4a30",
+  inkSoft: "#9a8060",
+  danger: "#c0392b",
+  dangerBg: "#fdf0ee",
+  success: "#2d6e3a",
+  successBg: "#edf7ee",
+};
+const serif = "'Georgia','Times New Roman',serif";
+const sans = "'Poppins',system-ui,sans-serif";
 
 // ── Types (preserved exactly from original) ───────────────────────────────────
 interface CirculationRecordResponse {
@@ -53,7 +70,7 @@ const FilterSelect = ({
         border: `1.5px solid ${C.goldBorder}`,
         borderRadius: 10,
         padding: "10px 32px 10px 14px",
-        fontFamily: fonts.sans,
+        fontFamily: sans,
         fontSize: "0.83rem",
         color: C.ink,
         cursor: "pointer",
@@ -101,7 +118,7 @@ const DateInput = ({
       borderRadius: 10,
       fontSize: "0.83rem",
       outline: "none",
-      fontFamily: fonts.sans,
+      fontFamily: sans,
       color: value ? C.ink : C.inkSoft,
       background: C.surface,
       transition: "border-color 0.2s",
@@ -149,16 +166,16 @@ export const CirculationHistoryPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const formatDate = (iso?: string | null) => {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // const formatDate = (iso?: string | null) => {
+  //   if (!iso) return "—";
+  //   return new Date(iso).toLocaleDateString("en-US", {
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //   });
+  // };
 
   const getStatusBadge = (status: string) => {
     const s = status.toLowerCase();
@@ -184,6 +201,7 @@ export const CirculationHistoryPage = () => {
     };
   };
 
+  // ── computedStatus helper (preserved from original) ───────────────────────
   const getComputedStatus = (r: CirculationRecordResponse) => {
     if (r.status) return r.status.toLowerCase();
     if (r.returnDate) return "returned";
@@ -226,7 +244,7 @@ export const CirculationHistoryPage = () => {
   };
 
   return (
-    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
+    <div style={{ fontFamily: sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -255,7 +273,7 @@ export const CirculationHistoryPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -327,7 +345,7 @@ export const CirculationHistoryPage = () => {
               padding: "10px 32px 10px 34px",
               border: `1.5px solid ${C.goldBorder}`,
               borderRadius: 10,
-              fontFamily: fonts.sans,
+              fontFamily: sans,
               fontSize: "0.83rem",
               color: C.ink,
               background: C.bg,
@@ -349,7 +367,7 @@ export const CirculationHistoryPage = () => {
                 border: "none",
                 cursor: "pointer",
                 color: C.inkSoft,
-                fontSize: 18,
+                fontSize: 16,
                 lineHeight: 1,
                 padding: 0,
               }}
@@ -407,17 +425,39 @@ export const CirculationHistoryPage = () => {
         {hasFilters && (
           <>
             <VDiv />
-            <OutlineBtn
+            <button
               onClick={clearFilters}
-              style={{ padding: "9px 14px", fontSize: "0.78rem" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: C.goldLight,
+                color: C.inkMid,
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 10,
+                padding: "9px 14px",
+                fontFamily: sans,
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "background 0.15s",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = C.goldBorder)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = C.goldLight)
+              }
             >
               <RotateCcw size={13} /> Clear
-            </OutlineBtn>
+            </button>
           </>
         )}
       </div>
 
-      {/* ══ TABLE ══ */}
+      {/* ══ TABLE (full width) ══ */}
       <div
         style={{
           background: C.surface,
@@ -427,6 +467,7 @@ export const CirculationHistoryPage = () => {
           boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
         }}
       >
+        {/* Table header bar */}
         <div
           style={{
             background: C.goldLight,
@@ -440,7 +481,7 @@ export const CirculationHistoryPage = () => {
           <History size={16} color={C.goldDark} />
           <h2
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: serif,
               fontSize: "0.92rem",
               fontWeight: 700,
               color: C.ink,
@@ -480,7 +521,7 @@ export const CirculationHistoryPage = () => {
             </div>
             <p
               style={{
-                fontFamily: fonts.serif,
+                fontFamily: serif,
                 fontSize: "1.1rem",
                 color: C.inkMid,
                 margin: "0 0 6px",
@@ -571,7 +612,7 @@ export const CirculationHistoryPage = () => {
                         <p
                           style={{
                             margin: "0 0 3px",
-                            fontFamily: fonts.serif,
+                            fontFamily: serif,
                             fontWeight: 700,
                             fontSize: "0.88rem",
                             color: C.ink,
@@ -672,7 +713,7 @@ export const CirculationHistoryPage = () => {
                           }}
                         >
                           <Calendar size={12} color={C.inkSoft} />
-                          {formatDate(r.borrowDate)}
+                          {formatDateWithTime(r.borrowDate)}
                         </p>
                         <p
                           style={{
@@ -681,7 +722,7 @@ export const CirculationHistoryPage = () => {
                             color: C.inkSoft,
                           }}
                         >
-                          Due: {formatDate(r.dueDate)}
+                          Due: {formatDateWithTime(r.dueDate)}
                         </p>
                       </td>
 
@@ -694,7 +735,7 @@ export const CirculationHistoryPage = () => {
                             fontWeight: r.returnDate ? 600 : 400,
                           }}
                         >
-                          {formatDate(r.returnDate)}
+                          {formatDateWithTime(r.returnDate)}
                         </span>
                       </td>
                     </tr>

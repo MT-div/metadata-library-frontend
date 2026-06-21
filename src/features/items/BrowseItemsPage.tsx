@@ -21,6 +21,11 @@ import {
   Package,
   Library,
 } from "lucide-react";
+import {
+  extractMetadataValue,
+  extractYear,
+  computeRating,
+} from "../../utils/helpers";
 
 // ── Category Definitions & Icons ─────────────────────────────────────────────
 const CAT_CONFIG = [
@@ -151,25 +156,26 @@ export const BrowseItemsPage = () => {
     }
   };
 
-  const extract = (item: ItemResponse, labels: string[]) =>
-    item.metadataValues.find((v) =>
-      labels.some((l) =>
-        v.propertyLabel.toLowerCase().includes(l.toLowerCase())
-      )
-    )?.valueText ?? null;
+  // const extract = (item: ItemResponse, labels: string[]) =>
+  //   item.metadataValues.find((v) =>
+  //     labels.some((l) =>
+  //       v.propertyLabel.toLowerCase().includes(l.toLowerCase())
+  //     )
+  //   )?.valueText ?? null;
 
-  const extractYear = (item: ItemResponse) => {
-    const yearStr = extract(item, ["تاريخ", "سنة", "date", "year", "issued"]);
-    return yearStr ? parseInt(yearStr.replace(/\D/g, ""), 10) : null;
-  };
+  // const extractYear = (item: ItemResponse) => {
+  //   const yearStr = extract(item, ["تاريخ", "سنة", "date", "year", "issued"]);
+  //   return yearStr ? parseInt(yearStr.replace(/\D/g, ""), 10) : null;
+  // };
 
-  const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
+  // const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
 
   const determineCategory = (item: ItemResponse) => {
     const tplLabel =
       templates.find((t) => t.id === item.templateId)?.label.toLowerCase() ||
       "";
-    const title = extract(item, ["عنوان", "title"])?.toLowerCase() || "";
+    const title =
+      extractMetadataValue(item, ["عنوان", "title"])?.toLowerCase() || "";
     const setsStr = itemSets
       .filter((s) => s.items?.some((i) => i.id === item.id))
       .map((s) => s.title.toLowerCase())
@@ -260,8 +266,8 @@ export const BrowseItemsPage = () => {
     if (effectiveSortBy === "newest") return b.id - a.id;
     if (effectiveSortBy === "oldest") return a.id - b.id;
     if (effectiveSortBy === "title") {
-      const titleA = extract(a, ["title", "عنوان"]) || "";
-      const titleB = extract(b, ["title", "عنوان"]) || "";
+      const titleA = extractMetadataValue(a, ["title", "عنوان"]) || "";
+      const titleB = extractMetadataValue(b, ["title", "عنوان"]) || "";
       return titleA.localeCompare(titleB);
     }
     return 0;
@@ -685,10 +691,15 @@ export const BrowseItemsPage = () => {
               >
                 {visibleItems.map((item) => {
                   const title =
-                    extract(item, ["عنوان", "Title"]) ?? `Untitled #${item.id}`;
+                    extractMetadataValue(item, ["عنوان", "Title"]) ??
+                    `Untitled #${item.id}`;
                   const author =
-                    extract(item, ["مؤلف", "كاتب", "Author", "Creator"]) ??
-                    "Unknown";
+                    extractMetadataValue(item, [
+                      "مؤلف",
+                      "كاتب",
+                      "Author",
+                      "Creator",
+                    ]) ?? "Unknown";
                   const year = extractYear(item) ?? "—";
                   const catKey = determineCategory(item);
                   const badgeConfig =
@@ -697,7 +708,7 @@ export const BrowseItemsPage = () => {
                     COVER_COLORS[catKey] ?? COVER_COLORS.default;
                   const badgeColor =
                     BADGE_COLORS[catKey] ?? BADGE_COLORS.default;
-                  const rating = MOCK_RATING(item.id);
+                  const rating = computeRating(item.id);
                   const isFavorited = bookmarks.includes(Number(item.id));
 
                   return (
@@ -939,14 +950,16 @@ export const BrowseItemsPage = () => {
               </div>
               {visibleItems.map((item, idx) => {
                 const title =
-                  extract(item, ["عنوان", "Title"]) ?? `Untitled #${item.id}`;
-                const author = extract(item, ["مؤلف", "كاتب", "Author"]) ?? "—";
+                  extractMetadataValue(item, ["عنوان", "Title"]) ??
+                  `Untitled #${item.id}`;
+                const author =
+                  extractMetadataValue(item, ["مؤلف", "كاتب", "Author"]) ?? "—";
                 const year = extractYear(item) ?? "—";
                 const catKey = determineCategory(item);
                 const badgeConfig =
                   CAT_CONFIG.find((c) => c.key === catKey) || CAT_CONFIG[0];
                 const badgeColor = BADGE_COLORS[catKey] ?? BADGE_COLORS.default;
-                const rating = MOCK_RATING(item.id);
+                const rating = computeRating(item.id);
 
                 return (
                   <div

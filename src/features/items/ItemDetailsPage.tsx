@@ -1,5 +1,10 @@
+// src/features/items/ItemDetailsPage.tsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
+import { useAuthStore } from "../../store/useAuthStore";
 import {
   ArrowLeft,
   Edit,
@@ -13,29 +18,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { ItemResponse } from "../../types/item.types";
-import { api } from "../../services/api";
-import { useAuthStore } from "../../store/useAuthStore";
 import type { ResourceTemplateResponse } from "../../types/template.types";
-import type { MediaResponse } from "../../types/media.types";
 import type { ItemSetResponse } from "../../types/itemSet.types";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
+import type { MediaResponse } from "../../types/media.types";
 
 // ── Reusable section card ─────────────────────────────────────────────────────
 const SectionCard = ({
@@ -72,7 +57,7 @@ const SectionCard = ({
         <span style={{ color: C.gold }}>{icon}</span>
         <h2
           style={{
-            fontFamily: serif,
+            fontFamily: fonts.serif,
             fontSize: "0.95rem",
             fontWeight: 700,
             color: C.ink,
@@ -101,7 +86,6 @@ export const ItemDetailsPage = () => {
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
   const [media, setMedia] = useState<MediaResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  // حالة لمعرفة هل جاري الحذف الآن
   const [isDeleting, setIsDeleting] = useState(false);
 
   // دالة الحذف
@@ -110,11 +94,8 @@ export const ItemDetailsPage = () => {
 
     setIsDeleting(true);
     try {
-      // استدعاء ה- API الحقيقي للحذف
       await api.delete(`/api/items/${id}`);
-
       alert("تم حذف العنصر بنجاح.");
-      // توجيه المستخدم مرة أخرى إلى صفحة الاستعراض
       navigate("/browse", { replace: true });
     } catch (error) {
       console.error("Error deleting item:", error);
@@ -122,19 +103,18 @@ export const ItemDetailsPage = () => {
       setIsDeleting(false);
     }
   };
+
   useEffect(() => {
     const load = async () => {
       try {
-        // 👇 جلب تفاصيل العنصر باستخدام api
         const itemRes = await api.get<ItemResponse>(`/api/items/${id}`);
         const itemData = itemRes.data;
         setItem(itemData);
 
-        // 👇 جلب باقي البيانات بالتوازي مع الروابط المطابقة للـ Swagger
         const [tplRes, setsRes, mediaRes] = await Promise.all([
           api.get<ResourceTemplateResponse[]>("/api/resource-templates"),
           api.get<ItemSetResponse[]>("/api/item-sets"),
-          api.get<MediaResponse[]>(`/api/media/by-item/${id}`), // الرابط الصحيح للميديا
+          api.get<MediaResponse[]>(`/api/media/by-item/${id}`),
         ]);
 
         const tpls = tplRes.data;
@@ -155,14 +135,13 @@ export const ItemDetailsPage = () => {
     load();
   }, [id]);
 
-  // ── Loading / Error states ────────────────────────────────────────────────
   if (loading)
     return (
       <div
         style={{
           textAlign: "center",
           padding: 80,
-          fontFamily: sans,
+          fontFamily: fonts.sans,
           color: C.inkSoft,
           fontStyle: "italic",
         }}
@@ -170,13 +149,14 @@ export const ItemDetailsPage = () => {
         Loading item details...
       </div>
     );
+
   if (!item)
     return (
       <div
         style={{
           textAlign: "center",
           padding: 80,
-          fontFamily: serif,
+          fontFamily: fonts.serif,
           color: C.danger,
           fontSize: "1.2rem",
         }}
@@ -223,9 +203,10 @@ export const ItemDetailsPage = () => {
   return (
     <div
       style={{
-        background: C.bg,
         minHeight: "calc(100vh - 72px)",
-        fontFamily: sans,
+        fontFamily: fonts.sans,
+        position: "relative",
+        zIndex: 1,
       }}
     >
       <div
@@ -240,34 +221,9 @@ export const ItemDetailsPage = () => {
             marginBottom: 28,
           }}
         >
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "transparent",
-              border: `1.5px solid ${C.goldBorder}`,
-              borderRadius: 999,
-              padding: "9px 18px",
-              fontFamily: sans,
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: C.inkMid,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = C.goldLight;
-              e.currentTarget.style.borderColor = C.gold;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = C.goldBorder;
-            }}
-          >
+          <OutlineBtn onClick={() => navigate(-1)} rounded>
             <ArrowLeft size={16} /> Back to list
-          </button>
+          </OutlineBtn>
 
           <div style={{ gap: 10, display: canAccessAdmin ? "flex" : "none" }}>
             <ActionBtn
@@ -279,7 +235,7 @@ export const ItemDetailsPage = () => {
               icon={<Trash2 size={15} />}
               label={isDeleting ? "Deleting..." : "Delete"}
               danger
-              onClick={handleDelete} // 👈 تم ربط الدالة هنا
+              onClick={handleDelete}
             />
           </div>
         </div>
@@ -296,7 +252,6 @@ export const ItemDetailsPage = () => {
             display: "flex",
           }}
         >
-          {/* Gold left accent */}
           <div style={{ width: 5, background: C.gold, flexShrink: 0 }} />
 
           <div
@@ -356,7 +311,7 @@ export const ItemDetailsPage = () => {
                   ID: {item.id}
                 </span>
 
-                {/* Template badge — clickable */}
+                {/* Template badge */}
                 {template && (
                   <button
                     onClick={() =>
@@ -391,7 +346,7 @@ export const ItemDetailsPage = () => {
               {/* Title */}
               <h1
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "clamp(1.5rem,3vw,2.2rem)",
                   fontWeight: 800,
                   color: C.ink,
@@ -406,7 +361,7 @@ export const ItemDetailsPage = () => {
               {author && (
                 <p
                   style={{
-                    fontFamily: sans,
+                    fontFamily: fonts.sans,
                     fontSize: "1rem",
                     color: C.inkMid,
                     margin: "0 0 6px",
@@ -425,7 +380,7 @@ export const ItemDetailsPage = () => {
           </div>
         </div>
 
-        {/* ── Body grid: metadata (left 2/3) + sidebar (right 1/3) ── */}
+        {/* ── Body grid ── */}
         <div
           style={{
             display: "grid",
@@ -434,7 +389,7 @@ export const ItemDetailsPage = () => {
             alignItems: "start",
           }}
         >
-          {/* ── LEFT: Metadata ── */}
+          {/* Metadata */}
           <SectionCard title="Metadata" icon={<FileText size={18} />}>
             {sortedMeta.length === 0 ? (
               <p
@@ -476,7 +431,7 @@ export const ItemDetailsPage = () => {
                     </dt>
                     <dd
                       style={{
-                        fontFamily: serif,
+                        fontFamily: fonts.serif,
                         fontSize: "0.95rem",
                         fontWeight: 600,
                         color: C.ink,
@@ -491,7 +446,7 @@ export const ItemDetailsPage = () => {
             )}
           </SectionCard>
 
-          {/* ── RIGHT sidebar ── */}
+          {/* Sidebar */}
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* Collections */}
             <SectionCard title="Collections" icon={<Folder size={18} />}>
@@ -524,7 +479,7 @@ export const ItemDetailsPage = () => {
                         borderRadius: 10,
                         padding: "10px 14px",
                         cursor: "pointer",
-                        fontFamily: sans,
+                        fontFamily: fonts.sans,
                         transition: "all 0.15s",
                       }}
                       onMouseEnter={(e) => {
@@ -690,15 +645,14 @@ const ActionBtn = ({
     onClick={onClick}
     style={{
       display: "inline-flex",
-
       alignItems: "center",
       gap: 7,
-      background: danger ? "#fdf0ee" : C.surface,
+      background: danger ? C.dangerBg : C.surface,
       border: `1.5px solid ${danger ? "rgba(192,57,43,0.25)" : C.goldBorder}`,
       color: danger ? C.danger : C.inkMid,
       borderRadius: 10,
       padding: "9px 16px",
-      fontFamily: sans,
+      fontFamily: fonts.sans,
       fontSize: "0.85rem",
       fontWeight: 600,
       cursor: "pointer",
@@ -708,7 +662,7 @@ const ActionBtn = ({
       (e.currentTarget.style.background = danger ? "#fce8e5" : C.goldLight)
     }
     onMouseLeave={(e) =>
-      (e.currentTarget.style.background = danger ? "#fdf0ee" : C.surface)
+      (e.currentTarget.style.background = danger ? C.dangerBg : C.surface)
     }
   >
     {icon} {label}

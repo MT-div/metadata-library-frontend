@@ -16,6 +16,7 @@ import {
   ArrowRightLeft,
   Info,
 } from "lucide-react";
+import { formatDate } from "../../utils/helpers";
 
 interface CirculationRecordResponse {
   recordId: number;
@@ -135,15 +136,15 @@ export const ActiveLoansPage = () => {
     };
   }, [currentTab]);
 
-  const formatDate = (isoString: string) => {
-    if (!isoString) return "—";
-    const date = new Date(isoString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  // const formatDate = (isoString: string) => {
+  //   if (!isoString) return "—";
+  //   const date = new Date(isoString);
+  //   return date.toLocaleDateString("en-US", {
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //   });
+  // };
 
   const filteredRecords = records.filter((r) => {
     const query = search.toLowerCase();

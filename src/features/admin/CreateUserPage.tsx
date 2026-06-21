@@ -15,6 +15,7 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-react";
+import { getErrorMessage } from "../../utils/helpers";
 
 export const CreateUserPage = () => {
   const navigate = useNavigate();
@@ -39,19 +40,19 @@ export const CreateUserPage = () => {
     }));
   };
 
-  const getErrorMessage = (error: unknown): string => {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "response" in error &&
-      typeof (error as { response?: { data?: unknown } }).response?.data ===
-        "string"
-    ) {
-      return (error as { response?: { data?: string } }).response!.data!;
-    }
+  // const getErrorMessage = (error: unknown): string => {
+  //   if (
+  //     typeof error === "object" &&
+  //     error !== null &&
+  //     "response" in error &&
+  //     typeof (error as { response?: { data?: unknown } }).response?.data ===
+  //       "string"
+  //   ) {
+  //     return (error as { response?: { data?: string } }).response!.data!;
+  //   }
 
-    return "حدث خطأ أثناء إنشاء المستخدم.";
-  };
+  //   return "حدث خطأ أثناء إنشاء المستخدم.";
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

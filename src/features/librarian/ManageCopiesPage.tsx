@@ -20,6 +20,7 @@ import {
   Check,
   LayoutTemplate,
 } from "lucide-react";
+import { getItemTitle } from "../../utils/helpers";
 
 export const ManageCopiesPage = () => {
   const [items, setItems] = useState<ItemResponse[]>([]);
@@ -176,14 +177,14 @@ export const ManageCopiesPage = () => {
     }
   };
 
-  const getItemTitle = (item: ItemResponse) => {
-    const titleObj = item.metadataValues?.find(
-      (v) =>
-        v?.propertyLabel?.toLowerCase().includes("title") ||
-        v?.propertyLabel?.includes("عنوان")
-    );
-    return titleObj?.valueText || `Untitled #${item.id}`;
-  };
+  // const getItemTitle = (item: ItemResponse) => {
+  //   const titleObj = item.metadataValues?.find(
+  //     (v) =>
+  //       v?.propertyLabel?.toLowerCase().includes("title") ||
+  //       v?.propertyLabel?.includes("عنوان")
+  //   );
+  //   return titleObj?.valueText || `Untitled #${item.id}`;
+  // };
 
   const filteredItems = items.filter((item) => {
     const title = getItemTitle(item).toLowerCase();

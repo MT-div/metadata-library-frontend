@@ -9,6 +9,11 @@ import type { ResourceTemplateResponse } from "../../types/template.types";
 import { Heart, Search } from "lucide-react";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
+import {
+  extractMetadataValue,
+  extractYear,
+  computeRating,
+} from "../../utils/helpers";
 
 const BADGE_COLORS: Record<string, string> = {
   book: C.gold,
@@ -94,19 +99,19 @@ export const FavoritePage = () => {
     }
   };
 
-  const extract = (item: ItemResponse, labels: string[]) =>
-    item.metadataValues.find((v) =>
-      labels.some((l) =>
-        v.propertyLabel.toLowerCase().includes(l.toLowerCase())
-      )
-    )?.valueText ?? null;
+  // const extract = (item: ItemResponse, labels: string[]) =>
+  //   item.metadataValues.find((v) =>
+  //     labels.some((l) =>
+  //       v.propertyLabel.toLowerCase().includes(l.toLowerCase())
+  //     )
+  //   )?.valueText ?? null;
 
-  const extractYear = (item: ItemResponse) => {
-    const yearStr = extract(item, ["تاريخ", "سنة", "date", "year", "issued"]);
-    return yearStr ? parseInt(yearStr.replace(/\D/g, ""), 10) : null;
-  };
+  // const extractYear = (item: ItemResponse) => {
+  //   const yearStr = extract(item, ["تاريخ", "سنة", "date", "year", "issued"]);
+  //   return yearStr ? parseInt(yearStr.replace(/\D/g, ""), 10) : null;
+  // };
 
-  const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
+  // const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
 
   // Apply simple search filter
   const filtered = favoriteItems.filter((item) => {
@@ -434,9 +439,11 @@ export const FavoritePage = () => {
           >
             {filtered.map((item) => {
               const title =
-                extract(item, ["title", "عنوان"]) ?? `Untitled #${item.id}`;
+                extractMetadataValue(item, ["title", "عنوان"]) ??
+                `Untitled #${item.id}`;
               const author =
-                extract(item, ["author", "كاتب", "مؤلف"]) ?? "Unknown Author";
+                extractMetadataValue(item, ["author", "كاتب", "مؤلف"]) ??
+                "Unknown Author";
               const year = extractYear(item) ?? "—";
               const tpl = templates.find((t) => t.id === item.templateId);
               const badgeConfig = getTypeBadge(tpl?.label || "");
@@ -444,7 +451,7 @@ export const FavoritePage = () => {
                 COVER_COLORS[badgeConfig.key] ?? COVER_COLORS.default;
               const badgeColor =
                 BADGE_COLORS[badgeConfig.key] ?? BADGE_COLORS.default;
-              const rating = MOCK_RATING(item.id);
+              const rating = computeRating(item.id);
 
               return (
                 <Link
@@ -668,14 +675,16 @@ export const FavoritePage = () => {
             </div>
             {filtered.map((item, idx) => {
               const title =
-                extract(item, ["title", "عنوان"]) ?? `Untitled #${item.id}`;
-              const author = extract(item, ["author", "كاتب", "مؤلف"]) ?? "—";
+                extractMetadataValue(item, ["title", "عنوان"]) ??
+                `Untitled #${item.id}`;
+              const author =
+                extractMetadataValue(item, ["author", "كاتب", "مؤلف"]) ?? "—";
               const year = extractYear(item) ?? "—";
               const tpl = templates.find((t) => t.id === item.templateId);
               const badgeConfig = getTypeBadge(tpl?.label || "");
               const badgeColor =
                 BADGE_COLORS[badgeConfig.key] ?? BADGE_COLORS.default;
-              const rating = MOCK_RATING(item.id);
+              const rating = computeRating(item.id);
 
               return (
                 <div
