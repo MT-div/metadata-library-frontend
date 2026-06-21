@@ -1,5 +1,10 @@
+// src/features/admin/ManageTemplatesPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+// import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
 import {
   LayoutTemplate,
   Plus,
@@ -12,32 +17,11 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import { api } from "../../services/api";
 
 import type {
   ResourceTemplateResponse,
   TemplatePropertyRequest,
 } from "../../types/metadata";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-  success: "#2d6e3a",
-  successBg: "#edf7ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 interface ExtendedTemplateResponse extends ResourceTemplateResponse {
   isDeleted?: boolean;
@@ -260,7 +244,7 @@ export const ManageTemplatesPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -289,7 +273,7 @@ export const ManageTemplatesPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -304,34 +288,9 @@ export const ManageTemplatesPage = () => {
             experience.
           </p>
         </div>
-        <button
-          onClick={() => navigate("/templates/new")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: C.surface,
-            color: C.goldDark,
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 10,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = C.surface;
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+        <GoldBtn onClick={() => navigate("/templates/new")}>
           <Plus size={15} /> New Template
-        </button>
+        </GoldBtn>
       </div>
 
       <div
@@ -367,7 +326,7 @@ export const ManageTemplatesPage = () => {
             <LayoutTemplate size={16} color={C.gold} />
             <h2
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "0.9rem",
                 fontWeight: 700,
                 color: C.ink,
@@ -410,7 +369,7 @@ export const ManageTemplatesPage = () => {
                 color: filterStatus === "deleted" ? C.danger : C.inkMid,
                 fontSize: "0.8rem",
                 outline: "none",
-                fontFamily: sans,
+                fontFamily: fonts.sans,
                 cursor: "pointer",
               }}
             >
@@ -552,7 +511,7 @@ export const ManageTemplatesPage = () => {
               <div>
                 <h2
                   style={{
-                    fontFamily: serif,
+                    fontFamily: fonts.serif,
                     fontSize: "1.05rem",
                     fontWeight: 700,
                     color: isSelectedTplDeleted ? C.inkSoft : C.ink,
@@ -634,48 +593,29 @@ export const ManageTemplatesPage = () => {
                   </button>
                 )}
 
-                <button
+                <GoldBtn
                   onClick={handleSave}
-                  // 👇 تعطيل الزر إذا كان يحفظ، أو القالب محذوف، أو لا يوجد تغييرات
                   disabled={isSaving || isSelectedTplDeleted || !hasChanges}
+                  success={saveSuccess}
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    // 👇 تغيير لون الخلفية حسب الحالة (باهت إذا لم يكن هناك تغيير)
-                    background: saveSuccess
-                      ? C.successBg
-                      : isSelectedTplDeleted || !hasChanges
-                      ? C.goldLight
-                      : C.gold,
-                    color: saveSuccess
-                      ? C.success
-                      : isSelectedTplDeleted || !hasChanges
-                      ? C.inkSoft
-                      : "#fff",
-                    border: saveSuccess
-                      ? `1.5px solid rgba(45,110,58,0.3)`
-                      : "none",
-                    borderRadius: 10,
                     padding: "10px 22px",
-                    fontFamily: sans,
+                    fontFamily: fonts.sans,
                     fontSize: "0.88rem",
                     fontWeight: 700,
-                    cursor:
-                      isSaving || isSelectedTplDeleted || !hasChanges
-                        ? "not-allowed"
-                        : "pointer",
-                    opacity: isSaving || isSelectedTplDeleted ? 0.7 : 1,
-                    transition: "all 0.2s",
-                    boxShadow:
-                      saveSuccess || isSelectedTplDeleted || !hasChanges
-                        ? "none"
-                        : "0 2px 10px rgba(200,169,110,0.3)",
+                    background: saveSuccess
+                      ? undefined
+                      : isSaving || isSelectedTplDeleted || !hasChanges
+                      ? C.goldLight
+                      : undefined,
+                    color: saveSuccess
+                      ? undefined
+                      : isSaving || isSelectedTplDeleted || !hasChanges
+                      ? C.inkSoft
+                      : undefined,
                     whiteSpace: "nowrap",
                   }}
                 >
                   <Save size={16} />
-                  {/* 👇 النص يتغير بذكاء */}
                   {isSaving
                     ? "Saving..."
                     : saveSuccess
@@ -683,7 +623,7 @@ export const ManageTemplatesPage = () => {
                     : !hasChanges
                     ? "No changes yet"
                     : "Save Changes"}
-                </button>
+                </GoldBtn>
               </div>
             </div>
 
@@ -711,7 +651,7 @@ export const ManageTemplatesPage = () => {
                     border: `1.5px solid ${C.goldBorder}`,
                     borderRadius: 10,
                     padding: "10px 36px 10px 14px",
-                    fontFamily: sans,
+                    fontFamily: fonts.sans,
                     fontSize: "0.85rem",
                     color: propToAdd ? C.ink : C.inkSoft,
                     outline: "none",
@@ -741,40 +681,18 @@ export const ManageTemplatesPage = () => {
                   ▾
                 </span>
               </div>
-              <button
+
+              <GoldBtn
                 onClick={handleAdd}
                 disabled={!propToAdd || isSelectedTplDeleted}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  background:
-                    propToAdd && !isSelectedTplDeleted ? C.gold : C.goldBorder,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
                   padding: "10px 18px",
-                  fontFamily: sans,
                   fontSize: "0.85rem",
-                  fontWeight: 700,
-                  cursor:
-                    propToAdd && !isSelectedTplDeleted
-                      ? "pointer"
-                      : "not-allowed",
-                  transition: "background 0.15s",
                   whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  if (propToAdd && !isSelectedTplDeleted)
-                    e.currentTarget.style.background = C.goldDark;
-                }}
-                onMouseLeave={(e) => {
-                  if (propToAdd && !isSelectedTplDeleted)
-                    e.currentTarget.style.background = C.gold;
                 }}
               >
                 <Plus size={15} /> Add Field
-              </button>
+              </GoldBtn>
             </div>
 
             {/* Properties list */}
@@ -815,7 +733,7 @@ export const ManageTemplatesPage = () => {
                   </div>
                   <p
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontSize: "1rem",
                       color: C.inkMid,
                       margin: "0 0 4px",
@@ -902,7 +820,7 @@ export const ManageTemplatesPage = () => {
                         <p
                           style={{
                             margin: 0,
-                            fontFamily: serif,
+                            fontFamily: fonts.serif,
                             fontSize: "0.92rem",
                             fontWeight: 700,
                             color: C.ink,
@@ -1040,7 +958,7 @@ export const ManageTemplatesPage = () => {
           >
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkSoft,
               }}
