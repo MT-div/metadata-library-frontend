@@ -1,5 +1,10 @@
+// src/features/templates/CreateTemplatePage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
 import type {
   CreateResourceTemplateCommand,
   TemplatePropertyRequest,
@@ -14,24 +19,6 @@ import {
   Info,
   GripVertical,
 } from "lucide-react";
-import { api } from "../../services/api";
-
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.15)",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 type AvailableProperty = {
   id: number;
@@ -57,7 +44,7 @@ const FieldLabel = ({
       letterSpacing: "0.05em",
       textTransform: "uppercase",
       marginBottom: 8,
-      fontFamily: sans,
+      fontFamily: fonts.sans,
     }}
   >
     {children}
@@ -94,7 +81,7 @@ const StepHeader = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: serif,
+        fontFamily: fonts.serif,
         fontWeight: 800,
         fontSize: "0.9rem",
         color: "#fff",
@@ -105,7 +92,7 @@ const StepHeader = ({
     <div>
       <h2
         style={{
-          fontFamily: serif,
+          fontFamily: fonts.serif,
           fontSize: "0.92rem",
           fontWeight: 700,
           color: C.ink,
@@ -128,7 +115,7 @@ const selectStyle: React.CSSProperties = {
   border: `1.5px solid ${C.goldBorder}`,
   borderRadius: 10,
   padding: "10px 32px 10px 14px",
-  fontFamily: sans,
+  fontFamily: fonts.sans,
   fontSize: "0.85rem",
   color: C.ink,
   outline: "none",
@@ -151,7 +138,6 @@ export const CreateTemplatePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
-  // cache of all prop labels we've added (for display after vocab change)
   const [propCache, setPropCache] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -168,7 +154,6 @@ export const CreateTemplatePage = () => {
   useEffect(() => {
     if (!selectedVocabId) return;
 
-    // 👇 الرابط الحقيقي المطابق للـ Swagger
     api
       .get(`/api/properties/by-vocabulary/${selectedVocabId}`)
       .then((res) => {
@@ -176,7 +161,6 @@ export const CreateTemplatePage = () => {
         setAvailableProps(data);
         setSelectedPropId(data.length > 0 ? data[0].id : 0);
 
-        // build cache
         const entries: Record<number, string> = {};
         data.forEach((p: AvailableProperty) => {
           entries[p.id] = p.label;
@@ -225,13 +209,9 @@ export const CreateTemplatePage = () => {
     }
     setIsSubmitting(true);
     try {
-      // 1. إنشاء القالب الأساسي
       const createRes = await api.post("/api/resource-templates", templateData);
-
-      // Axios يعيد البيانات في .data (قد يكون ID مباشرة أو كائن يحتوي على ID حسب إعدادات الـ C#)
       const createdId = createRes.data.id ?? createRes.data;
 
-      // 2. ربط الخصائص بالقالب الجديد
       await api.put(`/api/resource-templates/${createdId}/properties`, {
         templateId: createdId,
         properties: selectedProperties,
@@ -257,7 +237,7 @@ export const CreateTemplatePage = () => {
     border: `1.5px solid ${focused === id ? C.gold : C.goldBorder}`,
     borderRadius: 10,
     padding: "10px 14px",
-    fontFamily: sans,
+    fontFamily: fonts.sans,
     fontSize: "0.88rem",
     color: C.ink,
     background: C.surface,
@@ -266,7 +246,7 @@ export const CreateTemplatePage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -295,7 +275,7 @@ export const CreateTemplatePage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -309,34 +289,10 @@ export const CreateTemplatePage = () => {
             Define a template and select which metadata fields it includes.
           </p>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: "transparent",
-            border: `1.5px solid ${C.goldBorder}`,
-            borderRadius: 999,
-            padding: "9px 18px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: C.inkMid,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.goldLight;
-            e.currentTarget.style.borderColor = C.gold;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = C.goldBorder;
-          }}
-        >
+
+        <OutlineBtn onClick={() => navigate(-1)} rounded>
           <ArrowLeft size={15} /> Back
-        </button>
+        </OutlineBtn>
       </div>
 
       <form
@@ -506,46 +462,18 @@ export const CreateTemplatePage = () => {
                 </div>
               </div>
 
-              {/* Add button */}
-              <button
+              <GoldBtn
                 type="button"
                 onClick={handleAddProperty}
                 disabled={!selectedPropId || availableProps.length === 0}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background:
-                    !selectedPropId || availableProps.length === 0
-                      ? C.goldBorder
-                      : C.gold,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
                   padding: "10px 16px",
-                  fontFamily: sans,
                   fontSize: "0.85rem",
-                  fontWeight: 700,
-                  cursor:
-                    !selectedPropId || availableProps.length === 0
-                      ? "not-allowed"
-                      : "pointer",
-                  transition: "background 0.15s",
                   whiteSpace: "nowrap",
-                  alignSelf: "flex-end",
-                  marginTop: 24,
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedPropId && availableProps.length > 0)
-                    e.currentTarget.style.background = C.goldDark;
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedPropId && availableProps.length > 0)
-                    e.currentTarget.style.background = C.gold;
                 }}
               >
                 <Plus size={15} /> Add Field
-              </button>
+              </GoldBtn>
             </div>
 
             {/* Validation hint */}
@@ -589,7 +517,7 @@ export const CreateTemplatePage = () => {
               <LayoutTemplate size={16} color={C.gold} />
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "0.92rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -642,7 +570,7 @@ export const CreateTemplatePage = () => {
                 </div>
                 <p
                   style={{
-                    fontFamily: serif,
+                    fontFamily: fonts.serif,
                     fontSize: "0.95rem",
                     color: C.inkMid,
                     margin: "0 0 4px",
@@ -717,7 +645,7 @@ export const CreateTemplatePage = () => {
                       {/* Label */}
                       <span
                         style={{
-                          fontFamily: serif,
+                          fontFamily: fonts.serif,
                           fontWeight: 700,
                           fontSize: "0.9rem",
                           color: C.ink,
@@ -809,7 +737,7 @@ export const CreateTemplatePage = () => {
           </div>
         </div>
 
-        {/* ── Submit ── */}
+        {/* Submit buttons */}
         <div
           style={{
             display: "flex",
@@ -818,63 +746,15 @@ export const CreateTemplatePage = () => {
             paddingTop: 4,
           }}
         >
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            style={{
-              background: "transparent",
-              border: `1.5px solid ${C.goldBorder}`,
-              borderRadius: 10,
-              padding: "10px 20px",
-              fontFamily: sans,
-              fontSize: "0.88rem",
-              fontWeight: 600,
-              color: C.inkMid,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
-          >
+          <OutlineBtn type="button" onClick={() => navigate(-1)}>
             Cancel
-          </button>
+          </OutlineBtn>
 
-          <button
+          <GoldBtn
             type="submit"
             disabled={isSubmitting}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: success
-                ? "#edf7ee"
-                : isSubmitting
-                ? C.goldBorder
-                : C.gold,
-              color: success ? "#2d6e3a" : "#fff",
-              border: success ? "1.5px solid rgba(45,110,58,0.3)" : "none",
-              borderRadius: 10,
-              padding: "10px 28px",
-              fontFamily: sans,
-              fontSize: "0.9rem",
-              fontWeight: 700,
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-              transition: "all 0.2s",
-              boxShadow:
-                success || isSubmitting
-                  ? "none"
-                  : "0 2px 12px rgba(200,169,110,0.35)",
-            }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting && !success)
-                e.currentTarget.style.background = C.goldDark;
-            }}
-            onMouseLeave={(e) => {
-              if (!isSubmitting && !success)
-                e.currentTarget.style.background = C.gold;
-            }}
+            success={success}
+            style={{ padding: "10px 28px", fontSize: "0.9rem" }}
           >
             <Save size={16} />
             {isSubmitting
@@ -882,7 +762,7 @@ export const CreateTemplatePage = () => {
               : success
               ? "✓ Template Created!"
               : "Save Template"}
-          </button>
+          </GoldBtn>
         </div>
       </form>
     </div>
