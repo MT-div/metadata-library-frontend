@@ -1,8 +1,11 @@
+// src/layouts/MainLayout.tsx
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
+import { C, fonts } from "../utils/theme";
+import { GoldBtn } from "../components/ui/GoldBtn";
+import { useAuthStore } from "../store/useAuthStore";
 import { Globe, ChevronDown } from "lucide-react";
 import openBookIcon from "../assets/icons/open-book.svg";
 import leafs from "../assets/images/leafs.png";
-import { useAuthStore } from "../store/useAuthStore";
 
 export const MainLayout = () => {
   const { isAuthenticated, isAdmin, isLibrarian, logout } = useAuthStore();
@@ -22,7 +25,7 @@ export const MainLayout = () => {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#faf6f0",
+        background: C.bg,
       }}
     >
       <img
@@ -31,18 +34,19 @@ export const MainLayout = () => {
         style={{
           position: "absolute",
           width: 200,
-          top: " 10%",
+          top: "10%",
           left: -40,
           opacity: 0.5,
           zIndex: 1,
         }}
       />
+
       {/* ═══════════════════════════ NAVBAR ═══════════════════════════ */}
       <header
         style={{
           background: "#faf6f0",
           backdropFilter: "blur(14px)",
-          borderBottom: "1px solid rgba(200,169,110,0.2)",
+          borderBottom: `1px solid ${C.sidebarBorder}`,
           position: "sticky",
           top: 0,
           zIndex: 50,
@@ -59,7 +63,7 @@ export const MainLayout = () => {
             justifyContent: "space-between",
           }}
         >
-          {/* ── Logo ── */}
+          {/* Logo */}
           <Link
             to="/"
             style={{
@@ -73,7 +77,7 @@ export const MainLayout = () => {
               style={{
                 width: "72px",
                 height: "72px",
-                backgroundColor: "#c8a96e",
+                backgroundColor: C.gold,
                 WebkitMaskImage: `url(${openBookIcon})`,
                 maskImage: `url(${openBookIcon})`,
                 WebkitMaskSize: "contain",
@@ -86,10 +90,10 @@ export const MainLayout = () => {
             />
             <span
               style={{
-                fontFamily: "'Georgia', 'Times New Roman', serif",
+                fontFamily: fonts.serif,
                 fontWeight: 700,
                 fontSize: "2.2rem",
-                color: "#c8a96e",
+                color: C.gold,
                 letterSpacing: "-0.01em",
               }}
             >
@@ -97,7 +101,7 @@ export const MainLayout = () => {
             </span>
           </Link>
 
-          {/* ── Center Nav Links ── */}
+          {/* Center Nav Links */}
           <nav style={{ display: "flex", alignItems: "center", gap: 48 }}>
             {navLinks.map((link) => (
               <NavLink
@@ -108,9 +112,9 @@ export const MainLayout = () => {
                   textDecoration: "none",
                   fontSize: "0.9rem",
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? "#c8a96e" : "#4a3a20",
+                  color: isActive ? C.gold : C.inkMid,
                   borderBottom: isActive
-                    ? "2px solid #c8a96e"
+                    ? `2px solid ${C.gold}`
                     : "2px solid transparent",
                   paddingBottom: 2,
                   transition: "color 0.2s, border-color 0.2s",
@@ -121,11 +125,11 @@ export const MainLayout = () => {
             ))}
           </nav>
 
-          {/* ── Right: Language + Sign In / User Action ── */}
+          {/* Right: Language + Sign In / User Action */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {/* Language selector */}
             <button
-              onClick={() => alert("سيتم اضافة الكسير من اللغات لاحقا ")}
+              onClick={() => alert("سيتم اضافة الكثير من اللغات لاحقاً")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -133,58 +137,45 @@ export const MainLayout = () => {
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
-                color: "#4a3a20",
+                color: C.inkMid,
                 fontSize: "0.85rem",
                 fontWeight: 500,
               }}
             >
-              <Globe size={16} color="#4a3a20" />
+              <Globe size={16} color={C.inkMid} />
               EN
-              <ChevronDown size={14} color="#4a3a20" />
+              <ChevronDown size={14} color={C.inkMid} />
             </button>
 
-            {/* 👇 الزر الذكي المحدث */}
-            <button
+            {/* Smart Action Button */}
+            <GoldBtn
               onClick={() => {
                 if (!isAuthenticated) {
                   navigate("/login");
                 } else if (canAccessAdmin) {
                   navigate("/admin");
                 } else {
-                  // المستخدم العادي: نقوم بتسجيل خروجه ونوجهه للرئيسية
                   logout();
                   navigate("/");
                 }
               }}
               style={{
-                background: "#c8a96e",
-                color: "#fff",
-                border: "none",
                 borderRadius: 999,
                 padding: "9px 22px",
                 fontSize: "0.875rem",
                 fontWeight: 600,
-                cursor: "pointer",
-                transition: "background 0.2s",
-                letterSpacing: "0.01em",
+                boxShadow: "none",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#b8965a")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#c8a96e")
-              }
             >
               {!isAuthenticated
                 ? "Sign In"
                 : canAccessAdmin
                 ? "Admin Panel"
                 : "Sign Out"}
-            </button>
+            </GoldBtn>
           </div>
         </div>
 
-        {/* Mobile Nav */}
         <div
           style={{
             display: "none",
@@ -194,15 +185,15 @@ export const MainLayout = () => {
       </header>
 
       {/* ═══════════════════════════ CONTENT ═══════════════════════════ */}
-      <main style={{ flexGrow: 1, background: "#faf6f0" }}>
+      <main style={{ flexGrow: 1, background: C.bg }}>
         <Outlet />
       </main>
 
       {/* ═══════════════════════════ FOOTER ═══════════════════════════ */}
       <footer
         style={{
-          background: "#1a1208",
-          color: "#a08060",
+          background: C.ink,
+          color: C.inkSoft,
           padding: "28px 32px",
           fontSize: "0.85rem",
           zIndex: 10,
@@ -218,7 +209,7 @@ export const MainLayout = () => {
             alignItems: "center",
             flexWrap: "wrap",
             gap: 16,
-            fontFamily: "sans-serif",
+            fontFamily: fonts.sans,
           }}
         >
           <p style={{ margin: 0 }}>
@@ -228,13 +219,13 @@ export const MainLayout = () => {
           <div style={{ display: "flex", gap: 24 }}>
             <Link
               to="/browse"
-              style={{ color: "#a08060", textDecoration: "none" }}
+              style={{ color: C.inkSoft, textDecoration: "none" }}
             >
               Explore
             </Link>
             <Link
               to="/itemsets"
-              style={{ color: "#a08060", textDecoration: "none" }}
+              style={{ color: C.inkSoft, textDecoration: "none" }}
             >
               Collections
             </Link>
