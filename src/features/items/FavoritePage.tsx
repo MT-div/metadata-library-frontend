@@ -1,39 +1,25 @@
+// src/features/items/FavoritePage.tsx
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { api } from "../../services/api";
 import type {
   ItemResponse,
   ResourceTemplateResponse,
   BookmarksResponse,
 } from "../../types/metadata";
-import { Link, useNavigate } from "react-router-dom";
 import { Heart, Search } from "lucide-react";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
-import { api } from "../../services/api";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.18)",
-  goldBorder: "rgba(200,169,110,0.30)",
-  goldDark: "#b8965a",
-  danger: "#d46a6a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 const BADGE_COLORS: Record<string, string> = {
-  book: "#c8a96e",
+  book: C.gold,
   manuscript: "#7c5c2e",
   article: "#4a7c59",
   digital: "#4a6a9c",
-  other: "#9a8060",
-  default: "#9a8060",
+  other: C.inkSoft,
+  default: C.inkSoft,
 };
 
 const COVER_COLORS: Record<string, string> = {
@@ -141,7 +127,7 @@ export const FavoritePage = () => {
       style={{
         background: C.bg,
         minHeight: "calc(100vh - 72px)",
-        fontFamily: sans,
+        fontFamily: fonts.sans,
       }}
     >
       {/* ══════════ HERO SECTION ══════════ */}
@@ -210,7 +196,7 @@ export const FavoritePage = () => {
             </div>
             <h1
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 margin: "0 0 4px",
                 fontSize: "clamp(2.2rem,4vw,3.2rem)",
                 fontWeight: 800,
@@ -222,7 +208,7 @@ export const FavoritePage = () => {
             </h1>
             <h1
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 margin: "0 0 18px",
                 fontSize: "clamp(2.2rem,4vw,3.2rem)",
                 fontWeight: 800,
@@ -278,7 +264,7 @@ export const FavoritePage = () => {
         />
       </div>
 
-      {/* ══════════ SEARCH BAR ══════════ */}
+      {/* ── Search bar ── */}
       <div
         style={{
           maxWidth: 1280,
@@ -324,7 +310,7 @@ export const FavoritePage = () => {
                 paddingTop: 10,
                 paddingBottom: 10,
                 border: "none",
-                fontFamily: sans,
+                fontFamily: fonts.sans,
                 fontSize: "0.95rem",
                 color: C.ink,
                 background: "transparent",
@@ -351,7 +337,7 @@ export const FavoritePage = () => {
         </div>
       </div>
 
-      {/* ══════════ BODY (ITEMS GRID) ══════════ */}
+      {/* ── Body content ── */}
       <div
         style={{
           maxWidth: 1280,
@@ -372,7 +358,7 @@ export const FavoritePage = () => {
           <p
             style={{
               margin: 0,
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.9rem",
               color: C.inkSoft,
               fontWeight: 600,
@@ -410,7 +396,7 @@ export const FavoritePage = () => {
             />
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.3rem",
                 fontWeight: 700,
                 color: C.inkMid,
@@ -429,25 +415,19 @@ export const FavoritePage = () => {
                 : "Browse the library and click the heart icon to save items here."}
             </p>
             {!search && (
-              <button
+              <GoldBtn
                 onClick={() => navigate("/browse")}
                 style={{
-                  background: C.gold,
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 24px",
                   borderRadius: 999,
-                  fontFamily: sans,
+                  padding: "10px 24px",
                   fontWeight: 700,
-                  cursor: "pointer",
                 }}
               >
                 Browse Catalog
-              </button>
+              </GoldBtn>
             )}
           </div>
         ) : view === "grid" ? (
-          /* ── GRID VIEW ── */
           <div
             style={{
               display: "grid",
@@ -525,7 +505,6 @@ export const FavoritePage = () => {
                         {badgeConfig.label}
                       </span>
 
-                      {/* 🤍 Interactive Heart (Remove Bookmark) */}
                       <button
                         onClick={(e) => removeBookmark(e, item.id)}
                         title="Remove from favorites"
@@ -567,7 +546,7 @@ export const FavoritePage = () => {
                     >
                       <h3
                         style={{
-                          fontFamily: serif,
+                          fontFamily: fonts.serif,
                           fontSize: "1rem",
                           fontWeight: 700,
                           color: C.ink,
@@ -735,7 +714,7 @@ export const FavoritePage = () => {
                   </span>
                   <span
                     style={{
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                       fontWeight: 700,
                       fontSize: "0.9rem",
                       color: C.ink,
