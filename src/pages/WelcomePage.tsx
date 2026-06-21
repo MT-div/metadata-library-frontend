@@ -1,19 +1,22 @@
+// src/pages/WelcomePage.tsx
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../utils/theme";
+import { GoldBtn } from "../components/ui/GoldBtn";
+import { OutlineBtn } from "../components/ui/OutlineBtn";
+import { useAuthStore } from "../store/useAuthStore";
 
 import openBookIcon from "../assets/icons/open-book.png";
 import compassIcon from "../assets/icons/compass.svg";
 import usersIcon from "../assets/icons/users.svg";
 import bookMarkedIcon from "../assets/icons/book-marked.svg";
 import vasePng from "../assets/icons/vase.png";
-import backVase from "../assets/icons/backVase.png"; // uncomment when file is ready
-import { useAuthStore } from "../store/useAuthStore";
-
+import backVase from "../assets/icons/backVase.png";
 import libraryHero from "../assets/images/libraryHero6.png";
 
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
   size = 14,
-  color = "#c8a96e",
+  color = C.gold,
 }: {
   size?: number;
   color?: string;
@@ -75,8 +78,8 @@ export const WelcomePage = () => {
   return (
     <div
       style={{
-        fontFamily: "'Playfair Display', Georgia, serif",
-        background: "#F7F3ED",
+        fontFamily: fonts.serif,
+        background: C.bg,
         width: "100%",
         minHeight: "calc(100vh - 72px)",
         overflowX: "hidden",
@@ -90,7 +93,7 @@ export const WelcomePage = () => {
         aria-hidden
         style={{
           position: "absolute",
-          bottom: -55, // sits above the feature strip
+          bottom: -55,
           left: -20,
           width: 240,
           zIndex: 4,
@@ -104,7 +107,7 @@ export const WelcomePage = () => {
         aria-hidden
         style={{
           position: "absolute",
-          bottom: -110, // sits above the feature strip
+          bottom: -110,
           left: -20,
           width: 260,
           zIndex: 0,
@@ -112,20 +115,7 @@ export const WelcomePage = () => {
           pointerEvents: "none",
         }}
       />
-      {/* <img
-        src={vasePng}
-        alt=""
-        aria-hidden
-        style={{
-          position: "absolute",
-          bottom: -55, // sits above the feature strip
-          right: -20,
-          width: 220,
-          zIndex: 4,
-          filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.10))",
-          pointerEvents: "none",
-        }}
-      /> */}
+
       <div
         style={{
           position: "absolute",
@@ -155,6 +145,7 @@ export const WelcomePage = () => {
           />
         </div>
       </div>
+
       {/* ── Decorative background radial blobs ── */}
       <div
         aria-hidden
@@ -195,14 +186,12 @@ export const WelcomePage = () => {
           width: 160,
           height: 160,
           borderRadius: "50%",
-          border: "3px solid #c8a96e",
+          border: `3px solid ${C.gold}`,
           opacity: 0.4,
           pointerEvents: "none",
           zIndex: 1,
         }}
       />
-
-      {/* ── Vase plant — absolute (not fixed!) so it stays in page flow ── */}
 
       {/* ═══════════ HERO ═══════════ */}
       <section
@@ -211,7 +200,7 @@ export const WelcomePage = () => {
           margin: "0 auto",
           padding: "80px 48px 40px",
           display: "grid",
-          gridTemplateColumns: "1fr 1fr", // equal halves — balanced layout
+          gridTemplateColumns: "1fr 1fr",
           gap: 64,
           alignItems: "center",
           position: "relative",
@@ -226,8 +215,8 @@ export const WelcomePage = () => {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "#ffffff",
-              border: "1px solid #dbc9a4",
+              background: C.surface,
+              border: `1px solid ${C.goldBorder}`,
               borderRadius: 999,
               padding: "7px 16px",
               marginBottom: 16,
@@ -238,8 +227,8 @@ export const WelcomePage = () => {
               style={{
                 fontSize: "0.82rem",
                 fontWeight: 600,
-                color: "#8a6a3a",
-                fontFamily: "sans-serif",
+                color: C.goldDark,
+                fontFamily: fonts.sans,
               }}
             >
               Your Journey Begins Here
@@ -259,7 +248,7 @@ export const WelcomePage = () => {
                 display: "block",
                 fontSize: "clamp(2.6rem, 4.5vw, 4rem)",
                 fontWeight: 800,
-                color: "#1a1208",
+                color: C.ink,
               }}
             >
               Welcome to
@@ -269,7 +258,7 @@ export const WelcomePage = () => {
                 display: "block",
                 fontSize: "clamp(2.6rem, 4.5vw, 4rem)",
                 fontWeight: 800,
-                color: "#c8a96e",
+                color: C.gold,
                 fontStyle: "italic",
               }}
             >
@@ -280,9 +269,9 @@ export const WelcomePage = () => {
           {/* Body */}
           <p
             style={{
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: fonts.sans,
               fontSize: "1rem",
-              color: "#5c4a30",
+              color: C.inkMid,
               lineHeight: 1.8,
               marginBottom: 40,
               maxWidth: 400,
@@ -304,58 +293,31 @@ export const WelcomePage = () => {
               flexWrap: "wrap",
             }}
           >
-            <button
+            <GoldBtn
               onClick={() => navigate("/browse")}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                background: "#c8a96e",
-                color: "#fff",
-                border: "none",
                 borderRadius: 999,
                 padding: "15px 32px",
                 fontSize: "0.95rem",
-                fontWeight: 700,
-                fontFamily: "sans-serif",
-                cursor: "pointer",
-                transition: "background 0.2s",
                 boxShadow: "0 4px 20px rgba(200,169,110,0.4)",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#b8965a")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#c8a96e")
-              }
             >
               Enter HIASTica <ArrowRight size={16} />
-            </button>
+            </GoldBtn>
 
-            <button
+            <OutlineBtn
               onClick={() => navigate("/admin")}
+              rounded
               style={{
-                background: "transparent",
-                color: "#3d2b0e",
-                border: "2px solid #c8a96e",
-                borderRadius: 999,
+                color: C.ink,
+                border: `2px solid ${C.gold}`,
                 padding: "13px 28px",
                 fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "sans-serif",
-                cursor: "pointer",
-                transition: "background 0.2s",
                 display: canAccessAdmin ? "block" : "none",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#f0e8d8")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
             >
               Explore Features
-            </button>
+            </OutlineBtn>
           </div>
         </div>
       </section>
@@ -373,7 +335,7 @@ export const WelcomePage = () => {
         <div
           style={{
             background: "#faf6f0",
-            border: "1.5px solid rgba(200,169,110,0.2)",
+            border: `1.5px solid ${C.goldBorder}`,
             boxShadow: "0 8px 32px rgba(0,0,0,0.05)",
             borderRadius: 20,
             padding: "32px 40px",
@@ -392,7 +354,7 @@ export const WelcomePage = () => {
           style={{
             textAlign: "center",
             marginTop: 32,
-            color: "#c8a96e",
+            color: C.gold,
             fontStyle: "italic",
             fontSize: "1rem",
             letterSpacing: "0.02em",
@@ -400,7 +362,7 @@ export const WelcomePage = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: 12,
-            fontFamily: "'Georgia', serif",
+            fontFamily: fonts.serif,
           }}
         >
           <Sparkle size={13} />
@@ -436,13 +398,13 @@ const FeatureItem = ({
       style={{
         width: 52,
         height: 52,
-        background: "#f5efe5",
+        background: C.bg,
         borderRadius: "50%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        border: "1px solid rgba(200,169,110,0.3)",
+        border: `1px solid ${C.goldBorder}`,
       }}
     >
       <img
@@ -463,8 +425,8 @@ const FeatureItem = ({
           margin: "0 0 4px",
           fontWeight: 700,
           fontSize: "0.88rem",
-          color: "#1a1208",
-          fontFamily: "sans-serif",
+          color: C.ink,
+          fontFamily: fonts.sans,
         }}
       >
         {title}
@@ -473,9 +435,9 @@ const FeatureItem = ({
         style={{
           margin: 0,
           fontSize: "0.78rem",
-          color: "#7a5c30",
+          color: C.inkSoft,
           lineHeight: 1.55,
-          fontFamily: "sans-serif",
+          fontFamily: fonts.sans,
         }}
       >
         {desc}
