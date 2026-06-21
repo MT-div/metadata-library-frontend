@@ -1,13 +1,17 @@
+// src/features/items/BrowseItemsPage.tsx
 import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
+import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { api } from "../../services/api";
 import type {
   ItemResponse,
   ResourceTemplateResponse,
   ItemSetResponse,
 } from "../../types/metadata";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
-import { api } from "../../services/api";
 import {
   Search,
   Heart,
@@ -20,22 +24,6 @@ import {
   Library,
 } from "lucide-react";
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldMid: "rgba(200,169,110,0.18)",
-  goldBorder: "rgba(200,169,110,0.30)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
-
 // ── Category Definitions & Icons ─────────────────────────────────────────────
 const CAT_CONFIG = [
   { label: "All Items", key: "all", icon: <Library size={16} /> },
@@ -47,12 +35,12 @@ const CAT_CONFIG = [
 ];
 
 const BADGE_COLORS: Record<string, string> = {
-  book: "#c8a96e",
+  book: C.gold,
   manuscript: "#7c5c2e",
   article: "#4a7c59",
   digital: "#4a6a9c",
-  other: "#9a8060",
-  default: "#9a8060",
+  other: C.inkSoft,
+  default: C.inkSoft,
 };
 
 const COVER_COLORS: Record<string, string> = {
@@ -129,7 +117,6 @@ export const BrowseItemsPage = () => {
         setItems(i);
         setTemplates(t);
         setItemSets(s);
-        // normalise: accept array of ids or array of objects with id field
         const ids: number[] = Array.isArray(b)
           ? b.map((x: number | { id: number }) =>
               typeof x === "number" ? x : Number(x.id)
@@ -148,7 +135,6 @@ export const BrowseItemsPage = () => {
     e.preventDefault();
     const isFavorited = bookmarks.includes(itemId);
 
-    // Optimistic UI update
     setBookmarks((prev) =>
       isFavorited ? prev.filter((id) => id !== itemId) : [...prev, itemId]
     );
@@ -161,7 +147,6 @@ export const BrowseItemsPage = () => {
       }
     } catch (error) {
       console.error("Failed to toggle bookmark", error);
-      // Revert on failure
       setBookmarks((prev) =>
         isFavorited ? [...prev, itemId] : prev.filter((id) => id !== itemId)
       );
@@ -182,7 +167,6 @@ export const BrowseItemsPage = () => {
 
   const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
 
-  // ── Smart Category Logic ──
   const determineCategory = (item: ItemResponse) => {
     const tplLabel =
       templates.find((t) => t.id === item.templateId)?.label.toLowerCase() ||
@@ -215,7 +199,6 @@ export const BrowseItemsPage = () => {
     return "other";
   };
 
-  // ── Dynamic Languages ──
   const availableLanguages = Array.from(
     new Set(
       items
@@ -224,14 +207,11 @@ export const BrowseItemsPage = () => {
     )
   );
 
-  // ── Apply sidebar filters ──
   const handleApplyFilters = () => {
     setAppliedFilters({ ...pendingFilters });
     setVisibleCount(12);
   };
 
-  // ── Filtering Logic ──
-  // Merge: top-bar filters are instant; sidebar filters use appliedFilters
   const effectiveTplId = topTplId !== "all" ? topTplId : appliedFilters.tplId;
 
   let filtered = items.filter((item) => {
@@ -275,7 +255,6 @@ export const BrowseItemsPage = () => {
     );
   });
 
-  // ── Sorting: top-bar sortBy takes priority ──
   const effectiveSortBy =
     topSortBy !== "newest" ? topSortBy : appliedFilters.sortBy;
 
@@ -306,7 +285,7 @@ export const BrowseItemsPage = () => {
       style={{
         background: C.bg,
         minHeight: "calc(100vh - 72px)",
-        fontFamily: sans,
+        fontFamily: fonts.sans,
       }}
     >
       {/* ══════════ HERO SECTION ══════════ */}
@@ -380,7 +359,7 @@ export const BrowseItemsPage = () => {
 
             <h1
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 margin: "0 0 4px",
                 fontSize: "clamp(2.2rem,4vw,3.2rem)",
                 fontWeight: 800,
@@ -392,7 +371,7 @@ export const BrowseItemsPage = () => {
             </h1>
             <h1
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 margin: "0 0 18px",
                 fontSize: "clamp(2.2rem,4vw,3.2rem)",
                 fontWeight: 800,
@@ -451,7 +430,7 @@ export const BrowseItemsPage = () => {
         />
       </div>
 
-      {/* ══════════ SEARCH BAR ══════════ */}
+      {/* ── Search bar ── */}
       <div
         style={{
           maxWidth: 1280,
@@ -501,7 +480,7 @@ export const BrowseItemsPage = () => {
                 paddingBottom: 9,
                 border: `1.5px solid ${C.goldBorder}`,
                 borderRadius: 10,
-                fontFamily: sans,
+                fontFamily: fonts.sans,
                 fontSize: "0.88rem",
                 color: C.ink,
                 background: C.surface,
@@ -512,7 +491,6 @@ export const BrowseItemsPage = () => {
             />
           </div>
 
-          {/* Instant: All Types */}
           <Select
             value={topTplId}
             onChange={(v) => {
@@ -528,7 +506,6 @@ export const BrowseItemsPage = () => {
             ))}
           </Select>
 
-          {/* Instant: All Collections */}
           <Select
             value={topSetId}
             onChange={(v) => {
@@ -544,7 +521,6 @@ export const BrowseItemsPage = () => {
             ))}
           </Select>
 
-          {/* Instant: Sort */}
           <Select
             value={topSortBy}
             onChange={(v) => {
@@ -575,7 +551,7 @@ export const BrowseItemsPage = () => {
         </div>
       </div>
 
-      {/* ══════════ BODY ══════════ */}
+      {/* ── Body content ── */}
       <div
         style={{
           maxWidth: 1280,
@@ -588,9 +564,8 @@ export const BrowseItemsPage = () => {
           zIndex: 3,
         }}
       >
-        {/* ── LEFT: Category tabs + Items ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Category pills row */}
+          {/* Category pills */}
           <div
             style={{
               display: "flex",
@@ -656,7 +631,7 @@ export const BrowseItemsPage = () => {
                       fontSize: "1rem",
                       fontWeight: 700,
                       color: catFilter === c.key ? C.gold : C.ink,
-                      fontFamily: serif,
+                      fontFamily: fonts.serif,
                     }}
                   >
                     {c.count.toLocaleString()}
@@ -666,7 +641,6 @@ export const BrowseItemsPage = () => {
             ))}
           </div>
 
-          {/* Loading */}
           {loading ? (
             <div
               style={{
@@ -690,7 +664,7 @@ export const BrowseItemsPage = () => {
             >
               <p
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "1.2rem",
                   color: C.inkMid,
                   margin: "0 0 8px",
@@ -834,7 +808,7 @@ export const BrowseItemsPage = () => {
                         >
                           <h3
                             style={{
-                              fontFamily: serif,
+                              fontFamily: fonts.serif,
                               fontSize: "0.95rem",
                               fontWeight: 700,
                               color: C.ink,
@@ -915,32 +889,17 @@ export const BrowseItemsPage = () => {
                     marginTop: 40,
                   }}
                 >
-                  <button
+                  <OutlineBtn
                     onClick={() => setVisibleCount((prev) => prev + 12)}
+                    rounded
                     style={{
-                      background: "transparent",
-                      border: `1.5px solid ${C.gold}`,
-                      color: C.goldDark,
                       padding: "12px 32px",
-                      borderRadius: 999,
-                      fontFamily: sans,
                       fontSize: "0.85rem",
                       fontWeight: 700,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = C.goldLight;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "transparent";
                     }}
                   >
                     Load More <ChevronDown size={16} />
-                  </button>
+                  </OutlineBtn>
                 </div>
               )}
             </>
@@ -1025,7 +984,7 @@ export const BrowseItemsPage = () => {
                     </span>
                     <span
                       style={{
-                        fontFamily: serif,
+                        fontFamily: fonts.serif,
                         fontWeight: 700,
                         fontSize: "0.9rem",
                         color: C.ink,
@@ -1127,7 +1086,7 @@ export const BrowseItemsPage = () => {
         >
           <h3
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.05rem",
               fontWeight: 700,
               color: C.ink,
@@ -1168,7 +1127,7 @@ export const BrowseItemsPage = () => {
                 borderRadius: 8,
                 fontSize: "0.8rem",
                 outline: "none",
-                fontFamily: sans,
+                fontFamily: fonts.sans,
                 color: C.ink,
                 background: C.surface,
               }}
@@ -1188,7 +1147,7 @@ export const BrowseItemsPage = () => {
                 borderRadius: 8,
                 fontSize: "0.8rem",
                 outline: "none",
-                fontFamily: sans,
+                fontFamily: fonts.sans,
                 color: C.ink,
                 background: C.surface,
               }}
@@ -1226,33 +1185,17 @@ export const BrowseItemsPage = () => {
 
           <div style={{ height: 20 }} />
 
-          <button
+          <GoldBtn
             onClick={handleApplyFilters}
             style={{
               width: "100%",
-              background: C.gold,
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
               padding: "11px",
-              fontFamily: sans,
               fontSize: "0.88rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              transition: "background 0.2s",
               boxShadow: "0 4px 16px rgba(200,169,110,0.35)",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = C.goldDark)
-            }
-            onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
           >
             Apply Filters ▼
-          </button>
+          </GoldBtn>
         </aside>
       </div>
     </div>
@@ -1260,15 +1203,6 @@ export const BrowseItemsPage = () => {
 };
 
 // ── Small reusable style components ──────────────────────────────────────────
-const C2 = {
-  gold: "#c8a96e",
-  goldBorder: "rgba(200,169,110,0.30)",
-  ink: "#1a1208",
-  inkSoft: "#9a8060",
-  surface: "#FFFFFF",
-};
-const sans2 = "'Poppins',system-ui,sans-serif";
-
 const Select = ({
   value,
   onChange,
@@ -1284,13 +1218,13 @@ const Select = ({
       onChange={(e) => onChange(e.target.value)}
       style={{
         appearance: "none",
-        background: C2.surface,
-        border: `1.5px solid ${C2.goldBorder}`,
+        background: C.surface,
+        border: `1.5px solid ${C.goldBorder}`,
         borderRadius: 10,
         padding: "9px 32px 9px 12px",
-        fontFamily: sans2,
+        fontFamily: fonts.sans,
         fontSize: "0.83rem",
-        color: C2.ink,
+        color: C.ink,
         cursor: "pointer",
         outline: "none",
       }}
@@ -1299,7 +1233,7 @@ const Select = ({
     </select>
     <ChevronDown
       size={12}
-      color={C2.inkSoft}
+      color={C.inkSoft}
       style={{
         position: "absolute",
         right: 10,
@@ -1327,13 +1261,13 @@ const SelectFull = ({
       style={{
         appearance: "none",
         width: "100%",
-        background: C2.surface,
-        border: `1.5px solid ${C2.goldBorder}`,
+        background: C.surface,
+        border: `1.5px solid ${C.goldBorder}`,
         borderRadius: 10,
         padding: "9px 32px 9px 12px",
-        fontFamily: sans2,
+        fontFamily: fonts.sans,
         fontSize: "0.82rem",
-        color: C2.ink,
+        color: C.ink,
         cursor: "pointer",
         outline: "none",
       }}
@@ -1342,7 +1276,7 @@ const SelectFull = ({
     </select>
     <ChevronDown
       size={12}
-      color={C2.inkSoft}
+      color={C.inkSoft}
       style={{
         position: "absolute",
         right: 10,
@@ -1360,10 +1294,10 @@ const FilterLabel = ({ children }: { children: React.ReactNode }) => (
       margin: "0 0 7px",
       fontSize: "0.72rem",
       fontWeight: 700,
-      color: C2.inkSoft,
+      color: C.inkSoft,
       letterSpacing: "0.07em",
       textTransform: "uppercase",
-      fontFamily: sans2,
+      fontFamily: fonts.sans,
     }}
   >
     {children}
@@ -1385,9 +1319,9 @@ const ViewBtn = ({
       width: 36,
       height: 36,
       borderRadius: 8,
-      border: `1.5px solid ${C2.goldBorder}`,
-      background: active ? C2.gold : C2.surface,
-      color: active ? "#fff" : C2.inkSoft,
+      border: `1.5px solid ${C.goldBorder}`,
+      background: active ? C.gold : C.surface,
+      color: active ? "#fff" : C.inkSoft,
       cursor: "pointer",
       fontSize: 16,
       display: "flex",
