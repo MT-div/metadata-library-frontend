@@ -1,5 +1,8 @@
+// src/layouts/LibrarianLayout.tsx
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { C, fonts } from "../utils/theme";
+import { useAuthStore } from "../store/useAuthStore";
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,27 +17,6 @@ import {
   Clock,
   History,
 } from "lucide-react";
-import { useAuthStore } from "../store/useAuthStore";
-
-const C = {
-  sidebarBg: "#1e1508",
-  sidebarBorder: "rgba(200,169,110,0.15)",
-  sidebarHover: "rgba(200,169,110,0.10)",
-  sidebarActive: "rgba(200,169,110,0.18)",
-  sidebarText: "rgba(255,245,225,0.65)",
-  sidebarTextHi: "rgba(255,245,225,0.95)",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 const NAV_GROUPS = [
   {
@@ -100,7 +82,7 @@ export const LibrarianLayout = () => {
         display: "flex",
         height: "100vh",
         background: C.bg,
-        fontFamily: sans,
+        fontFamily: fonts.sans,
         overflow: "hidden",
       }}
     >
@@ -116,6 +98,7 @@ export const LibrarianLayout = () => {
         />
       )}
 
+      {/* ══════════ SIDEBAR ══════════ */}
       <aside
         style={{
           width: 240,
@@ -166,7 +149,7 @@ export const LibrarianLayout = () => {
                   fontSize: "0.88rem",
                   fontWeight: 700,
                   color: C.sidebarTextHi,
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                 }}
               >
                 HIASTica
@@ -199,6 +182,7 @@ export const LibrarianLayout = () => {
           </button>
         </div>
 
+        {/* Nav links */}
         <nav style={{ flexGrow: 1, overflowY: "auto", padding: "16px 12px" }}>
           {NAV_GROUPS.map((group) => (
             <div key={group.label} style={{ marginBottom: 24 }}>
@@ -228,7 +212,7 @@ export const LibrarianLayout = () => {
                       padding: "10px 12px",
                       borderRadius: 10,
                       textDecoration: "none",
-                      fontFamily: sans,
+                      fontFamily: fonts.sans,
                       fontSize: "0.85rem",
                       fontWeight: 500,
                       background: isActive ? C.sidebarActive : "transparent",
@@ -252,6 +236,7 @@ export const LibrarianLayout = () => {
           ))}
         </nav>
 
+        {/* Bottom actions */}
         <div
           style={{
             padding: "12px",
@@ -272,7 +257,7 @@ export const LibrarianLayout = () => {
               background: "transparent",
               border: "none",
               color: C.sidebarText,
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               fontWeight: 500,
               cursor: "pointer",
@@ -283,7 +268,6 @@ export const LibrarianLayout = () => {
             <Globe size={17} /> View Library
           </button>
           <button
-            onClick={handleLogout}
             style={{
               display: "flex",
               alignItems: "center",
@@ -293,19 +277,21 @@ export const LibrarianLayout = () => {
               background: "transparent",
               border: "none",
               color: "rgba(220,80,60,0.75)",
-              fontFamily: sans,
+              fontFamily: fonts.sans,
               fontSize: "0.85rem",
               fontWeight: 500,
               cursor: "pointer",
               width: "100%",
               transition: "all 0.15s",
             }}
+            onClick={handleLogout}
           >
             <LogOut size={17} /> Sign Out
           </button>
         </div>
       </aside>
 
+      {/* ══════════ MAIN AREA ══════════ */}
       <div
         style={{
           flex: 1,
@@ -347,7 +333,7 @@ export const LibrarianLayout = () => {
             <div>
               <h2
                 style={{
-                  fontFamily: serif,
+                  fontFamily: fonts.serif,
                   fontSize: "1.1rem",
                   fontWeight: 700,
                   color: C.ink,
@@ -388,7 +374,7 @@ export const LibrarianLayout = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontWeight: 700,
                 fontSize: "1rem",
                 color: C.goldDark,
@@ -400,6 +386,7 @@ export const LibrarianLayout = () => {
           </div>
         </header>
 
+        {/* Page content */}
         <main
           style={{
             flex: 1,
