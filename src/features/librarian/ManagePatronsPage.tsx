@@ -1,5 +1,8 @@
+// src/features/librarian/ManagePatronsPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { C, fonts } from "../../utils/theme";
+import { GoldBtn } from "../../components/ui/GoldBtn";
 import { api } from "../../services/api";
 import type { PatronResponse } from "../../types/metadata";
 import {
@@ -14,23 +17,6 @@ import {
   UserCheck,
   X,
 } from "lucide-react";
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#F7F3ED",
-  surface: "#FFFFFF",
-  gold: "#c8a96e",
-  goldLight: "#f0e8d8",
-  goldBorder: "rgba(200,169,110,0.28)",
-  goldDark: "#b8965a",
-  ink: "#1a1208",
-  inkMid: "#5c4a30",
-  inkSoft: "#9a8060",
-  danger: "#c0392b",
-  dangerBg: "#fdf0ee",
-};
-const serif = "'Georgia','Times New Roman',serif";
-const sans = "'Poppins',system-ui,sans-serif";
 
 // ── Extracted Components to avoid ESLint static-components error ──
 const StatCard = ({
@@ -83,7 +69,7 @@ const StatCard = ({
           fontSize: "1.3rem",
           fontWeight: 800,
           color: C.ink,
-          fontFamily: serif,
+          fontFamily: fonts.serif,
         }}
       >
         {value}
@@ -134,7 +120,7 @@ export const ManagePatronsPage = () => {
   });
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink }}>
+    <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
       <div
         style={{
@@ -163,7 +149,7 @@ export const ManagePatronsPage = () => {
           </p>
           <h1
             style={{
-              fontFamily: serif,
+              fontFamily: fonts.serif,
               fontSize: "1.8rem",
               fontWeight: 800,
               color: C.ink,
@@ -177,29 +163,13 @@ export const ManagePatronsPage = () => {
             Manage library members, students, and external researchers.
           </p>
         </div>
-        <button
+
+        <GoldBtn
           onClick={() => navigate("/librarian/patrons/new")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            background: C.gold,
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 20px",
-            fontFamily: sans,
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            transition: "background 0.15s",
-            boxShadow: "0 2px 10px rgba(200,169,110,0.3)",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = C.goldDark)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = C.gold)}
+          style={{ padding: "10px 20px", fontSize: "0.85rem" }}
         >
           <Plus size={15} /> Add New Patron
-        </button>
+        </GoldBtn>
       </div>
 
       {/* ── Stats row ── */}
@@ -244,7 +214,7 @@ export const ManagePatronsPage = () => {
             border: "none",
             outline: "none",
             background: "transparent",
-            fontFamily: sans,
+            fontFamily: fonts.sans,
             fontSize: "0.9rem",
             color: C.ink,
           }}
@@ -260,8 +230,7 @@ export const ManagePatronsPage = () => {
               padding: 0,
             }}
           >
-            <X size={18} />{" "}
-            {/* Note: Assuming X is imported or just use text "×" */}
+            <X size={18} />
           </button>
         )}
       </div>
@@ -296,7 +265,7 @@ export const ManagePatronsPage = () => {
             />
             <p
               style={{
-                fontFamily: serif,
+                fontFamily: fonts.serif,
                 fontSize: "1.1rem",
                 color: C.inkMid,
                 margin: "0 0 6px",
@@ -376,7 +345,7 @@ export const ManagePatronsPage = () => {
                     <td
                       style={{
                         padding: "14px 20px",
-                        fontFamily: serif,
+                        fontFamily: fonts.serif,
                         fontWeight: 700,
                         fontSize: "0.95rem",
                         color: C.ink,
@@ -455,6 +424,7 @@ export const ManagePatronsPage = () => {
                             justifyContent: "center",
                             cursor: "pointer",
                             transition: "opacity 0.15s",
+                            fontFamily: fonts.sans,
                           }}
                         >
                           <Edit size={15} />
@@ -479,6 +449,7 @@ export const ManagePatronsPage = () => {
                                 : "pointer",
                             opacity: isDeleting === patron.id ? 0.5 : 1,
                             transition: "opacity 0.15s",
+                            fontFamily: fonts.sans,
                           }}
                         >
                           <Trash2 size={15} />
