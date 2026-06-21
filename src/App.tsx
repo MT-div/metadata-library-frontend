@@ -36,6 +36,7 @@ import { CreatePatronPage } from "./features/librarian/CreatePatronPage";
 import { ManagePatronsPage } from "./features/librarian/ManagePatronsPage";
 import { ManageCopiesPage } from "./features/librarian/ManageCopiesPage";
 import { ActiveLoansPage } from "./features/librarian/ActiveLoansPage";
+import { CirculationHistoryPage } from "./features/librarian/CirculationHistoryPage";
 function App() {
   return (
     <BrowserRouter>
@@ -101,6 +102,10 @@ function App() {
             <Route path="librarian/copies" element={<ManageCopiesPage />} />
             <Route path="librarian/loans" element={<ActiveLoansPage />} />
             <Route path="librarian/items" element={<ManageItemsPage />} />
+            <Route
+              path="librarian/history"
+              element={<CirculationHistoryPage />}
+            />
           </Route>
         </Route>
       </Routes>

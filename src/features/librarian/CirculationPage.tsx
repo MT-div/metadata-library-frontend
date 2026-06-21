@@ -200,9 +200,11 @@ export const CirculationPage = () => {
     }
   };
 
+  // ── Checkout Action ──
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patronData || !checkoutBarcode.trim()) return;
+
     setIsCheckingOut(true);
     setCheckoutSuccess(null);
     try {
@@ -210,16 +212,28 @@ export const CirculationPage = () => {
         barcode: checkoutBarcode.trim(),
         patronId: patronData.id,
       });
+
       setCheckoutSuccess(
-        `Item ${checkoutBarcode} checked out to ${patronData.fullName}!`
+        `Item ${checkoutBarcode} successfully checked out to ${patronData.fullName}!`
       );
       setCheckoutBarcode("");
       loadHistory();
+
       setTimeout(() => setCheckoutSuccess(null), 3000);
     } catch (err: unknown) {
-      if (err instanceof AxiosError && err.response)
-        alert(err.response.data || "Checkout error.");
-      else alert("Network error processing checkout.");
+      console.error("Checkout error:", err);
+
+      // 👇 التعديل هنا: التقاط الرسالة الدقيقة القادمة من الباك اند (سواء كانت 400 أو 500)
+      if (err instanceof AxiosError && err.response) {
+        const serverMessage =
+          err.response.data?.message ||
+          err.response.data ||
+          "Error processing checkout.";
+        // إذا كان الخطأ هو رفض الإعارة بسبب القالب، نعرضه بوضوح
+        alert(`❌ فشل الإعارة:\n${serverMessage}`);
+      } else {
+        alert("Network error processing checkout.");
+      }
     } finally {
       setIsCheckingOut(false);
     }

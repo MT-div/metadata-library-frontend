@@ -12,6 +12,7 @@ import {
   Globe,
   ChevronRight,
   Clock,
+  History,
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -53,6 +54,11 @@ const NAV_GROUPS = [
         title: "Active Loans",
         path: "/librarian/loans",
         icon: <Clock size={17} />,
+      },
+      {
+        title: "Loans History",
+        path: "/librarian/history",
+        icon: <History size={17} />,
       },
     ],
   },
