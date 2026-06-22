@@ -212,6 +212,7 @@ export const CreateTemplatePage = () => {
         }}
       >
         {/* ── Card 1: Basic info ── */}
+        {/* ── Card 1: Basic info & Policies ── */}
         <div
           style={{
             background: C.surface,
@@ -223,48 +224,176 @@ export const CreateTemplatePage = () => {
         >
           <StepHeader
             step="1"
-            title="Template Info"
-            subtitle="Name and describe the template"
+            title="Template Info & Policies"
+            subtitle="Name the template and configure borrowing rules"
           />
           <div
             style={{
               padding: "22px 24px",
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: 16,
+              gap: 24,
             }}
           >
-            <div>
-              <FieldLabel required>Template Name</FieldLabel>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Printed Book"
-                value={templateData.label}
-                onChange={(e) =>
-                  setTemplateData((p) => ({ ...p, label: e.target.value }))
-                }
-                onFocus={() => setFocused("label")}
-                onBlur={() => setFocused(null)}
-                style={inputStyle("label")}
-              />
+            {/* Left Column: Name & Description */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <FieldLabel required>Template Name</FieldLabel>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Printed Book"
+                  value={templateData.label}
+                  onChange={(e) =>
+                    setTemplateData((p) => ({ ...p, label: e.target.value }))
+                  }
+                  onFocus={() => setFocused("label")}
+                  onBlur={() => setFocused(null)}
+                  style={inputStyle("label")}
+                />
+              </div>
+              <div>
+                <FieldLabel>Description</FieldLabel>
+                <input
+                  type="text"
+                  placeholder="Optional description..."
+                  value={templateData.description ?? ""}
+                  onChange={(e) =>
+                    setTemplateData((p) => ({
+                      ...p,
+                      description: e.target.value,
+                    }))
+                  }
+                  onFocus={() => setFocused("desc")}
+                  onBlur={() => setFocused(null)}
+                  style={inputStyle("desc")}
+                />
+              </div>
             </div>
-            <div>
-              <FieldLabel>Description</FieldLabel>
-              <input
-                type="text"
-                placeholder="Optional description..."
-                value={templateData.description ?? ""}
-                onChange={(e) =>
-                  setTemplateData((p) => ({
-                    ...p,
-                    description: e.target.value,
-                  }))
-                }
-                onFocus={() => setFocused("desc")}
-                onBlur={() => setFocused(null)}
-                style={inputStyle("desc")}
-              />
+
+            {/* Right Column: Circulation Policies */}
+            <div
+              style={{
+                background: C.bg,
+                border: `1.5px solid ${C.goldBorder}`,
+                borderRadius: 12,
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontFamily: fonts.sans,
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      color: C.ink,
+                    }}
+                  >
+                    Allow Borrowing?
+                  </h3>
+                  <p
+                    style={{ margin: 0, fontSize: "0.7rem", color: C.inkSoft }}
+                  >
+                    Can items of this type be checked out?
+                  </p>
+                </div>
+                {/* Custom Toggle Switch */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div
+                    onClick={() =>
+                      setTemplateData((p) => ({
+                        ...p,
+                        isBorrowable: !p.isBorrowable,
+                        defaultBorrowDays: !p.isBorrowable
+                          ? p.defaultBorrowDays
+                          : null,
+                      }))
+                    }
+                    style={{
+                      width: 44,
+                      height: 24,
+                      borderRadius: 999,
+                      background: templateData.isBorrowable
+                        ? C.gold
+                        : C.goldBorder,
+                      position: "relative",
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 3,
+                        left: templateData.isBorrowable ? 21 : 3,
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: "#fff",
+                        transition: "left 0.2s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {/* Default Borrow Days Input */}
+              <div
+                style={{
+                  opacity: templateData.isBorrowable ? 1 : 0.4,
+                  pointerEvents: templateData.isBorrowable ? "auto" : "none",
+                  transition: "opacity 0.2s",
+                }}
+              >
+                <FieldLabel>Default Borrowing Period (Days)</FieldLabel>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder="Global Default"
+                    value={templateData.defaultBorrowDays ?? ""}
+                    onChange={(e) =>
+                      setTemplateData((p) => ({
+                        ...p,
+                        defaultBorrowDays: e.target.value
+                          ? Number(e.target.value)
+                          : null,
+                      }))
+                    }
+                    style={{
+                      width: 120,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: `1.5px solid ${C.goldBorder}`,
+                      fontSize: "0.9rem",
+                      fontFamily: "monospace",
+                      color: C.ink,
+                      outline: "none",
+                    }}
+                  />
+                  <span style={{ fontSize: "0.75rem", color: C.inkSoft }}>
+                    Leave empty to use Global System Settings.
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

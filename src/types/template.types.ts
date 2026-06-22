@@ -1,13 +1,27 @@
 export interface ResourceTemplateResponse {
   id: number;
   label: string;
-  description: string | null;
-  properties: TemplatePropertyResponse[];
+  description?: string | null;
+  isBorrowable: boolean; // 👈 جديد
+  defaultBorrowDays?: number | null; // 👈 جديد
+  isDeleted?: boolean;
+  properties: TemplatePropertyResponse[]; // (أو TemplatePropertyResponse[])
 }
 
 export interface CreateResourceTemplateCommand {
   label: string;
-  description: string | null;
+  description?: string | null;
+  isBorrowable: boolean; // 👈 جديد
+  defaultBorrowDays?: number | null; // 👈 جديد
+}
+
+// 👈 إضافة نوع جديد لتعديل القالب الأساسي
+export interface UpdateResourceTemplateCommand {
+  id: number;
+  label: string;
+  description?: string | null;
+  isBorrowable: boolean;
+  defaultBorrowDays?: number | null;
 }
 
 export interface TemplatePropertyResponse {

@@ -1,9 +1,10 @@
 // src/features/admin/ManageTemplatesPage.tsx
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-// import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { useManageTemplates } from "../../hooks/adminHooks/useManageTemplates";
+import { api } from "../../services/api";
 import {
   LayoutTemplate,
   Plus,
@@ -15,12 +16,16 @@ import {
   GripVertical,
   RefreshCw,
   AlertCircle,
+  Edit,
+  X,
+  BookOpen,
+  Ban,
 } from "lucide-react";
 
 export const ManageTemplatesPage = () => {
   const navigate = useNavigate();
 
-  // استدعاء وتفكيك الخطاف الجديد هنا
+  // استدعاء وتفكيك الخطاف
   const {
     templates,
     selectedTemplateId,
@@ -47,6 +52,52 @@ export const ManageTemplatesPage = () => {
     handleSave,
     filteredTemplates,
   } = useManageTemplates();
+
+  // ── Edit Template Info State (Modal) ──
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
+  const [editData, setEditData] = useState({
+    label: "",
+    description: "",
+    isBorrowable: true,
+    defaultBorrowDays: null as number | null,
+  });
+
+  const openEditModal = () => {
+    if (!selectedTemplate) return;
+    setEditData({
+      label: selectedTemplate.label,
+      description: selectedTemplate.description || "",
+      isBorrowable: selectedTemplate.isBorrowable ?? true,
+      defaultBorrowDays: selectedTemplate.defaultBorrowDays ?? null,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTemplate) return;
+    setIsSavingInfo(true);
+    try {
+      const payload = {
+        id: selectedTemplate.id,
+        label: editData.label.trim(),
+        description: editData.description.trim() || null,
+        isBorrowable: editData.isBorrowable,
+        defaultBorrowDays: editData.defaultBorrowDays,
+      };
+
+      await api.put(`/api/resource-templates/${selectedTemplate.id}`, payload);
+
+      // لإعادة تحميل القوالب بالبيانات الجديدة وتحديث الواجهة
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating template info:", error);
+      alert("Failed to update template information.");
+      setIsSavingInfo(false);
+    }
+  };
+
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
@@ -88,8 +139,7 @@ export const ManageTemplatesPage = () => {
             Template Builder
           </h1>
           <p style={{ margin: 0, fontSize: "0.85rem", color: C.inkSoft }}>
-            Manage form fields and reorder them to customize the data entry
-            experience.
+            Manage form fields, reorder them, and configure borrowing rules.
           </p>
         </div>
         <GoldBtn onClick={() => navigate("/templates/new")}>
@@ -183,7 +233,13 @@ export const ManageTemplatesPage = () => {
             </select>
           </div>
 
-          <div style={{ padding: "10px" }}>
+          <div
+            style={{
+              padding: "10px",
+              maxHeight: "calc(100vh - 250px)",
+              overflowY: "auto",
+            }}
+          >
             {filteredTemplates.length === 0 ? (
               <p
                 style={{
@@ -316,16 +372,35 @@ export const ManageTemplatesPage = () => {
                 <h2
                   style={{
                     fontFamily: fonts.serif,
-                    fontSize: "1.05rem",
+                    fontSize: "1.1rem",
                     fontWeight: 700,
                     color: isSelectedTplDeleted ? C.inkSoft : C.ink,
-                    margin: "0 0 3px",
+                    margin: "0 0 4px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
                     textDecoration: isSelectedTplDeleted
                       ? "line-through"
                       : "none",
                   }}
                 >
                   {selectedTemplate.label}
+                  {!isSelectedTplDeleted && (
+                    <button
+                      onClick={openEditModal}
+                      title="Edit Template Info"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: C.goldDark,
+                        padding: 0,
+                        display: "flex",
+                      }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                  )}
                   {isSelectedTplDeleted && (
                     <span
                       style={{
@@ -340,13 +415,37 @@ export const ManageTemplatesPage = () => {
                     </span>
                   )}
                 </h2>
-                {selectedTemplate.description && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <p
                     style={{ margin: 0, fontSize: "0.78rem", color: C.inkSoft }}
                   >
-                    {selectedTemplate.description}
+                    {selectedTemplate.description || "No description"}
                   </p>
-                )}
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      color: C.goldDark,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      background: C.goldMid,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      border: `1px solid ${C.goldBorder}`,
+                    }}
+                  >
+                    {selectedTemplate.isBorrowable ? (
+                      <>
+                        <BookOpen size={10} /> Borrowable
+                      </>
+                    ) : (
+                      <>
+                        <Ban size={10} /> Reference Only
+                      </>
+                    )}
+                  </span>
+                </div>
               </div>
 
               {/* Actions (Delete/Restore + Save) */}
@@ -403,30 +502,34 @@ export const ManageTemplatesPage = () => {
                   success={saveSuccess}
                   style={{
                     padding: "10px 22px",
-                    fontFamily: fonts.sans,
-                    fontSize: "0.88rem",
-                    fontWeight: 700,
                     background: saveSuccess
-                      ? undefined
+                      ? C.successBg
                       : isSaving || isSelectedTplDeleted || !hasChanges
                       ? C.goldLight
-                      : undefined,
+                      : C.gold,
                     color: saveSuccess
-                      ? undefined
+                      ? C.success
                       : isSaving || isSelectedTplDeleted || !hasChanges
                       ? C.inkSoft
-                      : undefined,
-                    whiteSpace: "nowrap",
+                      : "#fff",
+                    boxShadow:
+                      saveSuccess || isSelectedTplDeleted || !hasChanges
+                        ? "none"
+                        : undefined,
+                    border: saveSuccess
+                      ? `1.5px solid rgba(45,110,58,0.3)`
+                      : "none",
                   }}
                 >
-                  <Save size={16} />
+                  {" "}
+                  {saveSuccess ? undefined : <Save size={16} />}
                   {isSaving
                     ? "Saving..."
                     : saveSuccess
                     ? "✓ Saved!"
                     : !hasChanges
                     ? "No changes yet"
-                    : "Save Changes"}
+                    : "Save Fields"}
                 </GoldBtn>
               </div>
             </div>
@@ -491,11 +594,17 @@ export const ManageTemplatesPage = () => {
                 disabled={!propToAdd || isSelectedTplDeleted}
                 style={{
                   padding: "10px 18px",
-                  fontSize: "0.85rem",
-                  whiteSpace: "nowrap",
+                  background:
+                    propToAdd && !isSelectedTplDeleted ? C.gold : C.goldBorder,
+                  cursor:
+                    propToAdd && !isSelectedTplDeleted
+                      ? "pointer"
+                      : "not-allowed",
+                  boxShadow: "none",
                 }}
               >
-                <Plus size={15} /> Add Field
+                <Plus size={15} />
+                Add Field
               </GoldBtn>
             </div>
 
@@ -589,7 +698,6 @@ export const ManageTemplatesPage = () => {
                         }
                       }}
                     >
-                      {/* Order number */}
                       <span
                         style={{
                           width: 28,
@@ -609,7 +717,6 @@ export const ManageTemplatesPage = () => {
                         {prop.displayOrder}
                       </span>
 
-                      {/* Drag handle (visual only) */}
                       <GripVertical
                         size={16}
                         color={C.inkSoft}
@@ -619,7 +726,6 @@ export const ManageTemplatesPage = () => {
                         }}
                       />
 
-                      {/* Property label */}
                       <div>
                         <p
                           style={{
@@ -644,7 +750,6 @@ export const ManageTemplatesPage = () => {
                         </p>
                       </div>
 
-                      {/* Required toggle */}
                       <label
                         style={{
                           display: "flex",
@@ -663,9 +768,6 @@ export const ManageTemplatesPage = () => {
                             background: prop.isRequired ? C.gold : C.goldBorder,
                             position: "relative",
                             transition: "background 0.2s",
-                            cursor: isSelectedTplDeleted
-                              ? "default"
-                              : "pointer",
                           }}
                         >
                           <div
@@ -694,26 +796,78 @@ export const ManageTemplatesPage = () => {
                         </span>
                       </label>
 
-                      {/* Up / Down */}
                       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                        <MoveBtn
+                        <button
                           onClick={() => moveUp(idx)}
                           disabled={idx === 0 || isSelectedTplDeleted}
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 7,
+                            background:
+                              idx === 0 || isSelectedTplDeleted
+                                ? "transparent"
+                                : C.goldLight,
+                            border: `1px solid ${
+                              idx === 0 || isSelectedTplDeleted
+                                ? "transparent"
+                                : C.goldBorder
+                            }`,
+                            color:
+                              idx === 0 || isSelectedTplDeleted
+                                ? C.goldBorder
+                                : C.inkMid,
+                            cursor:
+                              idx === 0 || isSelectedTplDeleted
+                                ? "not-allowed"
+                                : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
                         >
                           <ArrowUp size={13} />
-                        </MoveBtn>
-                        <MoveBtn
+                        </button>
+                        <button
                           onClick={() => moveDown(idx)}
                           disabled={
                             idx === editableProps.length - 1 ||
                             isSelectedTplDeleted
                           }
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 7,
+                            background:
+                              idx === editableProps.length - 1 ||
+                              isSelectedTplDeleted
+                                ? "transparent"
+                                : C.goldLight,
+                            border: `1px solid ${
+                              idx === editableProps.length - 1 ||
+                              isSelectedTplDeleted
+                                ? "transparent"
+                                : C.goldBorder
+                            }`,
+                            color:
+                              idx === editableProps.length - 1 ||
+                              isSelectedTplDeleted
+                                ? C.goldBorder
+                                : C.inkMid,
+                            cursor:
+                              idx === editableProps.length - 1 ||
+                              isSelectedTplDeleted
+                                ? "not-allowed"
+                                : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
                         >
                           <ArrowDown size={13} />
-                        </MoveBtn>
+                        </button>
                       </div>
 
-                      {/* Remove */}
                       <button
                         onClick={() => handleRemove(idx)}
                         disabled={isSelectedTplDeleted}
@@ -772,43 +926,298 @@ export const ManageTemplatesPage = () => {
           </div>
         )}
       </div>
+
+      {/* ── Edit Template Info Modal ── */}
+      {isEditModalOpen && selectedTemplate && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: C.surface,
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 500,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                background: C.goldLight,
+                padding: "16px 20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: `1.5px solid ${C.goldBorder}`,
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: fonts.serif,
+                  fontWeight: 700,
+                  color: C.ink,
+                }}
+              >
+                Edit Template Info
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: C.inkSoft,
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSaveInfo}
+              style={{
+                padding: 24,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: C.inkMid,
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Template Name <span style={{ color: C.danger }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editData.label}
+                  onChange={(e) =>
+                    setEditData({ ...editData, label: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${C.goldBorder}`,
+                    outline: "none",
+                    fontFamily: fonts.sans,
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: C.inkMid,
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editData.description}
+                  onChange={(e) =>
+                    setEditData({ ...editData, description: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${C.goldBorder}`,
+                    outline: "none",
+                    fontFamily: fonts.sans,
+                    fontSize: "0.9rem",
+                    resize: "none",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  background: C.bg,
+                  border: `1px solid ${C.goldBorder}`,
+                  borderRadius: 10,
+                  padding: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: editData.isBorrowable ? 16 : 0,
+                  }}
+                >
+                  <div>
+                    <h4
+                      style={{
+                        margin: 0,
+                        fontSize: "0.85rem",
+                        color: C.ink,
+                        fontWeight: 700,
+                      }}
+                    >
+                      Allow Borrowing
+                    </h4>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.7rem",
+                        color: C.inkSoft,
+                      }}
+                    >
+                      Can items be checked out?
+                    </p>
+                  </div>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      onClick={() =>
+                        setEditData((p) => ({
+                          ...p,
+                          isBorrowable: !p.isBorrowable,
+                          defaultBorrowDays: !p.isBorrowable
+                            ? p.defaultBorrowDays
+                            : null,
+                        }))
+                      }
+                      style={{
+                        width: 44,
+                        height: 24,
+                        borderRadius: 999,
+                        background: editData.isBorrowable
+                          ? C.gold
+                          : C.goldBorder,
+                        position: "relative",
+                        transition: "background 0.2s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 3,
+                          left: editData.isBorrowable ? 21 : 3,
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          background: "#fff",
+                          transition: "left 0.2s",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        }}
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                {editData.isBorrowable && (
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        color: C.inkMid,
+                        marginBottom: 8,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Default Borrow Days
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Use Global Setting"
+                      value={editData.defaultBorrowDays ?? ""}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          defaultBorrowDays: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        border: `1px solid ${C.goldBorder}`,
+                        outline: "none",
+                        fontFamily: "monospace",
+                        fontSize: "0.9rem",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 10,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  style={{
+                    background: "transparent",
+                    border: `1.5px solid ${C.goldBorder}`,
+                    borderRadius: 8,
+                    padding: "8px 16px",
+                    color: C.inkMid,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <GoldBtn
+                  onClick={() => {}}
+                  disabled={isSavingInfo}
+                  style={{ padding: "8px 24px", boxShadow: "none" }}
+                >
+                  {isSavingInfo ? "Saving..." : "Save Info"}
+                </GoldBtn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-// ── Move button ───────────────────────────────────────────────────────────────
-const MoveBtn = ({
-  onClick,
-  disabled,
-  children,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  children: React.ReactNode;
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      width: 28,
-      height: 28,
-      borderRadius: 7,
-      background: disabled ? "transparent" : C.goldLight,
-      border: `1px solid ${disabled ? "transparent" : C.goldBorder}`,
-      color: disabled ? C.goldBorder : C.inkMid,
-      cursor: disabled ? "not-allowed" : "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "all 0.15s",
-    }}
-    onMouseEnter={(e) => {
-      if (!disabled) e.currentTarget.style.background = C.goldBorder;
-    }}
-    onMouseLeave={(e) => {
-      if (!disabled) e.currentTarget.style.background = C.goldLight;
-    }}
-  >
-    {children}
-  </button>
-);

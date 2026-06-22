@@ -16,7 +16,12 @@ type AvailableProperty = {
 
 export const useCreateTemplate = () => {
   const [templateData, setTemplateData] =
-    useState<CreateResourceTemplateCommand>({ label: "", description: "" });
+    useState<CreateResourceTemplateCommand>({
+      label: "",
+      description: "",
+      isBorrowable: true, // افتراضياً مسموح إعارته
+      defaultBorrowDays: null, // فارغ يعني يعتمد على الإعداد العام
+    });
   const [selectedProperties, setSelectedProperties] = useState<
     TemplatePropertyRequest[]
   >([]);
@@ -113,7 +118,12 @@ export const useCreateTemplate = () => {
 
       setSuccess(true);
       setTimeout(() => {
-        setTemplateData({ label: "", description: "" });
+        setTemplateData({
+          label: "",
+          description: "",
+          isBorrowable: true,
+          defaultBorrowDays: null,
+        });
         setSelectedProperties([]);
         setSuccess(false);
       }, 2200);

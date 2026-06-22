@@ -7,10 +7,12 @@ import type {
 import type {
   PropertyResponse,
   CreatePropertyCommand,
+  SearchableFieldResponse,
 } from "../types/property.types";
 import type {
   ResourceTemplateResponse,
   CreateResourceTemplateCommand,
+  UpdateResourceTemplateCommand,
   TemplatePropertyRequest,
 } from "../types/template.types";
 
@@ -59,6 +61,11 @@ export const metadataService = {
     return api.put(`/api/properties/Undelet/${id}`, { id });
   },
 
+  getSearchableFields: () => {
+    return api.get<SearchableFieldResponse[]>(
+      "/api/properties/searchable-fields"
+    );
+  },
   // ── Resource Templates ──
   getTemplates: (withDeleted = false) => {
     const url = withDeleted
@@ -79,9 +86,12 @@ export const metadataService = {
   },
 
   restoreTemplate: (id: number) => {
-    return api.put(`/api/resource-templates/Undelet/${id}`, { id });
+    return api.put(`/api/resource-templates/Undelete/${id}`, { id });
   },
 
+  updateTemplate: (id: number, command: UpdateResourceTemplateCommand) => {
+    return api.put(`/api/resource-templates/${id}`, command);
+  },
   saveTemplateProperties: (
     templateId: number,
     properties: TemplatePropertyRequest[]
