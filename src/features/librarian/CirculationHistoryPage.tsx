@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { api } from "../../services/api";
-import { AxiosError } from "axios";
+import { useCirculationHistory } from "../../hooks/librarianHooks/useCirculationHistory";
+
 import {
   History,
   Search,
@@ -8,12 +7,12 @@ import {
   User,
   Barcode,
   Calendar,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
   Archive,
   ChevronDown,
   RotateCcw,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { formatDateWithTime } from "../../utils/helpers";
 
@@ -37,18 +36,6 @@ const serif = "'Georgia','Times New Roman',serif";
 const sans = "'Poppins',system-ui,sans-serif";
 
 // ── Types (preserved exactly from original) ───────────────────────────────────
-interface CirculationRecordResponse {
-  recordId: number;
-  copyBarcode: string | null;
-  patronId?: number;
-  patronName: string | null;
-  itemTitle: string | null;
-  borrowDate: string;
-  dueDate: string;
-  returnDate?: string | null;
-  status?: string;
-  isOverdue?: boolean;
-}
 
 // ── Small reusable select ─────────────────────────────────────────────────────
 const FilterSelect = ({
@@ -138,45 +125,22 @@ const VDiv = () => (
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const CirculationHistoryPage = () => {
-  const [records, setRecords] = useState<CirculationRecordResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-
-  useEffect(() => {
-    api
-      .get<CirculationRecordResponse[]>("/api/Circulation/history")
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setRecords(
-          data.sort(
-            (a, b) =>
-              new Date(b.borrowDate).getTime() -
-              new Date(a.borrowDate).getTime()
-          )
-        );
-      })
-      .catch((err: unknown) => {
-        console.error("Error fetching circulation history:", err);
-        if (err instanceof AxiosError && err.response?.status === 404)
-          setRecords([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // const formatDate = (iso?: string | null) => {
-  //   if (!iso) return "—";
-  //   return new Date(iso).toLocaleDateString("en-US", {
-  //     year: "numeric",
-  //     month: "short",
-  //     day: "numeric",
-  //     hour: "2-digit",
-  //     minute: "2-digit",
-  //   });
-  // };
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    loading,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    getComputedStatus,
+    hasFilters,
+    filtered,
+    clearFilters,
+  } = useCirculationHistory();
   const getStatusBadge = (status: string) => {
     const s = status.toLowerCase();
     if (s === "returned")
@@ -200,49 +164,6 @@ export const CirculationHistoryPage = () => {
       icon: <Clock size={12} />,
     };
   };
-
-  // ── computedStatus helper (preserved from original) ───────────────────────
-  const getComputedStatus = (r: CirculationRecordResponse) => {
-    if (r.status) return r.status.toLowerCase();
-    if (r.returnDate) return "returned";
-    if (r.isOverdue) return "overdue";
-    return "active";
-  };
-
-  const hasFilters = search || statusFilter !== "all" || dateFrom || dateTo;
-
-  const filtered = records.filter((r) => {
-    const computedStatus = getComputedStatus(r);
-    const q = search.toLowerCase();
-    const matchSearch =
-      !search ||
-      (r.patronName?.toLowerCase() || "").includes(q) ||
-      (r.itemTitle?.toLowerCase() || "").includes(q) ||
-      (r.copyBarcode?.toLowerCase() || "").includes(q) ||
-      r.recordId.toString() === q;
-
-    const matchStatus =
-      statusFilter === "all" || computedStatus === statusFilter.toLowerCase();
-
-    let matchDate = true;
-    const bDate = new Date(r.borrowDate).getTime();
-    if (dateFrom)
-      matchDate = matchDate && bDate >= new Date(dateFrom).getTime();
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      matchDate = matchDate && bDate <= to.getTime();
-    }
-    return matchSearch && matchStatus && matchDate;
-  });
-
-  const clearFilters = () => {
-    setSearch("");
-    setStatusFilter("all");
-    setDateFrom("");
-    setDateTo("");
-  };
-
   return (
     <div style={{ fontFamily: sans, color: C.ink }}>
       {/* ── Page header ── */}

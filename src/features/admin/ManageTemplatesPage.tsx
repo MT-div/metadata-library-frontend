@@ -1,10 +1,9 @@
 // src/features/admin/ManageTemplatesPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 // import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
+import { useManageTemplates } from "../../hooks/adminHooks/useManageTemplates";
 import {
   LayoutTemplate,
   Plus,
@@ -18,231 +17,36 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import type {
-  ResourceTemplateResponse,
-  TemplatePropertyRequest,
-} from "../../types/template.types";
-
-interface ExtendedTemplateResponse extends ResourceTemplateResponse {
-  isDeleted?: boolean;
-}
-
-type EditableProperty = TemplatePropertyRequest & { propertyLabel?: string };
-type PropertyOption = {
-  id: number;
-  label: string;
-  vocabularyPrefix: string;
-  localName: string;
-};
-
 export const ManageTemplatesPage = () => {
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<ExtendedTemplateResponse[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
-    null
-  );
 
-  // Status Filter State
-  const [filterStatus, setFilterStatus] = useState<
-    "active" | "deleted" | "all"
-  >("active");
-
-  const [editableProps, setEditableProps] = useState<EditableProperty[]>([]);
-  // 👇 1. سطر جديد لحفظ النسخة الأصلية للمقارنة
-  const [originalProps, setOriginalProps] = useState<EditableProperty[]>([]);
-
-  // باقي الحالات...
-  const [allProperties, setAllProperties] = useState<PropertyOption[]>([]);
-
-  // 👇 2. سطر جديد يحسب هل يوجد تغييرات أم لا (بمقارنة النصوص)
-  const hasChanges =
-    JSON.stringify(originalProps) !== JSON.stringify(editableProps);
-  const [propToAdd, setPropToAdd] = useState<number>(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [isProcessingTpl, setIsProcessingTpl] = useState<number | null>(null);
-
-  const selectTemplate = (
-    id: number | null,
-    list: ExtendedTemplateResponse[] = templates
-  ) => {
-    setSelectedTemplateId(id);
-    if (!id) {
-      setEditableProps([]);
-      setOriginalProps([]); // 👈 تصفير النسخة الأصلية
-      return;
-    }
-    const tpl = list.find((t) => t.id === id);
-    if (tpl) {
-      const mapped = [...tpl.properties]
-        .map((p) => ({
-          propertyId: p.propertyId,
-          propertyLabel: p.propertyLabel,
-          isRequired: p.isRequired,
-          displayOrder: p.displayOrder,
-          alternateLabel: "",
-        }))
-        .sort((a, b) => a.displayOrder - b.displayOrder);
-
-      setEditableProps(mapped);
-      // 👇 أخذ نسخة عميقة (Deep Copy) من الخصائص لكي لا تتأثر بالتعديلات
-      setOriginalProps(JSON.parse(JSON.stringify(mapped)));
-    }
-  };
-
-  useEffect(() => {
-    Promise.all([
-      api.get("/api/resource-templates/WithDeleted").then((r) => r.data),
-      api.get("/api/properties").then((r) => r.data),
-    ])
-      .then(([tpls, props]) => {
-        setTemplates(tpls);
-        setAllProperties(props);
-        if (tpls.length > 0) selectTemplate(tpls[0].id, tpls);
-      })
-      .catch((err) => console.error("Error loading builder data:", err));
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
-  const isSelectedTplDeleted = selectedTemplate?.isDeleted === true;
-
-  // ── TEMPLATE ACTIONS (SOFT DELETE & RESTORE) ──
-
-  const handleDeleteTemplate = async (id: number) => {
-    if (
-      !confirm("Are you sure you want to delete this template? (Soft Delete)")
-    )
-      return;
-
-    setIsProcessingTpl(id);
-    try {
-      await api.delete(`/api/resource-templates/${id}`);
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, isDeleted: true } : t))
-      );
-
-      if (filterStatus === "active" && selectedTemplateId === id) {
-        setSelectedTemplateId(null);
-      }
-    } catch (error) {
-      console.error("Error deleting template:", error);
-      alert("An error occurred while deleting the template.");
-    } finally {
-      setIsProcessingTpl(null);
-    }
-  };
-
-  const handleRestoreTemplate = async (id: number) => {
-    if (!confirm("Are you sure you want to restore this template?")) return;
-
-    setIsProcessingTpl(id);
-    try {
-      // إرسال { id } لتطابق ה- Command وتجنب خطأ 400
-      await api.put(`/api/resource-templates/Undelet/${id}`, { id: id });
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, isDeleted: false } : t))
-      );
-    } catch (error) {
-      console.error("Error restoring template:", error);
-      alert("An error occurred while restoring the template.");
-    } finally {
-      setIsProcessingTpl(null);
-    }
-  };
-
-  // ── EDITOR LOGIC ──
-
-  const recalc = (list: EditableProperty[]) =>
-    setEditableProps(list.map((p, i) => ({ ...p, displayOrder: i + 1 })));
-
-  const handleAdd = () => {
-    if (!propToAdd || isSelectedTplDeleted) return;
-    if (editableProps.some((p) => p.propertyId === propToAdd)) {
-      alert("Property already exists in this template.");
-      return;
-    }
-    const pd = allProperties.find((p) => p.id === propToAdd);
-    recalc([
-      ...editableProps,
-      {
-        propertyId: propToAdd,
-        propertyLabel: pd?.label ?? "New Property",
-        isRequired: false,
-        displayOrder: editableProps.length + 1,
-        alternateLabel: "",
-      },
-    ]);
-    setPropToAdd(0);
-  };
-
-  const handleRemove = (i: number) => {
-    if (isSelectedTplDeleted) return;
-    recalc(editableProps.filter((_, idx) => idx !== i));
-  };
-
-  const moveUp = (i: number) => {
-    if (i === 0 || isSelectedTplDeleted) return;
-    const a = [...editableProps];
-    [a[i - 1], a[i]] = [a[i], a[i - 1]];
-    recalc(a);
-  };
-
-  const moveDown = (i: number) => {
-    if (i === editableProps.length - 1 || isSelectedTplDeleted) return;
-    const a = [...editableProps];
-    [a[i + 1], a[i]] = [a[i], a[i + 1]];
-    recalc(a);
-  };
-
-  const toggleReq = (i: number) => {
-    if (isSelectedTplDeleted) return;
-    const a = [...editableProps];
-    a[i].isRequired = !a[i].isRequired;
-    setEditableProps(a);
-  };
-
-  const handleSave = async () => {
-    if (!selectedTemplateId || isSelectedTplDeleted) return;
-    setIsSaving(true);
-    try {
-      const command = {
-        templateId: selectedTemplateId,
-        properties: editableProps.map((p) => ({
-          propertyId: p.propertyId,
-          isRequired: p.isRequired,
-          displayOrder: p.displayOrder,
-          alternateLabel: p.alternateLabel,
-        })),
-      };
-
-      const res = await api.put(
-        `/api/resource-templates/${selectedTemplateId}/properties`,
-        command
-      );
-
-      if (res.status === 200 || res.status === 204) {
-        setSaveSuccess(true);
-        // 👇 تحديث النسخة الأصلية لتطابق التعديلات الجديدة بعد نجاح الحفظ
-        setOriginalProps(JSON.parse(JSON.stringify(editableProps)));
-        setTimeout(() => setSaveSuccess(false), 2500);
-      }
-    } catch (e) {
-      console.error("Save error:", e);
-      alert("حدث خطأ أثناء الحفظ. تأكد من الكونسول.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // ── FILTER TEMPLATES ──
-  const filteredTemplates = templates.filter((tpl) => {
-    if (filterStatus === "active") return !tpl.isDeleted;
-    if (filterStatus === "deleted") return tpl.isDeleted;
-    return true;
-  });
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    templates,
+    selectedTemplateId,
+    filterStatus,
+    setFilterStatus,
+    editableProps,
+    allProperties,
+    hasChanges,
+    propToAdd,
+    setPropToAdd,
+    isSaving,
+    saveSuccess,
+    isProcessingTpl,
+    selectedTemplate,
+    isSelectedTplDeleted,
+    selectTemplate,
+    handleDeleteTemplate,
+    handleRestoreTemplate,
+    handleAdd,
+    handleRemove,
+    moveUp,
+    moveDown,
+    toggleReq,
+    handleSave,
+    filteredTemplates,
+  } = useManageTemplates();
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}

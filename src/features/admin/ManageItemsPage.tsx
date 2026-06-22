@@ -1,11 +1,7 @@
 // src/features/admin/ManageItemsPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { api } from "../../services/api";
-import type { ItemResponse } from "../../types/item.types";
-import type { ResourceTemplateResponse } from "../../types/template.types";
 import {
   FileText,
   Plus,
@@ -17,123 +13,29 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
+import { useManageItems } from "../../hooks/adminHooks/useManageItems";
+import { getItemTitle, getItemAuthor } from "../../utils/helpers";
 
 // ── Extended ItemResponse to include isDeleted ──
-interface ExtendedItemResponse extends ItemResponse {
-  isDeleted?: boolean;
-}
 
 export const ManageItemsPage = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<ExtendedItemResponse[]>([]);
-  const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // ── Filters State ──
-  const [search, setSearch] = useState("");
-  const [filterTpl, setFilterTpl] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "deleted"
-  >("active"); // افتراضياً يعرض النشط
-
-  const [isProcessing, setIsProcessing] = useState<number | null>(null);
-
-  useEffect(() => {
-    Promise.all([
-      // 👇 استخدام الـ API الجديد الذي يجلب المحذوفة وغير المحذوفة
-      api
-        .get<ExtendedItemResponse[]>("/api/items/withDeleted")
-        .then((res) => res.data),
-      api
-        .get<ResourceTemplateResponse[]>("/api/resource-templates")
-        .then((res) => res.data),
-    ])
-      .then(([itemsData, templatesData]) => {
-        setItems(itemsData);
-        setTemplates(templatesData);
-      })
-      .catch((err) => console.error("Error fetching items admin data:", err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل أنت متأكد من حذف هذا العنصر؟ (سيتم نقله لسلة المهملات)"))
-      return;
-
-    setIsProcessing(id);
-    try {
-      await api.delete(`/api/items/${id}`);
-      // تحديث الحالة محلياً بدلاً من حذفه من المصفوفة
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, isDeleted: true } : item
-        )
-      );
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      alert("حدث خطأ أثناء محاولة الحذف.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const handleUndelete = async (id: number) => {
-    if (!confirm("هل تريد استرجاع هذا العنصر؟")) return;
-
-    setIsProcessing(id);
-    try {
-      await api.put(`/api/items/Undelet/${id}`, { id: id });
-      // تحديث الحالة محلياً
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, isDeleted: false } : item
-        )
-      );
-    } catch (error) {
-      console.error("Error restoring item:", error);
-      alert("حدث خطأ أثناء محاولة الاسترجاع.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const getItemTitle = (item: ExtendedItemResponse) =>
-    item.metadataValues.find(
-      (v) =>
-        v.propertyLabel.includes("عنوان") ||
-        v.propertyLabel.toLowerCase().includes("title")
-    )?.valueText ?? `Untitled #${item.id}`;
-
-  const getItemAuthor = (item: ExtendedItemResponse) =>
-    item.metadataValues.find(
-      (v) =>
-        v.propertyLabel.includes("مؤلف") ||
-        v.propertyLabel.includes("كاتب") ||
-        v.propertyLabel.toLowerCase().includes("author")
-    )?.valueText ?? "—";
-
-  const filteredItems = items.filter((item) => {
-    const title = getItemTitle(item).toLowerCase();
-    const author = getItemAuthor(item).toLowerCase();
-    const query = search.toLowerCase();
-
-    // 1. Text Search
-    const matchSearch =
-      title.includes(query) ||
-      author.includes(query) ||
-      item.id.toString() === query;
-
-    // 2. Template Filter
-    const matchTpl =
-      filterTpl === "all" || item.templateId?.toString() === filterTpl;
-
-    // 3. Status Filter (Soft Delete Logic)
-    let matchStatus = true;
-    if (filterStatus === "active") matchStatus = !item.isDeleted;
-    if (filterStatus === "deleted") matchStatus = item.isDeleted === true;
-
-    return matchSearch && matchTpl && matchStatus;
-  });
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    templates,
+    loading,
+    search,
+    setSearch,
+    filterTpl,
+    setFilterTpl,
+    filterStatus,
+    setFilterStatus,
+    isProcessing,
+    handleDelete,
+    handleUndelete,
+    filteredItems,
+  } = useManageItems();
 
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>

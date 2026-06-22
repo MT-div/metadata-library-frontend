@@ -1,11 +1,8 @@
 // src/features/items/FavoritePage.tsx
-import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { api } from "../../services/api";
-import type { ItemResponse, BookmarksResponse } from "../../types/item.types";
-import type { ResourceTemplateResponse } from "../../types/template.types";
+import { useFavorites } from "../../hooks/itemsHooks/useFavorites";
 import { Heart, Search } from "lucide-react";
 import libraryHero from "../../assets/images/libraryHeroBrowse.png";
 import ItemBottom from "../../assets/icons/ItemBottom.png";
@@ -54,75 +51,16 @@ const getTypeBadge = (templateLabel: string) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const FavoritePage = () => {
   const navigate = useNavigate();
-  const [favoriteItems, setFavoriteItems] = useState<ItemResponse[]>([]);
-  const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
-
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [view, setView] = useState<"grid" | "list">("grid");
-
-  useEffect(() => {
-    // 1. Fetch Bookmarks (Array of IDs), All Items, and Templates
-    Promise.all([
-      api.get<BookmarksResponse[]>("/api/bookmarks").then((r) => r.data),
-      api.get<ItemResponse[]>("/api/items").then((r) => r.data),
-      api
-        .get<ResourceTemplateResponse[]>("/api/resource-templates")
-        .then((r) => r.data),
-    ])
-      .then(([bookmarkIds, allItems, tpls]) => {
-        // 2. Filter items to keep only the bookmarked ones
-        const userFavorites = allItems.filter((item) =>
-          bookmarkIds.some((bookmark) => bookmark.id === item.id)
-        );
-        setFavoriteItems(userFavorites);
-        setTemplates(tpls);
-        console.log(bookmarkIds);
-      })
-      .catch((err) => {
-        console.error("Error loading favorites:", err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const removeBookmark = async (e: React.MouseEvent, itemId: number) => {
-    e.preventDefault();
-
-    // Optimistic UI Update: Remove instantly from screen
-    setFavoriteItems((prev) => prev.filter((item) => item.id !== itemId));
-
-    try {
-      await api.delete(`/api/bookmarks/${itemId}`);
-    } catch (error) {
-      console.error("Failed to remove bookmark", error);
-      // Optional: Refresh the page or show error if deletion fails
-    }
-  };
-
-  // const extract = (item: ItemResponse, labels: string[]) =>
-  //   item.metadataValues.find((v) =>
-  //     labels.some((l) =>
-  //       v.propertyLabel.toLowerCase().includes(l.toLowerCase())
-  //     )
-  //   )?.valueText ?? null;
-
-  // const extractYear = (item: ItemResponse) => {
-  //   const yearStr = extract(item, ["تاريخ", "سنة", "date", "year", "issued"]);
-  //   return yearStr ? parseInt(yearStr.replace(/\D/g, ""), 10) : null;
-  // };
-
-  // const MOCK_RATING = (id: number) => (3.5 + (id % 15) * 0.1).toFixed(1);
-
-  // Apply simple search filter
-  const filtered = favoriteItems.filter((item) => {
-    return (
-      !search ||
-      item.metadataValues.some((v) =>
-        v.valueText?.toLowerCase().includes(search.toLowerCase())
-      ) ||
-      item.id.toString() === search
-    );
-  });
+  const {
+    templates,
+    loading,
+    search,
+    setSearch,
+    view,
+    setView,
+    removeBookmark,
+    filtered,
+  } = useFavorites();
 
   return (
     <div

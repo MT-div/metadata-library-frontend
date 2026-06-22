@@ -1,9 +1,8 @@
 // src/features/librarian/LibrarianDashboardPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { StatCard } from "../../components/ui/StatCard";
-import { api } from "../../services/api";
+import { useLibrarianDashboard } from "../../hooks/librarianHooks/useLibrarianDashboard";
 import {
   BookOpen,
   Users,
@@ -15,53 +14,10 @@ import {
   Archive,
 } from "lucide-react";
 
-interface LibrarianStats {
-  totalItems: number;
-  totalPatrons: number;
-  activeLoans: number;
-  overdueLoans: number;
-}
-
 export const LibrarianDashboardPage = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<LibrarianStats>({
-    totalItems: 0,
-    totalPatrons: 0,
-    activeLoans: 0,
-    overdueLoans: 0,
-  });
 
-  useEffect(() => {
-    Promise.all([
-      api
-        .get("/api/items")
-        .then((r) => r.data)
-        .catch(() => []),
-      api
-        .get("/api/Patrons")
-        .then((r) => r.data)
-        .catch(() => []),
-      api
-        .get("/api/Circulation/active")
-        .then((r) => r.data)
-        .catch(() => []),
-      api
-        .get("/api/Circulation/overdue")
-        .then((r) => r.data)
-        .catch(() => []),
-    ])
-      .then(([items, patrons, active, overdue]) => {
-        setStats({
-          totalItems: items.length,
-          totalPatrons: patrons.length,
-          activeLoans: active.length,
-          overdueLoans: overdue.length,
-        });
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
+  const { loading, stats } = useLibrarianDashboard();
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* Welcome Banner */}

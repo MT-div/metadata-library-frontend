@@ -1,12 +1,9 @@
 // src/features/items/CreateItemPage.tsx
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import type { CreateItemCommand } from "../../types/item.types";
-import type { ResourceTemplateResponse } from "../../types/template.types";
+import { useCreateItem } from "../../hooks/itemsHooks/useCreateItem";
 import {
   Save,
   Loader2,
@@ -18,77 +15,23 @@ import {
 
 export const CreateItemPage = () => {
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<ResourceTemplateResponse[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | "">("");
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState<Record<number, string>>({});
-  const [focusedField, setFocusedField] = useState<number | string | null>(
-    null
-  );
-
-  useEffect(() => {
-    api
-      .get<ResourceTemplateResponse[]>("api/resource-templates")
-      .then((res) => {
-        setTemplates(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching templates:", err);
-        setLoading(false);
-      });
-  }, []);
-
-  const handleTemplateChange = (val: string) => {
-    setSelectedTemplateId(val === "" ? "" : Number(val));
-    setFormData({});
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTemplateId) return;
-    setIsSubmitting(true);
-
-    const command: CreateItemCommand = {
-      templateId: Number(selectedTemplateId),
-      ownerId: 1, // TODO: سنستبدله لاحقاً بالـ ID الحقيقي من التوكن
-      values: Object.entries(formData).map(([propId, valueText]) => ({
-        propertyId: Number(propId),
-        valueText,
-        type: "literal",
-        language: "ar", // جعلتها ar افتراضياً لتناسب الميتاداتا العربية
-      })),
-    };
-
-    try {
-      const res = await api.post("/api/items", command);
-
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        console.log("CreateItemCommand Success:", command);
-        setTimeout(() => {
-          setFormData({});
-          setSuccess(false);
-          // navigate('/browse'); // اختياري: يمكنك تفعيله لنقل المستخدم بعد الحفظ
-        }, 2200);
-      }
-    } catch (e) {
-      console.error("Error creating item:", e);
-      alert("حدث خطأ أثناء حفظ العنصر.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
-  const sortedProps =
-    selectedTemplate?.properties
-      .slice()
-      .sort((a, b) => a.displayOrder - b.displayOrder) ?? [];
-  const filledCount = Object.values(formData).filter((v) => v.trim()).length;
-  const totalRequired = sortedProps.filter((p) => p.isRequired).length;
+  const {
+    templates,
+    selectedTemplateId,
+    loading,
+    isSubmitting,
+    success,
+    formData,
+    setFormData,
+    focusedField,
+    setFocusedField,
+    handleTemplateChange,
+    handleSubmit,
+    selectedTemplate,
+    sortedProps,
+    filledCount,
+    totalRequired,
+  } = useCreateItem();
 
   const inputStyle = (id: number | string): React.CSSProperties => ({
     width: "100%",

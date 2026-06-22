@@ -1,9 +1,8 @@
 // src/features/items/ItemDetailsPage.tsx
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
+import { useItemDetails } from "../../hooks/itemsHooks/useItemDetails";
 import { useAuthStore } from "../../store/useAuthStore";
 import {
   ArrowLeft,
@@ -17,10 +16,6 @@ import {
   FileText,
   ChevronRight,
 } from "lucide-react";
-import type { ItemResponse } from "../../types/item.types";
-import type { ResourceTemplateResponse } from "../../types/template.types";
-import type { ItemSetResponse } from "../../types/itemSet.types";
-import type { MediaResponse } from "../../types/media.types";
 
 // ── Reusable section card ─────────────────────────────────────────────────────
 const SectionCard = ({
@@ -75,65 +70,11 @@ const SectionCard = ({
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const ItemDetailsPage = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
   const { isAdmin, isLibrarian } = useAuthStore();
   const canAccessAdmin = isAdmin() || isLibrarian();
-  const [item, setItem] = useState<ItemResponse | null>(null);
-  const [template, setTemplate] = useState<ResourceTemplateResponse | null>(
-    null
-  );
-  const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
-  const [media, setMedia] = useState<MediaResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // دالة الحذف
-  const handleDelete = async () => {
-    if (!confirm("هل أنت متأكد من حذف هذا العنصر؟")) return;
-
-    setIsDeleting(true);
-    try {
-      await api.delete(`/api/items/${id}`);
-      alert("تم حذف العنصر بنجاح.");
-      navigate("/browse", { replace: true });
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      alert("حدث خطأ أثناء محاولة حذف العنصر.");
-      setIsDeleting(false);
-    }
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const itemRes = await api.get<ItemResponse>(`/api/items/${id}`);
-        const itemData = itemRes.data;
-        setItem(itemData);
-
-        const [tplRes, setsRes, mediaRes] = await Promise.all([
-          api.get<ResourceTemplateResponse[]>("/api/resource-templates"),
-          api.get<ItemSetResponse[]>("/api/item-sets"),
-          api.get<MediaResponse[]>(`/api/media/by-item/${id}`),
-        ]);
-
-        const tpls = tplRes.data;
-        setTemplate(tpls.find((t) => t.id === itemData.templateId) || null);
-
-        const sets = setsRes.data;
-        setItemSets(
-          sets.filter((s) => s.items?.some((i) => i.id === itemData.id))
-        );
-
-        setMedia(mediaRes.data);
-      } catch (e) {
-        console.error("Error loading item details:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id]);
+  const { item, template, itemSets, media, loading, isDeleting, handleDelete } =
+    useItemDetails();
 
   if (loading)
     return (

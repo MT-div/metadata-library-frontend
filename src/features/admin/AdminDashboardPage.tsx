@@ -1,13 +1,10 @@
 // src/features/admin/AdminDashboardPage.tsx
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/useAuthStore";
-import { api } from "../../services/api";
+import { useAdminDashboard } from "../../hooks/adminHooks/useAdminDashboard";
+
 import { C, fonts } from "../../utils/theme";
 import { StatCard } from "../../components/ui/StatCard";
 import { QuickAction } from "../../components/ui/QuickAction";
-import type { ItemResponse } from "../../types/item.types";
-import type { ResourceTemplateResponse } from "../../types/template.types";
+
 import {
   LayoutDashboard,
   Users,
@@ -20,61 +17,15 @@ import {
   Activity,
   Sparkles,
 } from "lucide-react";
-
-interface SystemStats {
-  items: number;
-  users: number;
-  collections: number;
-  media: number;
-  templatesDist: { label: string; count: number; percentage: number }[];
-}
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<SystemStats>({
-    items: 0,
-    users: 0,
-    collections: 0,
-    media: 0,
-    templatesDist: [],
-  });
 
-  useEffect(() => {
-    Promise.all([
-      api.get("/api/items").then((r) => r.data),
-      api.get("/api/users").then((r) => r.data),
-      api.get("/api/item-sets").then((r) => r.data),
-      api.get("/api/media").then((r) => r.data),
-      api.get("/api/resource-templates").then((r) => r.data),
-    ])
-      .then(([itemsData, usersData, setsData, mediaData, templatesData]) => {
-        const items = itemsData as ItemResponse[];
-        const templates = templatesData as ResourceTemplateResponse[];
-
-        const dist = templates
-          .map((tpl) => {
-            const count = items.filter((i) => i.templateId === tpl.id).length;
-            const percentage =
-              items.length === 0 ? 0 : Math.round((count / items.length) * 100);
-            return { label: tpl.label, count, percentage };
-          })
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 4);
-
-        setStats({
-          items: items.length,
-          users: usersData.length,
-          collections: setsData.length,
-          media: mediaData.length,
-          templatesDist: dist,
-        });
-      })
-      .catch((err) => console.error("Error loading dashboard stats:", err))
-      .finally(() => setLoading(false));
-  }, []);
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const { loading, stats } = useAdminDashboard();
   // Bar colors for distribution chart
   const BAR_COLORS = [C.goldDark, C.gold, "#d8c090", "rgba(200,169,110,0.4)"];
 

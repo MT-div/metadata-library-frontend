@@ -17,6 +17,7 @@ import {
   Sliders,
   Database,
   Users,
+  DoorOpenIcon,
 } from "lucide-react";
 
 // ── Nav link groups ───────────────────────────────────────────────────────────
@@ -263,6 +264,35 @@ export const AdminLayout = () => {
             gap: 4,
           }}
         >
+          <button
+            onClick={() => navigate("/librarian")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 12px",
+              borderRadius: 10,
+              background: "transparent",
+              border: "none",
+              color: C.sidebarText,
+              fontFamily: fonts.sans,
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              width: "100%",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = C.sidebarHover;
+              e.currentTarget.style.color = C.sidebarTextHi;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = C.sidebarText;
+            }}
+          >
+            <DoorOpenIcon size={17} /> Librarian Panel
+          </button>
           <button
             onClick={() => navigate("/browse")}
             style={{

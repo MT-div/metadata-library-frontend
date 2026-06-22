@@ -1,51 +1,26 @@
 // src/features/itemSets/CreateItemSetPage.tsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
+import { useCreateItemSet } from "../../hooks/useCreateItemSet";
 import { Save, FolderPlus, Globe, Lock, Info, ArrowLeft } from "lucide-react";
-import type { CreateItemSetCommand } from "../../types/itemSet.types";
 
 export const CreateItemSetPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<CreateItemSetCommand>({
-    title: "",
-    description: "",
-    isPublic: true,
-    ownerId: 1, // TODO: replace with current authenticated user's id
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/admin/itemsets";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      // 👇 استخدام api.post مع الرابط الصحيح (item-sets)
-      const res = await api.post("/api/item-sets", formData);
-
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        setTimeout(() => {
-          setFormData({
-            title: "",
-            description: "",
-            isPublic: true,
-            ownerId: 1, // سيتم أخذها لاحقاً من التوكن الحقيقي
-          });
-          setSuccess(false);
-        }, 2000);
-      }
-    } catch (err) {
-      console.error("Error creating item set:", err);
-      alert("حدث خطأ أثناء إنشاء المجموعة.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    formData,
+    setFormData,
+    isSubmitting,
+    success,
+    focusedField,
+    setFocusedField,
+    handleSubmit,
+  } = useCreateItemSet();
 
   const inputStyle = (field: string): React.CSSProperties => ({
     width: "100%",
@@ -166,7 +141,12 @@ export const CreateItemSetPage = () => {
           </div>
 
           {/* Form body */}
-          <form onSubmit={handleSubmit} style={{ padding: "28px" }}>
+          <form
+            onSubmit={(e) =>
+              handleSubmit(e, () => navigate(returnTo, { replace: true }))
+            }
+            style={{ padding: "28px" }}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               {/* Title */}
               <div>

@@ -1,17 +1,13 @@
 // src/features/auth/RegisterPage.tsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { useAuthStore } from "../../store/useAuthStore";
 import { Loader2 } from "lucide-react";
-import type { RegisterRequest, AuthResponse } from "../../types/auth";
-import { api } from "../../services/api";
-import { AxiosError } from "axios";
 
 import vasePng from "../../assets/icons/vase.png";
 import backVase from "../../assets/icons/backVase.png";
 import libraryHero from "../../assets/images/libraryHero6.png";
+import { useRegister } from "../../hooks/authHooks/useRegister";
+import { useNavigate } from "react-router-dom";
 
 // ─── Shared SVG helpers (identical to LoginPage) ──────────────────────────────
 const Sparkle = ({
@@ -246,50 +242,17 @@ const PageBackground = () => (
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const RegisterPage = () => {
-  const [formData, setFormData] = useState<RegisterRequest>({
-    fullName: "",
-    userName: "",
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
-
-  // Auto-generate username from email prefix
-  const handleEmailChange = (email: string) => {
-    const auto = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
-    setFormData((prev) => ({
-      ...prev,
-      email,
-      userName: prev.userName || auto,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-    try {
-      const res = await api.post<AuthResponse>("/api/Auth/register", formData);
-      login(res.data);
-      navigate("/browse");
-    } catch (err: unknown) {
-      if (err instanceof AxiosError && err.response) {
-        setError(
-          err.response.data ||
-            "Registration failed. Email or username might already be taken."
-        );
-      } else {
-        setError("Network error. Please make sure the server is running.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    error,
+    isLoading,
+    showPassword,
+    setShowPassword,
+    handleEmailChange,
+    handleSubmit,
+  } = useRegister();
 
   return (
     <div

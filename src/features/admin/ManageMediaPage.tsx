@@ -1,10 +1,7 @@
 // src/features/admin/ManageMediaPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { api } from "../../services/api";
-import type { MediaResponse } from "../../types/media.types";
 import {
   Image as ImageIcon,
   Film,
@@ -18,12 +15,9 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
+import { useManageMedia } from "../../hooks/adminHooks/useManageMedia";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-
-interface ExtendedMediaResponse extends MediaResponse {
-  isDeleted?: boolean;
-}
 
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
@@ -57,86 +51,23 @@ const getFileTypeBadge = (fileName: string) => {
 
 export const ManageMediaPage = () => {
   const navigate = useNavigate();
-  const [mediaList, setMediaList] = useState<ExtendedMediaResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "active" | "deleted" | "all"
-  >("active");
-  const [isProcessing, setIsProcessing] = useState<number | null>(null);
 
-  useEffect(() => {
-    api
-      .get<ExtendedMediaResponse[]>("/api/media/WithDeleted")
-      .then((res) => {
-        setMediaList(res.data);
-      })
-      .catch((err) => {
-        console.error("Error fetching media:", err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this file? (Soft Delete)"))
-      return;
-
-    setIsProcessing(id);
-    try {
-      await api.delete(`/api/media/${id}`);
-      setMediaList((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, isDeleted: true } : m))
-      );
-    } catch (error) {
-      console.error("Error deleting media:", error);
-      alert("حدث خطأ أثناء الحذف.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const handleRestore = async (id: number) => {
-    if (!confirm("Are you sure you want to restore this file?")) return;
-
-    setIsProcessing(id);
-    try {
-      await api.put(`/api/media/Undelet/${id}`, { id: id });
-      setMediaList((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, isDeleted: false } : m))
-      );
-    } catch (error) {
-      console.error("Error restoring media:", error);
-      alert("حدث خطأ أثناء الاسترجاع.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const filtered = mediaList.filter((m) => {
-    const matchSearch =
-      !search ||
-      m.fileName.toLowerCase().includes(search.toLowerCase()) ||
-      m.itemId.toString() === search;
-
-    let matchStatus = true;
-    if (filterStatus === "active") matchStatus = !m.isDeleted;
-    if (filterStatus === "deleted") matchStatus = m.isDeleted === true;
-
-    return matchSearch && matchStatus;
-  });
-
-  // Stats (only for active items)
-  const activeMedia = mediaList.filter((m) => !m.isDeleted);
-  const imageCount = activeMedia.filter((m) =>
-    /\.(jpg|jpeg|png|gif|webp)$/i.test(m.fileName)
-  ).length;
-  const videoCount = activeMedia.filter((m) =>
-    /\.(mp4|mov|avi|mkv)$/i.test(m.fileName)
-  ).length;
-  const docCount = activeMedia.filter((m) =>
-    /\.(pdf|doc|docx|txt)$/i.test(m.fileName)
-  ).length;
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    loading,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    isProcessing,
+    handleDelete,
+    handleRestore,
+    filtered,
+    activeMedia,
+    imageCount,
+    videoCount,
+    docCount,
+  } = useManageMedia();
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}

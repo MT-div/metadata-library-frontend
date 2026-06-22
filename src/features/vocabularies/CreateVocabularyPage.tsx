@@ -1,17 +1,11 @@
 // src/features/vocabularies/CreateVocabularyPage.tsx
-import {
-  useState,
-  type FormEvent,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
+import { useCreateVocabulary } from "../../hooks/useCreateVocabulary";
 import { Save, BookOpen, ArrowLeft, Info, ExternalLink } from "lucide-react";
-import type { CreateVocabularyCommand } from "../../types/vocabulary.types";
 
 const FieldLabel = ({
   children,
@@ -39,40 +33,18 @@ const FieldLabel = ({
 
 export const CreateVocabularyPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<CreateVocabularyCommand>({
-    prefix: "",
-    namespaceUri: "",
-    label: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
 
-  const uriPreview = formData.prefix
-    ? `https://purl.org/${formData.prefix.toLowerCase()}/terms/`
-    : null;
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await api.post("/api/vocabularies", formData);
-
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        setTimeout(() => {
-          setFormData({ prefix: "", namespaceUri: "", label: "" });
-          setSuccess(false);
-        }, 2200);
-      }
-    } catch (e) {
-      console.error("Error creating vocabulary:", e);
-      alert("حدث خطأ أثناء حفظ القاموس، تأكد من الكونسول.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    formData,
+    setFormData,
+    isSubmitting,
+    success,
+    focused,
+    setFocused,
+    uriPreview,
+    handleSubmit,
+  } = useCreateVocabulary();
   const inputStyle = (id: string): CSSProperties => ({
     width: "100%",
     boxSizing: "border-box",

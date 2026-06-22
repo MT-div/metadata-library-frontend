@@ -1,7 +1,6 @@
 // src/features/admin/CreateUserPage.tsx
-import { useState } from "react";
+import { useCreateUser } from "../../hooks/useCreateUser";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
@@ -15,67 +14,22 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-react";
-import { getErrorMessage } from "../../utils/helpers";
 
 export const CreateUserPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    fullName: "",
-    userName: "",
-    email: "",
-    password: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // استنتاج اسم المستخدم (UserName) تلقائياً من الإيميل لتسهيل العمل
-  const handleEmailChange = (email: string) => {
-    const autoUserName = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
-    setFormData((prev) => ({
-      ...prev,
-      email,
-      userName: prev.userName || autoUserName, // نملأه فقط إذا كان فارغاً
-    }));
-  };
-
-  // const getErrorMessage = (error: unknown): string => {
-  //   if (
-  //     typeof error === "object" &&
-  //     error !== null &&
-  //     "response" in error &&
-  //     typeof (error as { response?: { data?: unknown } }).response?.data ===
-  //       "string"
-  //   ) {
-  //     return (error as { response?: { data?: string } }).response!.data!;
-  //   }
-
-  //   return "حدث خطأ أثناء إنشاء المستخدم.";
-  // };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMsg(null);
-
-    try {
-      // نستخدم رابط الـ Register لأنه ينشئ حساباً قابلاً لتسجيل الدخول (Identity)
-      const res = await api.post("/api/Auth/register", formData);
-
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate("/admin/users"); // العودة لجدول المستخدمين بعد النجاح
-        }, 2000);
-      }
-    } catch (err: unknown) {
-      console.error("Error creating user:", err);
-      setErrorMsg(getErrorMessage(err));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    formData,
+    setFormData,
+    isSubmitting,
+    success,
+    focusedField,
+    setFocusedField,
+    errorMsg,
+    handleEmailChange,
+    handleSubmit,
+  } = useCreateUser();
 
   const inputStyle = (field: string): React.CSSProperties => ({
     width: "100%",

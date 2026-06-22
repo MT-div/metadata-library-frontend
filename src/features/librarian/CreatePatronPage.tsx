@@ -1,53 +1,24 @@
 // src/features/librarian/CreatePatronPage.tsx
-import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import { AxiosError } from "axios";
-import type { CreatePatronCommand } from "../../types/patron.types";
+import { useCreatePatron } from "../../hooks/librarianHooks/useCreatePatron";
 import { UserPlus, Save, ArrowLeft, Loader2, Info } from "lucide-react";
 
 export const CreatePatronPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // نستلم مسار العودة إن وُجد (الذكاء الاصطناعي في الـ UX)
-  const returnTo = location.state?.returnTo || "/librarian/patrons";
-
-  const [formData, setFormData] = useState<CreatePatronCommand>({
-    fullName: "",
-    nationalId: "",
-    phoneNumber: "",
-    email: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMsg(null);
-
-    try {
-      const res = await api.post("/api/Patrons", formData);
-      if (res.status === 200 || res.status === 201) {
-        // إذا جاء من صفحة الإعارة، نعيده إليها بعد الحفظ فوراً
-        navigate(returnTo, { replace: true });
-      }
-    } catch (err: unknown) {
-      console.error("Error creating patron:", err);
-      if (err instanceof AxiosError && err.response) {
-        setErrorMsg(err.response.data || "Failed to create patron.");
-      } else {
-        setErrorMsg("Network error occurred.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    returnTo,
+    formData,
+    setFormData,
+    isSubmitting,
+    errorMsg,
+    handleSubmit,
+  } = useCreatePatron();
   const inputStyle: React.CSSProperties = {
     width: "100%",
     boxSizing: "border-box",

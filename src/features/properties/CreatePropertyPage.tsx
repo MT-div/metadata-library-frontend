@@ -1,13 +1,10 @@
 // src/features/properties/CreatePropertyPage.tsx
-import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
 import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
-import type { CreatePropertyCommand } from "../../types/property.types";
-import type { VocabularyResponse } from "../../types/vocabulary.types";
+import { useCreateProperty } from "../../hooks/propertiesHooks/useCreateProperty";
 
 // واجهة خصائص المكون FormLabel
 interface FormLabelProps {
@@ -37,73 +34,20 @@ const FormLabel = ({ children, required, htmlFor }: FormLabelProps) => (
 
 export const CreatePropertyPage = () => {
   const navigate = useNavigate();
-  const [vocabularies, setVocabularies] = useState<VocabularyResponse[]>([]);
-  const [formData, setFormData] = useState<CreatePropertyCommand>({
-    vocabularyId: 0,
-    localName: "",
-    label: "",
-    termUri: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
 
-  useEffect(() => {
-    api
-      .get<VocabularyResponse[]>("/api/vocabularies")
-      .then((res) => {
-        const data = res.data;
-        setVocabularies(data);
-        if (data.length > 0)
-          setFormData((p) => ({ ...p, vocabularyId: data[0].id }));
-      })
-      .catch((err) => console.error("Error fetching vocabularies:", err));
-  }, []);
-
-  const selectedVocab = vocabularies.find(
-    (v) => v.id === formData.vocabularyId
-  );
-
-  const autoUri =
-    selectedVocab && formData.localName
-      ? `${selectedVocab.namespaceUri}${formData.localName}`
-      : "";
-
-  const handleLocalNameChange = (val: string) => {
-    setFormData((p) => ({
-      ...p,
-      localName: val,
-      termUri: selectedVocab
-        ? `${selectedVocab.namespaceUri}${val}`
-        : p.termUri,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await api.post("/api/properties", formData);
-
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        setTimeout(() => {
-          setFormData({
-            vocabularyId: vocabularies[0]?.id || 0,
-            localName: "",
-            label: "",
-            termUri: "",
-          });
-          setSuccess(false);
-        }, 2200);
-      }
-    } catch (e) {
-      console.error("Error creating property:", e);
-      alert("حدث خطأ أثناء حفظ الخاصية. تأكد من الكونسول.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const {
+    vocabularies,
+    formData,
+    setFormData,
+    isSubmitting,
+    success,
+    focused,
+    setFocused,
+    selectedVocab,
+    autoUri,
+    handleLocalNameChange,
+    handleSubmit,
+  } = useCreateProperty();
 
   const inputStyle = (id: string): React.CSSProperties => ({
     width: "100%",

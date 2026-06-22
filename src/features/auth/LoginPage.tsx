@@ -1,20 +1,15 @@
 // src/features/auth/LoginPage.tsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLogin } from "../../hooks/authHooks/useLogin";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
 import { Loader2 } from "lucide-react";
-import type { LoginRequest, AuthResponse } from "../../types/auth";
-import { api } from "../../services/api";
-import { AxiosError } from "axios";
 
 import vasePng from "../../assets/icons/vase.png";
 import backVase from "../../assets/icons/backVase.png";
 import libraryHero from "../../assets/images/libraryHero6.png";
 import { GoogleLogin } from "@react-oauth/google";
-import type { CredentialResponse } from "@react-oauth/google";
-import { useAuthStore } from "../../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 
 // ─── 4-point star ────────────────────────────────────────────────────────────
 const Sparkle = ({
@@ -111,75 +106,21 @@ const EyeIcon = ({ open }: { open: boolean }) =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const LoginPage = () => {
-  const { isAdmin, isLibrarian } = useAuthStore();
-  const canAccessAdmin = isAdmin() || isLibrarian();
-
-  const [formData, setFormData] = useState<LoginRequest>({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const response = await api.post<AuthResponse>(
-        "/api/Auth/login",
-        formData
-      );
-
-      const data = response.data;
-      login(data);
-
-      if (canAccessAdmin) navigate("/admin/metadata");
-      else navigate("/browse");
-    } catch (err: unknown) {
-      if (err instanceof AxiosError && err.response) {
-        setError(
-          err.response.data || "البريد الإلكتروني أو كلمة المرور غير صحيحة."
-        );
-      } else {
-        setError("تعذر الاتصال بالخادم. تأكد من تشغيل الباك اند.");
-        console.error("Login error:", err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse | null
-  ) => {
-    setIsLoading(true);
-    setError("");
-    try {
-      if (!credentialResponse || !credentialResponse.credential) {
-        throw new Error("Missing credential from Google response");
-      }
-      const response = await api.post<AuthResponse>("/api/Auth/login-google", {
-        idToken: credentialResponse.credential,
-      });
-      login(response.data);
-      navigate("/admin/metadata");
-    } catch (err: unknown) {
-      if (err instanceof AxiosError && err.response) {
-        setError(err.response.data || "Google login failed.");
-      } else {
-        setError("Network error. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    setError,
+    error,
+    isLoading,
+    showPassword,
+    setShowPassword,
+    rememberMe,
+    setRememberMe,
+    handleSubmit,
+    handleGoogleSuccess,
+  } = useLogin();
 
   return (
     <div

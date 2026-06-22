@@ -1,15 +1,10 @@
 // src/features/templates/CreateTemplatePage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import type {
-  CreateResourceTemplateCommand,
-  TemplatePropertyRequest,
-} from "../../types/template.types";
-import type { VocabularyResponse } from "../../types/vocabulary.types";
+import { useCreateTemplate } from "../../hooks/templatesHooks/useCreateTemplate";
+
 import {
   Save,
   LayoutTemplate,
@@ -19,13 +14,6 @@ import {
   Info,
   GripVertical,
 } from "lucide-react";
-
-type AvailableProperty = {
-  id: number;
-  label: string;
-  vocabularyPrefix: string;
-  localName: string;
-};
 
 // ── Shared sub-components ────────────────────────────────────────────────────
 const FieldLabel = ({
@@ -126,110 +114,28 @@ const selectStyle: React.CSSProperties = {
 // ─────────────────────────────────────────────────────────────────────────────
 export const CreateTemplatePage = () => {
   const navigate = useNavigate();
-  const [templateData, setTemplateData] =
-    useState<CreateResourceTemplateCommand>({ label: "", description: "" });
-  const [selectedProperties, setSelectedProperties] = useState<
-    TemplatePropertyRequest[]
-  >([]);
-  const [vocabularies, setVocabularies] = useState<VocabularyResponse[]>([]);
-  const [selectedVocabId, setSelectedVocabId] = useState<number>(0);
-  const [availableProps, setAvailableProps] = useState<AvailableProperty[]>([]);
-  const [selectedPropId, setSelectedPropId] = useState<number>(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
-  const [propCache, setPropCache] = useState<Record<number, string>>({});
 
-  useEffect(() => {
-    api
-      .get("/api/vocabularies")
-      .then((res) => {
-        const data = res.data;
-        setVocabularies(data);
-        if (data.length > 0) setSelectedVocabId(data[0].id);
-      })
-      .catch((err) => console.error("Error fetching vocabularies:", err));
-  }, []);
-
-  useEffect(() => {
-    if (!selectedVocabId) return;
-
-    api
-      .get(`/api/properties/by-vocabulary/${selectedVocabId}`)
-      .then((res) => {
-        const data = res.data;
-        setAvailableProps(data);
-        setSelectedPropId(data.length > 0 ? data[0].id : 0);
-
-        const entries: Record<number, string> = {};
-        data.forEach((p: AvailableProperty) => {
-          entries[p.id] = p.label;
-        });
-        setPropCache((prev) => ({ ...prev, ...entries }));
-      })
-      .catch((err) => console.error("Error fetching properties:", err));
-  }, [selectedVocabId]);
-
-  const handleAddProperty = () => {
-    if (!selectedPropId) return;
-    if (selectedProperties.some((p) => p.propertyId === selectedPropId)) {
-      alert("This property is already added.");
-      return;
-    }
-    setSelectedProperties((prev) => [
-      ...prev,
-      {
-        propertyId: selectedPropId,
-        isRequired: false,
-        displayOrder: prev.length + 1,
-        alternateLabel: "",
-      },
-    ]);
-  };
-
-  const handleRemove = (id: number) =>
-    setSelectedProperties((prev) =>
-      prev
-        .filter((p) => p.propertyId !== id)
-        .map((p, i) => ({ ...p, displayOrder: i + 1 }))
-    );
-
-  const handleToggle = (id: number) =>
-    setSelectedProperties((prev) =>
-      prev.map((p) =>
-        p.propertyId === id ? { ...p, isRequired: !p.isRequired } : p
-      )
-    );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedProperties.length === 0) {
-      alert("Add at least one property to the template.");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const createRes = await api.post("/api/resource-templates", templateData);
-      const createdId = createRes.data.id ?? createRes.data;
-
-      await api.put(`/api/resource-templates/${createdId}/properties`, {
-        templateId: createdId,
-        properties: selectedProperties,
-      });
-
-      setSuccess(true);
-      setTimeout(() => {
-        setTemplateData({ label: "", description: "" });
-        setSelectedProperties([]);
-        setSuccess(false);
-      }, 2200);
-    } catch (err) {
-      console.error("Error creating template:", err);
-      alert("حدث خطأ أثناء حفظ القالب. راجع الكونسول.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    templateData,
+    setTemplateData,
+    selectedProperties,
+    vocabularies,
+    selectedVocabId,
+    setSelectedVocabId,
+    availableProps,
+    selectedPropId,
+    setSelectedPropId,
+    isSubmitting,
+    success,
+    focused,
+    setFocused,
+    propCache,
+    handleAddProperty,
+    handleRemove,
+    handleToggle,
+    handleSubmit,
+  } = useCreateTemplate();
 
   const inputStyle = (id: string): React.CSSProperties => ({
     width: "100%",

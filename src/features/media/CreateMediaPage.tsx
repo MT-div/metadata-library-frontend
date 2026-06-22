@@ -1,11 +1,9 @@
 // src/features/media/CreateMediaPage.tsx
-import { useState, useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import type { CreateValueRequest } from "../../types/item.types";
+import { useCreateMedia } from "../../hooks/useCreateMedia";
 import {
   UploadCloud,
   Save,
@@ -16,115 +14,33 @@ import {
   X,
 } from "lucide-react";
 
-interface PropertyOption {
-  id: number;
-  label: string;
-}
-
 export const CreateMediaPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [itemId, setItemId] = useState<number>(location.state?.media);
-  const [mediaValues, setMediaValues] = useState<CreateValueRequest[]>([]);
-  const [availableProps, setAvailableProps] = useState<PropertyOption[]>([]);
-  const [selectedPropId, setSelectedPropId] = useState<number>(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | number | null>(
-    null
-  );
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    api
-      .get("/api/properties")
-      .then((res) => {
-        setAvailableProps(res.data);
-        if (res.data.length > 0) setSelectedPropId(res.data[0].id);
-      })
-      .catch((err) => console.error("Error fetching properties:", err));
-  }, []);
-  const handleFileSelect = (file: File) => setSelectedFile(file);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) setSelectedFile(file);
-  };
-
-  const handleAddValue = () => {
-    if (!selectedPropId) return;
-    setMediaValues((prev) => [
-      ...prev,
-      {
-        propertyId: selectedPropId,
-        valueText: "",
-        type: "literal",
-        language: "en",
-      },
-    ]);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      alert("Please select a file first.");
-      return;
-    }
-    if (itemId <= 0) {
-      alert("Please enter a valid Item ID.");
-      return;
-    }
-    setIsSubmitting(true);
-
-    try {
-      const formattedValues = mediaValues.map((v) => ({
-        propertyId: v.propertyId,
-        valueText: v.valueText,
-        type: "literal",
-        language: "en",
-      }));
-
-      const fd = new FormData();
-      fd.append("File", selectedFile);
-      fd.append("ItemId", itemId.toString());
-      fd.append("ValuesJson", JSON.stringify(formattedValues));
-
-      const res = await api.post("/api/media/upload-with-metadata", fd, {
-        headers: {
-          "Content-Type": undefined,
-        },
-      });
-      if (res.status === 200 || res.status === 201) {
-        setSuccess(true);
-        setTimeout(() => {
-          setSelectedFile(null);
-          setItemId(0);
-          setMediaValues([]);
-          setSuccess(false);
-          if (fileInputRef.current) fileInputRef.current.value = "";
-        }, 2200);
-      }
-    } catch (err) {
-      console.error("Media upload error:", err);
-      alert(
-        "حدث خطأ أثناء رفع الملف أو حفظ البيانات. تأكد من أن الـ Item ID صحيح."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-  };
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    selectedFile,
+    setSelectedFile,
+    isDragging,
+    setIsDragging,
+    itemId,
+    setItemId,
+    mediaValues,
+    setMediaValues,
+    availableProps,
+    selectedPropId,
+    setSelectedPropId,
+    isSubmitting,
+    success,
+    focusedField,
+    setFocusedField,
+    fileInputRef,
+    handleFileSelect,
+    handleDrop,
+    handleAddValue,
+    handleSubmit,
+    formatSize,
+  } = useCreateMedia();
 
   const inputStyle = (id: string | number): React.CSSProperties => ({
     width: "100%",

@@ -1,9 +1,8 @@
 // src/features/itemSets/BrowseItemSetsPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { api } from "../../services/api";
+import { useItemSets } from "../../hooks/useItemSets";
 import { useAuthStore } from "../../store/useAuthStore";
 import {
   Folder,
@@ -19,41 +18,21 @@ import {
 import type { ItemSetResponse } from "../../types/itemSet.types";
 
 export const BrowseItemSetsPage = () => {
-  const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { isAdmin, isLibrarian } = useAuthStore();
   const canAccessAdmin = isAdmin() || isLibrarian();
-  useEffect(() => {
-    api
-      .get<ItemSetResponse[]>("/api/item-sets")
-      .then((res) => {
-        setItemSets(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error loading item sets:", err);
-        setLoading(false);
-      });
-  }, []);
-
   const handleOpenSet = (setId: number) =>
     navigate("/browse", { state: { itemSet: setId.toString() } });
-
-  const filtered = itemSets.filter(
-    (s) =>
-      !search ||
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.description?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const publicCount = itemSets.filter((s) => s.isPublic).length;
-  const privateCount = itemSets.length - publicCount;
-  const totalItems = itemSets.reduce(
-    (acc, s) => acc + (s.items?.length || 0),
-    0
-  );
+  const {
+    itemSets,
+    loading,
+    search,
+    setSearch,
+    filtered,
+    publicCount,
+    privateCount,
+    totalItems,
+  } = useItemSets();
 
   return (
     <div

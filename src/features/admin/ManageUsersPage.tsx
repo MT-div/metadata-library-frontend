@@ -1,11 +1,9 @@
 // src/features/admin/ManageUsersPage.tsx
-import { useState, useEffect } from "react";
+import { useManageUsers } from "../../hooks/useManageUsers";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import type { UserResponse } from "../../types/user.types";
 import {
   Users,
   Shield,
@@ -26,150 +24,36 @@ import {
 const AVAILABLE_ROLES = ["Admin", "Librarian", "User", "Guest"];
 
 // تمديد الواجهة لتشمل حالة الحذف
-interface ExtendedUserResponse extends UserResponse {
-  isDeleted?: boolean;
-}
 
 export const ManageUsersPage = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<ExtendedUserResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-  // ── Filters State ──
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "active" | "deleted" | "all"
-  >("active");
-
-  const [isProcessing, setIsProcessing] = useState<number | null>(null);
-
-  // ── Role Modal State ──
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<ExtendedUserResponse | null>(
-    null
-  );
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-
-  useEffect(() => {
-    // 👇 استخدام الـ API الذي يجلب الكل بما فيهم المحذوفين
-    api
-      .get<ExtendedUserResponse[]>("/api/users/withDeleted")
-      .then((res) => {
-        setUsers(res.data);
-      })
-      .catch((err) => console.error("Error fetching users:", err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    if (
-      !confirm(
-        "هل أنت متأكد من حذف هذا المستخدم؟ (سيتم إيقاف الحساب / Soft Delete)"
-      )
-    )
-      return;
-
-    setIsProcessing(id);
-    try {
-      await api.delete(`/api/users/${id}`);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, isDeleted: true } : u))
-      );
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("حدث خطأ أثناء الحذف.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const handleRestore = async (id: number) => {
-    if (!confirm("هل تريد استرجاع حساب هذا المستخدم؟")) return;
-
-    setIsProcessing(id);
-    try {
-      // إرسال { id } في الـ Body كما تعودنا في كل عمليات الـ Undelete
-      await api.put(`/api/users/Undelet/${id}`, { id });
-      setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, isDeleted: false } : u))
-      );
-    } catch (error) {
-      console.error("Error restoring user:", error);
-      alert("حدث خطأ أثناء الاسترجاع.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  const openRoleModal = (user: ExtendedUserResponse) => {
-    if (user.isDeleted) return;
-    setEditingUser(user);
-    setSelectedRoles(user.roles || []);
-    setIsRoleModalOpen(true);
-  };
-
-  const toggleRole = (role: string) => {
-    setSelectedRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
-    );
-  };
-
-  const submitRoleChange = async () => {
-    if (!editingUser) return;
-    setIsProcessing(editingUser.id);
-
-    try {
-      const command = {
-        id: editingUser.id,
-        roleNames: selectedRoles,
-      };
-
-      const res = await api.put(`/api/users/${editingUser.id}/roles`, command);
-
-      if (res.status === 200 || res.status === 204) {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === editingUser.id ? { ...u, roles: selectedRoles } : u
-          )
-        );
-        setIsRoleModalOpen(false);
-      }
-    } catch (error) {
-      console.error("Error updating roles:", error);
-      alert("حدث خطأ أثناء تحديث الصلاحيات.");
-    } finally {
-      setIsProcessing(null);
-    }
-  };
-
-  // ── الإحصائيات (تُحسب للمستخدمين النشطين فقط) ──
-  const activeUsers = users.filter((u) => !u.isDeleted);
-  const totalUsers = activeUsers.length;
-  const adminCount = activeUsers.filter((u) =>
-    u.roles?.includes("Admin")
-  ).length;
-  const librarianCount = activeUsers.filter((u) =>
-    u.roles?.includes("Librarian")
-  ).length;
-  const normalCount = totalUsers - adminCount - librarianCount;
-
-  // ── الفلترة ──
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch =
-      u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      u.externalId.toLowerCase().includes(search.toLowerCase());
-
-    const matchesRole =
-      roleFilter === "all" || (u.roles && u.roles.includes(roleFilter));
-
-    let matchesStatus = true;
-    if (statusFilter === "active") matchesStatus = !u.isDeleted;
-    if (statusFilter === "deleted") matchesStatus = u.isDeleted === true;
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    loading,
+    search,
+    setSearch,
+    roleFilter,
+    setRoleFilter,
+    statusFilter,
+    setStatusFilter,
+    isProcessing,
+    isRoleModalOpen,
+    setIsRoleModalOpen,
+    editingUser,
+    selectedRoles,
+    handleDelete,
+    handleRestore,
+    openRoleModal,
+    toggleRole,
+    submitRoleChange,
+    totalUsers,
+    adminCount,
+    librarianCount,
+    normalCount,
+    filteredUsers,
+  } = useManageUsers();
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
@@ -552,9 +436,7 @@ export const ManageUsersPage = () => {
                         <div style={{ position: "relative" }}>
                           {user.profilePicturePath ? (
                             <img
-                              src={
-                                api.defaults.baseURL + user.profilePicturePath
-                              }
+                              src={`${BASE_URL}${user.profilePicturePath}`}
                               alt="avatar"
                               style={{
                                 width: 36,

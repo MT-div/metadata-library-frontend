@@ -1,10 +1,8 @@
 // src/features/librarian/ActiveLoansPage.tsx
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { api } from "../../services/api";
-import { AxiosError } from "axios";
+import { useActiveLoans } from "../../hooks/librarianHooks/useActiveLoans";
 import {
   Clock,
   AlertTriangle,
@@ -17,16 +15,6 @@ import {
   Info,
 } from "lucide-react";
 import { formatDate } from "../../utils/helpers";
-
-interface CirculationRecordResponse {
-  recordId: number;
-  copyBarcode: string | null;
-  patronName: string | null;
-  itemTitle: string | null;
-  borrowDate: string;
-  dueDate: string;
-  isOverdue: boolean;
-}
 
 // ── Extracted Component ──
 const StatCard = ({
@@ -95,67 +83,17 @@ const StatCard = ({
 
 export const ActiveLoansPage = () => {
   const navigate = useNavigate();
-  const [records, setRecords] = useState<CirculationRecordResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [currentTab, setCurrentTab] = useState<"active" | "overdue">("active");
 
-  useEffect(() => {
-    const endpoint =
-      currentTab === "overdue"
-        ? "/api/Circulation/overdue"
-        : "/api/Circulation/active";
-    let cancelled = false;
-
-    const loadRecords = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get<CirculationRecordResponse[]>(endpoint);
-        if (!cancelled) {
-          setRecords(Array.isArray(res.data) ? res.data : []);
-        }
-      } catch (error: unknown) {
-        console.error("Error fetching circulation records:", error);
-        if (!cancelled) {
-          if (error instanceof AxiosError && error.response?.status === 404) {
-            setRecords([]);
-          } else {
-            alert("Failed to load records from server.");
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadRecords();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentTab]);
-
-  // const formatDate = (isoString: string) => {
-  //   if (!isoString) return "—";
-  //   const date = new Date(isoString);
-  //   return date.toLocaleDateString("en-US", {
-  //     year: "numeric",
-  //     month: "short",
-  //     day: "numeric",
-  //   });
-  // };
-
-  const filteredRecords = records.filter((r) => {
-    const query = search.toLowerCase();
-    const pName = r.patronName?.toLowerCase() || "";
-    const iTitle = r.itemTitle?.toLowerCase() || "";
-    const bcode = r.copyBarcode?.toLowerCase() || "";
-    return (
-      pName.includes(query) || iTitle.includes(query) || bcode.includes(query)
-    );
-  });
-
+  // استدعاء وتفكيك الخطاف الجديد هنا
+  const {
+    records,
+    loading,
+    search,
+    setSearch,
+    currentTab,
+    setCurrentTab,
+    filteredRecords,
+  } = useActiveLoans();
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
