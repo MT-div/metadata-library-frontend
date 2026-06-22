@@ -8,6 +8,7 @@ import type {
   PropertyResponse,
   CreatePropertyCommand,
   SearchableFieldResponse,
+  UpdatePropertyCommand,
 } from "../types/property.types";
 import type {
   ResourceTemplateResponse,
@@ -34,7 +35,7 @@ export const metadataService = {
   },
 
   restoreVocabulary: (id: number) => {
-    return api.put(`/api/vocabularies/Undelet/${id}`, { id });
+    return api.put(`/api/vocabularies/Undelete/${id}`, { id });
   },
 
   // ── Properties ──
@@ -58,7 +59,10 @@ export const metadataService = {
   },
 
   restoreProperty: (id: number) => {
-    return api.put(`/api/properties/Undelet/${id}`, { id });
+    return api.put(`/api/properties/Undelete/${id}`, { id });
+  },
+  updateProperty: (id: number, command: UpdatePropertyCommand) => {
+    return api.put(`/api/properties/${id}`, command);
   },
 
   getSearchableFields: () => {

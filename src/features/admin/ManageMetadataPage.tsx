@@ -1,9 +1,10 @@
 // src/features/admin/ManageMetadataPage.tsx
-import { useManageMetadata } from "../../hooks/adminHooks/useManageMetadata";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
+import { IconBtn } from "../../components/ui/IconBtn";
+import { useManageMetadata } from "../../hooks/adminHooks/useManageMetadata";
 import {
   Book,
   Tags,
@@ -14,12 +15,15 @@ import {
   ChevronRight,
   RefreshCw,
   AlertCircle,
+  Search,
+  X,
+  Save,
 } from "lucide-react";
 
 export const ManageMetadataPage = () => {
   const navigate = useNavigate();
 
-  // استدعاء وتفكيك الخطاف الجديد هنا
+  // استدعاء وتفكيك الخطاف
   const {
     vocabularies,
     selectedVocabId,
@@ -40,7 +44,15 @@ export const ManageMetadataPage = () => {
     filteredVocabs,
     filteredProps,
     handleNotImplemented,
+    // ── Edit Modal States & Handlers ──
+    isEditPropModalOpen,
+    setIsEditPropModalOpen,
+    editPropData,
+    setEditPropData,
+    openEditPropModal,
+    handleSavePropEdit,
   } = useManageMetadata();
+
   return (
     <div style={{ fontFamily: fonts.sans, color: C.ink }}>
       {/* ── Page header ── */}
@@ -401,16 +413,18 @@ export const ManageMetadataPage = () => {
                   }}
                 >
                   Properties
-                  <span
-                    style={{
-                      marginLeft: 8,
-                      fontSize: "0.72rem",
-                      fontWeight: 400,
-                      color: C.inkSoft,
-                    }}
-                  >
-                    ({filteredProps.length})
-                  </span>
+                  {!loading && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: "0.72rem",
+                        fontWeight: 400,
+                        color: C.inkSoft,
+                      }}
+                    >
+                      ({filteredProps.length})
+                    </span>
+                  )}
                 </h2>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -570,21 +584,49 @@ export const ManageMetadataPage = () => {
                             {prop.isDeleted && <AlertCircle size={12} />}
                           </span>
                         </td>
+
+                        {/* Label + Searchable Badge */}
                         <td style={{ padding: "13px 16px" }}>
-                          <span
+                          <div
                             style={{
-                              fontFamily: fonts.serif,
-                              fontWeight: 700,
-                              fontSize: "0.9rem",
-                              color: prop.isDeleted ? C.inkSoft : C.ink,
-                              textDecoration: prop.isDeleted
-                                ? "line-through"
-                                : "none",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
                             }}
                           >
-                            {prop.label}
-                          </span>
+                            <span
+                              style={{
+                                fontFamily: fonts.serif,
+                                fontWeight: 700,
+                                fontSize: "0.9rem",
+                                color: prop.isDeleted ? C.inkSoft : C.ink,
+                                textDecoration: prop.isDeleted
+                                  ? "line-through"
+                                  : "none",
+                              }}
+                            >
+                              {prop.label}
+                            </span>
+                            {prop.isSearchable && !prop.isDeleted && (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  background: C.goldLight,
+                                  color: C.goldDark,
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  fontSize: "0.65rem",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <Search size={10} />
+                              </span>
+                            )}
+                          </div>
                         </td>
+
                         <td style={{ padding: "13px 16px" }}>
                           <span
                             style={{
@@ -629,9 +671,7 @@ export const ManageMetadataPage = () => {
                           <div style={{ display: "flex", gap: 6 }}>
                             <IconBtn
                               icon={<Edit size={14} />}
-                              onClick={() =>
-                                handleNotImplemented("Edit Property")
-                              }
+                              onClick={() => openEditPropModal(prop)}
                               disabled={prop.isDeleted}
                             />
 
@@ -674,45 +714,276 @@ export const ManageMetadataPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── Edit Property Modal ── */}
+      {isEditPropModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: C.surface,
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 500,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                background: C.goldLight,
+                padding: "16px 20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: `1.5px solid ${C.goldBorder}`,
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: fonts.serif,
+                  fontWeight: 700,
+                  color: C.ink,
+                }}
+              >
+                Edit Property
+              </h3>
+              <button
+                onClick={() => setIsEditPropModalOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: C.inkSoft,
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSavePropEdit}
+              style={{
+                padding: 24,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: C.inkMid,
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Display Label
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPropData.label}
+                  onChange={(e) =>
+                    setEditPropData({ ...editPropData, label: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${C.goldBorder}`,
+                    outline: "none",
+                    fontFamily: fonts.sans,
+                    fontSize: "0.9rem",
+                    color: C.ink,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: C.inkMid,
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Local Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPropData.localName}
+                  onChange={(e) =>
+                    setEditPropData({
+                      ...editPropData,
+                      localName: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1px solid ${C.goldBorder}`,
+                    outline: "none",
+                    fontFamily: "monospace",
+                    fontSize: "0.85rem",
+                    color: C.ink,
+                  }}
+                  dir="ltr"
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: C.inkMid,
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Term URI
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={editPropData.termUri}
+                  onChange={(e) =>
+                    setEditPropData({
+                      ...editPropData,
+                      termUri: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1px solid ${C.goldBorder}`,
+                    outline: "none",
+                    fontFamily: "monospace",
+                    fontSize: "0.85rem",
+                    color: C.ink,
+                  }}
+                  dir="ltr"
+                />
+              </div>
+
+              <div
+                style={{
+                  background: C.bg,
+                  border: `1px solid ${C.goldBorder}`,
+                  borderRadius: 10,
+                  padding: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <h4
+                    style={{
+                      margin: 0,
+                      fontSize: "0.85rem",
+                      color: C.ink,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Searchable
+                  </h4>
+                  <p
+                    style={{ margin: 0, fontSize: "0.7rem", color: C.inkSoft }}
+                  >
+                    Used for dynamic search filters
+                  </p>
+                </div>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div
+                    onClick={() =>
+                      setEditPropData((p) => ({
+                        ...p,
+                        isSearchable: !p.isSearchable,
+                      }))
+                    }
+                    style={{
+                      width: 44,
+                      height: 24,
+                      borderRadius: 999,
+                      background: editPropData.isSearchable
+                        ? C.gold
+                        : C.goldBorder,
+                      position: "relative",
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 3,
+                        left: editPropData.isSearchable ? 21 : 3,
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: "#fff",
+                        transition: "left 0.2s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 10,
+                }}
+              >
+                <OutlineBtn
+                  type="button"
+                  onClick={() => setIsEditPropModalOpen(false)}
+                >
+                  Cancel
+                </OutlineBtn>
+                <GoldBtn type="submit" disabled={isProcessingProp !== null}>
+                  <Save size={16} />{" "}
+                  {isProcessingProp !== null ? "Saving..." : "Save Property"}
+                </GoldBtn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-// ── Local specialized buttons ──────────────────────────────────────────────────
-const IconBtn = ({
-  icon,
-  onClick,
-  danger,
-  disabled,
-}: {
-  icon: React.ReactNode;
-  onClick: () => void;
-  danger?: boolean;
-  disabled?: boolean;
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      width: 30,
-      height: 30,
-      borderRadius: 8,
-      border: "none",
-      background: disabled ? "#f1f5f9" : danger ? C.dangerBg : C.goldLight,
-      color: disabled ? "#94a3b8" : danger ? C.danger : C.goldDark,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: disabled ? "not-allowed" : "pointer",
-      transition: "all 0.15s",
-    }}
-    onMouseEnter={(e) => {
-      if (!disabled) e.currentTarget.style.opacity = "0.75";
-    }}
-    onMouseLeave={(e) => {
-      if (!disabled) e.currentTarget.style.opacity = "1";
-    }}
-  >
-    {icon}
-  </button>
-);

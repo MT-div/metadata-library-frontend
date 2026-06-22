@@ -29,6 +29,6 @@ export const mediaService = {
   },
 
   restoreMedia: (id: number) => {
-    return api.put(`/api/media/Undelet/${id}`, { id });
+    return api.put(`/api/media/Undelete/${id}`, { id });
   },
 };

@@ -16,6 +16,58 @@ export const useManageMetadata = () => {
   const [selectedVocabId, setSelectedVocabId] = useState<number>(0);
   const [properties, setProperties] = useState<ExtendedProp[]>([]);
   const [loading, setLoading] = useState(true);
+  // ── 1. أضف هذه الحالات داخل الـ Hook ──
+  const [isEditPropModalOpen, setIsEditPropModalOpen] = useState(false);
+  const [editingPropId, setEditingPropId] = useState<number | null>(null);
+  const [editPropData, setEditPropData] = useState({
+    label: "",
+    localName: "",
+    termUri: "",
+    isSearchable: true,
+  });
+
+  // ── 2. أضف دوال الفتح والحفظ ──
+  const openEditPropModal = (prop: ExtendedProp) => {
+    setEditingPropId(prop.id);
+    setEditPropData({
+      label: prop.label,
+      localName: prop.localName,
+      termUri: prop.termUri,
+      isSearchable: prop.isSearchable ?? false,
+    });
+    setIsEditPropModalOpen(true);
+  };
+
+  const handleSavePropEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPropId || !selectedVocabId) return;
+    setIsProcessingProp(editingPropId);
+
+    try {
+      const payload = {
+        id: editingPropId,
+        vocabularyId: selectedVocabId,
+        label: editPropData.label.trim(),
+        localName: editPropData.localName.trim(),
+        termUri: editPropData.termUri.trim(),
+        isSearchable: editPropData.isSearchable,
+      };
+
+      // استدعاء الخدمة (تأكد من وجود metadataService.updateProperty)
+      await metadataService.updateProperty(editingPropId, payload);
+
+      // تحديث الجدول محلياً للسرعة
+      setProperties((prev) =>
+        prev.map((p) => (p.id === editingPropId ? { ...p, ...payload } : p))
+      );
+      setIsEditPropModalOpen(false);
+    } catch (err) {
+      console.error("Error updating property:", err);
+      alert("Failed to update property.");
+    } finally {
+      setIsProcessingProp(null);
+    }
+  };
 
   // Status Filters
   const [vocabFilterStatus, setVocabFilterStatus] = useState<
@@ -164,5 +216,11 @@ export const useManageMetadata = () => {
     filteredVocabs,
     filteredProps,
     handleNotImplemented,
+    isEditPropModalOpen,
+    setIsEditPropModalOpen,
+    editPropData,
+    setEditPropData,
+    openEditPropModal,
+    handleSavePropEdit,
   };
 };

@@ -32,7 +32,7 @@ export const itemService = {
   },
 
   restoreItem: (id: number) => {
-    return api.put(`/api/items/Undelet/${id}`, { id });
+    return api.put(`/api/items/Undelete/${id}`, { id });
   },
 
   // ── Item Copies ──
@@ -67,7 +67,7 @@ export const itemService = {
   },
 
   restoreItemSet: (id: number) => {
-    return api.put(`/api/item-sets/Undelet/${id}`, { id });
+    return api.put(`/api/item-sets/Undelete/${id}`, { id });
   },
 
   linkItemToSet: (setId: number, itemId: number) => {

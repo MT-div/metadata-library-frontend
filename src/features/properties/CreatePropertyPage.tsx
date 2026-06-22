@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { Save, Tags, ArrowLeft, ExternalLink, Info } from "lucide-react";
+import {
+  Save,
+  Tags,
+  ArrowLeft,
+  ExternalLink,
+  Info,
+  Search,
+} from "lucide-react";
 import { useCreateProperty } from "../../hooks/propertiesHooks/useCreateProperty";
 
 // واجهة خصائص المكون FormLabel
@@ -362,6 +369,93 @@ export const CreatePropertyPage = () => {
                 )}
               </div>
 
+              {/* 👇 ── Searchable Toggle ── 👇 */}
+              <div
+                style={{
+                  background: C.bg,
+                  border: `1.5px solid ${C.goldBorder}`,
+                  borderRadius: 12,
+                  padding: "16px",
+                  marginTop: 8,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontFamily: fonts.sans,
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        color: C.ink,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <Search size={14} color={C.goldDark} /> Allow Filtering &
+                      Searching
+                    </h3>
+                    <p
+                      style={{
+                        margin: "2px 0 0",
+                        fontSize: "0.7rem",
+                        color: C.inkSoft,
+                      }}
+                    >
+                      Should this property be used to generate dynamic search
+                      filters?
+                    </p>
+                  </div>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      onClick={() =>
+                        setFormData((p) => ({
+                          ...p,
+                          isSearchable: !p.isSearchable,
+                        }))
+                      }
+                      style={{
+                        width: 44,
+                        height: 24,
+                        borderRadius: 999,
+                        background: formData.isSearchable
+                          ? C.gold
+                          : C.goldBorder,
+                        position: "relative",
+                        transition: "background 0.2s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 3,
+                          left: formData.isSearchable ? 21 : 3,
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          background: "#fff",
+                          transition: "left 0.2s",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        }}
+                      />
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Info note */}
               <div
                 style={{
@@ -369,6 +463,7 @@ export const CreatePropertyPage = () => {
                   gap: 10,
                   alignItems: "flex-start",
                   background: C.goldMid,
+
                   border: `1px solid ${C.goldBorder}`,
                   borderRadius: 10,
                   padding: "11px 14px",

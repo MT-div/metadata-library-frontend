@@ -27,7 +27,7 @@ export const authService = {
   },
 
   restoreUser: (id: number) => {
-    return api.put(`/api/users/Undelet/${id}`, { id });
+    return api.put(`/api/users/Undelete/${id}`, { id });
   },
 
   updateUserRoles: (userId: number, roles: string[]) => {
