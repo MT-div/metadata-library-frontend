@@ -1,9 +1,9 @@
 // src/hooks/useCreateMedia.ts
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { mediaService } from "../services/mediaService";
-import { metadataService } from "../services/metadataService";
-import type { CreateValueRequest } from "../types/item.types";
+import { mediaService } from "../../services/mediaService";
+import { metadataService } from "../../services/metadataService";
+import type { CreateValueRequest } from "../../types/item.types";
 
 interface PropertyOption {
   id: number;

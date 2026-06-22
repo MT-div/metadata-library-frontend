@@ -1,8 +1,8 @@
 // src/hooks/useCreateUser.ts
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
-import { getErrorMessage } from "../utils/helpers";
+import { authService } from "../../services/authService";
+import { getErrorMessage } from "../../utils/helpers";
 
 export const useCreateUser = () => {
   const navigate = useNavigate();

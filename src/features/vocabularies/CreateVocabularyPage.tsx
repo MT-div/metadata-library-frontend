@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { useCreateVocabulary } from "../../hooks/useCreateVocabulary";
+import { useCreateVocabulary } from "../../hooks/vocabulariesHooks/useCreateVocabulary";
 import { Save, BookOpen, ArrowLeft, Info, ExternalLink } from "lucide-react";
 
 const FieldLabel = ({

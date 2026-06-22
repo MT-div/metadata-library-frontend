@@ -1,5 +1,5 @@
 // src/features/admin/ManageUsersPage.tsx
-import { useManageUsers } from "../../hooks/useManageUsers";
+import { useManageUsers } from "../../hooks/adminHooks/useManageUsers";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";

@@ -1,7 +1,7 @@
 // src/hooks/useManageUsers.ts
 import { useState, useEffect } from "react";
-import { authService } from "../services/authService";
-import type { UserResponse } from "../types/user.types";
+import { authService } from "../../services/authService";
+import type { UserResponse } from "../../types/user.types";
 
 interface ExtendedUserResponse extends UserResponse {
   isDeleted?: boolean;

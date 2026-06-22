@@ -1,7 +1,7 @@
 // src/hooks/useCreateItemSet.ts
 import { useState } from "react";
-import { itemService } from "../services/itemService";
-import type { CreateItemSetCommand } from "../types/itemSet.types";
+import { itemService } from "../../services/itemService";
+import type { CreateItemSetCommand } from "../../types/itemSet.types";
 
 export const useCreateItemSet = (ownerId = 1) => {
   const [formData, setFormData] = useState<CreateItemSetCommand>({

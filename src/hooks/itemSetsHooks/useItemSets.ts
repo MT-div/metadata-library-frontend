@@ -1,7 +1,7 @@
 // src/hooks/useItemSets.ts
 import { useState, useEffect } from "react";
-import { itemService } from "../services/itemService";
-import type { ItemSetResponse } from "../types/itemSet.types";
+import { itemService } from "../../services/itemService";
+import type { ItemSetResponse } from "../../types/itemSet.types";
 
 export const useItemSets = () => {
   const [itemSets, setItemSets] = useState<ItemSetResponse[]>([]);

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { useCreateMedia } from "../../hooks/useCreateMedia";
+import { useCreateMedia } from "../../hooks/mediaHooks/useCreateMedia";
 import {
   UploadCloud,
   Save,

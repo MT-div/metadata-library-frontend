@@ -1,7 +1,7 @@
 // src/hooks/useCreateVocabulary.ts
 import { useState } from "react";
-import { metadataService } from "../services/metadataService";
-import type { CreateVocabularyCommand } from "../types/vocabulary.types";
+import { metadataService } from "../../services/metadataService";
+import type { CreateVocabularyCommand } from "../../types/vocabulary.types";
 
 export const useCreateVocabulary = () => {
   const [formData, setFormData] = useState<CreateVocabularyCommand>({

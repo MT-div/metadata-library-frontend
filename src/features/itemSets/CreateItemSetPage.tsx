@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
 import { OutlineBtn } from "../../components/ui/OutlineBtn";
-import { useCreateItemSet } from "../../hooks/useCreateItemSet";
+import { useCreateItemSet } from "../../hooks/itemSetsHooks/useCreateItemSet";
 import { Save, FolderPlus, Globe, Lock, Info, ArrowLeft } from "lucide-react";
 
 export const CreateItemSetPage = () => {

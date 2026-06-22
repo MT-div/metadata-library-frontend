@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
-import { useItemSets } from "../../hooks/useItemSets";
+import { useItemSets } from "../../hooks/itemSetsHooks/useItemSets";
 import { useAuthStore } from "../../store/useAuthStore";
 import {
   Folder,

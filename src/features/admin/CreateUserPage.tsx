@@ -1,5 +1,5 @@
 // src/features/admin/CreateUserPage.tsx
-import { useCreateUser } from "../../hooks/useCreateUser";
+import { useCreateUser } from "../../hooks/adminHooks/useCreateUser";
 import { useNavigate } from "react-router-dom";
 import { C, fonts } from "../../utils/theme";
 import { GoldBtn } from "../../components/ui/GoldBtn";
