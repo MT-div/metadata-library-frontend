@@ -63,7 +63,11 @@ export const useLogin = () => {
         credentialResponse.credential
       );
       login(response.data);
-      navigate("/admin/metadata");
+      if (canAccessAdmin) {
+        navigate("/admin/metadata");
+      } else {
+        navigate("/browse");
+      }
     } catch (err: unknown) {
       if (err instanceof AxiosError && err.response) {
         setError(err.response.data || "Google login failed.");

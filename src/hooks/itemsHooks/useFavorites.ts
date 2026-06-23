@@ -21,7 +21,7 @@ export const useFavorites = () => {
       .then(([bookmarkIds, allItems, tpls]) => {
         // فلترة العناصر لعرض المحفوظة فقط محلياً
         const userFavorites = allItems.filter((item) =>
-          bookmarkIds.some((bookmark) => bookmark.id === item.id)
+          bookmarkIds.some((bookmark) => bookmark.itemId === item.id)
         );
         setFavoriteItems(userFavorites);
         setTemplates(tpls);

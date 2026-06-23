@@ -22,6 +22,7 @@ import {
   extractYear,
   computeRating,
 } from "../../utils/helpers";
+import { useAuthStore } from "../../store/useAuthStore";
 
 // ── Category Definitions & Icons ─────────────────────────────────────────────
 const CAT_CONFIG = [
@@ -56,6 +57,7 @@ const COVER_COLORS: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 export const BrowseItemsPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
 
   // استدعاء وتفكيك الخطاف الجديد هنا
   const {
@@ -574,9 +576,10 @@ export const BrowseItemsPage = () => {
                               fontSize: "0.68rem",
                               fontWeight: 700,
                               padding: "3px 10px",
+                              display: "flex",
+
                               borderRadius: 999,
                               letterSpacing: "0.04em",
-                              display: "flex",
                               alignItems: "center",
                               gap: 4,
                             }}
@@ -596,7 +599,7 @@ export const BrowseItemsPage = () => {
                               background: "rgba(255,255,255,0.9)",
                               border: "none",
                               cursor: "pointer",
-                              display: "flex",
+                              display: !isAuthenticated ? "none" : "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               transition: "transform 0.2s",

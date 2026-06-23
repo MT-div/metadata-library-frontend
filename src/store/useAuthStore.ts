@@ -7,10 +7,10 @@ interface AuthState {
   login: (userData: AuthResponse) => void;
   logout: () => void;
 
-  // 👈 دوال الـ Senior المساعدة
   hasRole: (role: string) => boolean;
   isAdmin: () => boolean;
   isLibrarian: () => boolean;
+  isUser: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -43,5 +43,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // 👈 التحقق السريع من أمناء المكتبة
   isLibrarian: () => {
     return get().hasRole("Librarian");
+  },
+  isUser: () => {
+    return get().hasRole("User");
   },
 }));

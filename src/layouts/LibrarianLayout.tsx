@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Clock,
   History,
+  DoorOpenIcon,
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -70,6 +71,8 @@ export const LibrarianLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { isAdmin } = useAuthStore();
+  const canAccessAdmin = isAdmin();
 
   const handleLogout = () => {
     logout();
@@ -247,6 +250,29 @@ export const LibrarianLayout = () => {
           }}
         >
           <button
+            onClick={() => navigate("/admin")}
+            style={{
+              display: canAccessAdmin ? "flex" : "none",
+
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 12px",
+              borderRadius: 10,
+              background: "transparent",
+              border: "none",
+              color: C.sidebarText,
+              fontFamily: fonts.sans,
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              width: "100%",
+              transition: "all 0.15s",
+            }}
+          >
+            <DoorOpenIcon size={17} /> Admin Panel
+          </button>
+
+          <button
             onClick={() => navigate("/browse")}
             style={{
               display: "flex",
@@ -267,6 +293,7 @@ export const LibrarianLayout = () => {
           >
             <Globe size={17} /> View Library
           </button>
+
           <button
             style={{
               display: "flex",

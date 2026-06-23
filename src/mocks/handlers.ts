@@ -1,6 +1,6 @@
 // src/mocks/handlers.ts
 import { http, HttpResponse } from "msw";
-import type { ResourceTemplateResponse } from "../types/template.types";
+// import type { ResourceTemplateResponse } from "../types/template.types";
 import type { VocabularyResponse } from "../types/vocabulary.types";
 // أضف هذه المصفوفات الوهمية في أعلى الملف
 const mockItems = [
@@ -105,39 +105,39 @@ const mockProperties = [
   },
 ];
 // محاكاة استجابة قالب "كتاب" بناءً على DTO الخاص بك
-const mockTemplates: ResourceTemplateResponse[] = [
-  {
-    id: 1,
-    label: "كتاب مطبوع",
-    description: "قالب أساسي للكتب المطبوعة والمنشورة",
-    properties: [
-      {
-        propertyId: 101,
-        propertyLabel: "العنوان الرئيسي",
-        isRequired: true,
-        displayOrder: 1,
-      },
-      {
-        propertyId: 102,
-        propertyLabel: "المؤلف",
-        isRequired: true,
-        displayOrder: 2,
-      },
-      {
-        propertyId: 103,
-        propertyLabel: "سنة النشر",
-        isRequired: false,
-        displayOrder: 3,
-      },
-      {
-        propertyId: 104,
-        propertyLabel: "الرقم المعياري (ISBN)",
-        isRequired: false,
-        displayOrder: 4,
-      },
-    ],
-  },
-];
+// const mockTemplates: ResourceTemplateResponse[] = [
+//   {
+//     id: 1,
+//     label: "كتاب مطبوع",
+//     description: "قالب أساسي للكتب المطبوعة والمنشورة",
+//     properties: [
+//       {
+//         propertyId: 101,
+//         propertyLabel: "العنوان الرئيسي",
+//         isRequired: true,
+//         displayOrder: 1,
+//       },
+//       {
+//         propertyId: 102,
+//         propertyLabel: "المؤلف",
+//         isRequired: true,
+//         displayOrder: 2,
+//       },
+//       {
+//         propertyId: 103,
+//         propertyLabel: "سنة النشر",
+//         isRequired: false,
+//         displayOrder: 3,
+//       },
+//       {
+//         propertyId: 104,
+//         propertyLabel: "الرقم المعياري (ISBN)",
+//         isRequired: false,
+//         displayOrder: 4,
+//       },
+//     ],
+//   },
+// ];
 const mockVocabularies: VocabularyResponse[] = [
   {
     id: 1,
@@ -155,18 +155,18 @@ const mockVocabularies: VocabularyResponse[] = [
 
 export const handlers = [
   // 1. جلب القوالب
-  http.get("/api/templates", () => {
-    return HttpResponse.json(mockTemplates);
-  }),
+  // http.get("/api/templates", () => {
+  //   return HttpResponse.json(mockTemplates);
+  // }),
 
-  // 2. جلب قالب محدد بواسطة الـ ID
-  http.get("/api/templates/:id", ({ params }) => {
-    const template = mockTemplates.find((t) => t.id === Number(params.id));
-    if (!template) {
-      return new HttpResponse(null, { status: 404 });
-    }
-    return HttpResponse.json(template);
-  }),
+  // // 2. جلب قالب محدد بواسطة الـ ID
+  // http.get("/api/templates/:id", ({ params }) => {
+  //   const template = mockTemplates.find((t) => t.id === Number(params.id));
+  //   if (!template) {
+  //     return new HttpResponse(null, { status: 404 });
+  //   }
+  //   return HttpResponse.json(template);
+  // }),
 
   // 3. محاكاة الـ Command الخاص بإنشاء العنصر
   http.post("/api/items", async ({ request }) => {

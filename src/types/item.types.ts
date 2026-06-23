@@ -32,5 +32,5 @@ export interface CreateItemCommand {
 }
 
 export interface BookmarksResponse {
-  id: number;
+  itemId: number;
 }

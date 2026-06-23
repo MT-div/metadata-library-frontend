@@ -9,7 +9,8 @@ import leafs from "../assets/images/leafs.png";
 
 export const MainLayout = () => {
   const { isAuthenticated, isAdmin, isLibrarian, logout } = useAuthStore();
-  const canAccessAdmin = isAdmin() || isLibrarian();
+  const canAccessAdmin = isAdmin();
+  const canAccessLibrarian = isLibrarian();
 
   const navigate = useNavigate();
   const navLinks = [
@@ -154,6 +155,8 @@ export const MainLayout = () => {
                   navigate("/login");
                 } else if (canAccessAdmin) {
                   navigate("/admin");
+                } else if (canAccessLibrarian) {
+                  navigate("/librarian");
                 } else {
                   logout();
                   navigate("/");
@@ -171,6 +174,8 @@ export const MainLayout = () => {
                 ? "Sign In"
                 : canAccessAdmin
                 ? "Admin Panel"
+                : canAccessLibrarian
+                ? "Librarian Panel"
                 : "Sign Out"}
             </GoldBtn>
           </div>

@@ -72,8 +72,8 @@ export const useBrowseItems = () => {
         setTemplates(t);
         setItemSets(s);
         const ids: number[] = Array.isArray(b)
-          ? b.map((x: number | { id: number }) =>
-              typeof x === "number" ? x : Number(x.id)
+          ? b.map((x: number | { itemId: number }) =>
+              typeof x === "number" ? x : Number(x.itemId)
             )
           : [];
         setBookmarks(ids);
