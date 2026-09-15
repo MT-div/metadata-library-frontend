@@ -1,73 +1,81 @@
-# React + TypeScript + Vite
+# Metadata Library
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A role-based web application for organising, discovering, and circulating library resources. The interface supports public catalogue browsing alongside dedicated workspaces for administrators and librarians.
 
-Currently, two official plugins are available:
+## Highlights
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Browse and search catalogue items, inspect item details, and save favourites.
+- Filter catalogue results by type, publication year, language, and sort order.
+- Email/password and Google sign-in flows with token-based session handling.
+- Protected role-based dashboards for administrators and librarians.
+- Administrator tools for users, media, metadata, templates, item sets, items, vocabularies, properties, and settings.
+- Librarian workflows for circulation, patrons, copies, active loans, and circulation history.
+- Responsive, library-focused visual design.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 and TypeScript
+- Vite
+- React Router
+- Zustand
+- Axios
+- Tailwind CSS
+- Lucide icons
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 20 or later
+- A running compatible backend API (the current client is configured for `https://localhost:7206`)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone <your-repository-url>
+cd metadata-library-frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open the local address printed by Vite, normally `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Available Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev      # Start the development server
+npm run build    # Type-check and create a production build
+npm run lint     # Run ESLint
+npm run preview  # Preview the production build locally
 ```
+
+## Project Structure
+
+```text
+src/
+├── components/  # Shared UI and route-protection components
+├── features/    # Feature pages grouped by domain and user role
+├── hooks/       # Data-fetching and feature logic hooks
+├── layouts/     # Public, admin, and librarian layouts
+├── services/    # API clients and endpoint services
+├── store/       # Client-side authentication state
+├── types/       # TypeScript domain models
+└── utils/       # Theme and helper utilities
+```
+
+## Roles and Access
+
+| Area | Access |
+| --- | --- |
+| Public catalogue | All visitors |
+| Favourites | Authenticated users |
+| Administration | Administrators |
+| Circulation desk | Librarians and administrators |
+
+## API Configuration
+
+The Axios client is defined in `src/services/api.ts`. Update its `baseURL` to point to the deployed API when running outside local development. The client attaches a stored bearer token to protected requests and handles expired sessions.
+
+## License
+
+This project is intended for educational and portfolio use. Add a license file before distributing it publicly.
